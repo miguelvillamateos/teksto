@@ -1,0 +1,41 @@
+% ==========================================
+% Fichero principal: documento.tks
+% ==========================================
+
+% 1. Estado de pagina por defecto combinando unidades metricas (m, cm, mm) y orientacion
+\pagesize{0.21m}{29.7cm}
+\orientation{portrait}
+\margins{2.5cm}{2.5cm}{20mm}{20mm}
+
+% 2. Macro de estado base (0 parametros) para restaurar parrafo y fuente principal
+\newcommand{cuerpobase}{0}{\align{justify}\linespacing{5.5mm}\parindent{8mm}\parmargins{0mm}{0mm}\parspacing{0mm}{2.5mm}\font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}\fontweight{normal}\fontslant{normal}}
+
+% 3. Macros de bloques semanticos en el documento raiz
+\newcommand{titulo}{1}{\parbreak\align{center}\linespacing{9mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{4mm}{6mm}\font{DejaVu Sans}\fontsize{20pt}\fontcolor{Navy}\textbf{#1}\parbreak\cuerpobase}
+\newcommand{alerta}{1}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{1.2cm}{1.2cm}\parspacing{3mm}{3mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{DarkRed}\textbf{[AVISO:} \textit{#1}\textbf{]}\parbreak\cuerpobase}
+
+% Inicializamos el estado tipografico por defecto
+\cuerpobase
+
+% 4. Contenido de la primera pagina
+\titulo{Especificacion del Formato Intermedio XML}
+
+Este primer parrafo demuestra l control de estado tipografico continuo con alineacion justificada, sangria de primera linea en milimetros e interlineado metrico. El generador registra automaticamente cada familia tipografica y deduplica las combinaciones de estilo empleadas, permitiendo anidar \textbf{negrita con \textit{cursiva combinada y \underline{subrayado simultaneo}}} o destacar terminos con \underline{subrayado simple} manteniendo referencias limpias hacia el bloque inicial de definiciones.
+
+\alerta{Todas las dimensiones equivalentes como 20mm, 2cm o 0.02m se normalizan internamente para evitar duplicar estilos en el catalogo XML.}
+
+% 5. Inclusion de modulo externo (resuelve automaticamente la extension .tks)
+\include{capitulo1}
+
+% 6. Salto a segunda pagina y definicion explicita de dos marcos en columnas metricas
+\newpage
+\newframe{20mm}{25mm}{82mm}{24.7cm}
+\newframe{10.8cm}{25mm}{82mm}{24.7cm}
+
+\titulo{Maquetacion Multipagina y Persistencia de Estado}
+
+Tras ejecutar el salto de pagina e instanciar dos marcos simetricos en milimetros y centimetros, las macros registradas dentro del fichero incluido siguen activas en el entorno global:
+
+\seccion{Mutacion Directa del Estado de Fuente}
+
+Ademas de los modificadores acotados entre llaves, el procesador permite conmutar directamente los registros de estado como \font{DejaVu Sans}\fontsize{10.5pt}\fontcolor{DarkSlateGray}\fontweight{bold}\fontslant{italic}peso negrita e inclinacion cursiva persistentes sobre otra familia tipografica\cuerpobase y retomar de inmediato el estilo del cuerpo principal en el mismo flujo documental.

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="doc-root" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 242.000 337.000" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <filter id="page-shadow" x="-8%" y="-5%" width="116%" height="114%">
+      <feDropShadow dx="0" dy="2.2" stdDeviation="2.8" flood-color="#0b0f19" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <style><![CDATA[
+    svg { background-color: #1e2430; user-select: text; -webkit-user-select: text; }
+    .page-sheet { fill: #ffffff; stroke: #cbd5e1; stroke-width: 0.25px; }
+    .page-num-footer { font-family: sans-serif; font-size: 3.2px; fill: #64748b; user-select: none; }
+    .hud-pill { fill: #0f172a; fill-opacity: 0.88; stroke: #334155; stroke-width: 0.35px; }
+    .hud-btn { cursor: pointer; fill: #1e293b; stroke: #475569; stroke-width: 0.3px; transition: fill 0.15s; }
+    .hud-btn:hover { fill: #334155; }
+    .hud-btn-disabled { opacity: 0.38; cursor: default; pointer-events: none; }
+    .hud-label { font-family: system-ui, sans-serif; font-size: 3.6px; fill: #f8fafc; user-select: none; pointer-events: none; }
+    .cs-cs1 { font-family: "DejaVu Sans"; font-size: 7.056px; fill: Navy; font-weight: bold; font-style: normal; }
+    .cs-cs2 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs3 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs4 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: italic; }
+    .cs-cs5 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: italic; text-decoration: underline; }
+    .cs-cs6 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; text-decoration: underline; }
+    .cs-cs7 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: bold; font-style: normal; }
+    .cs-cs8 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: normal; font-style: normal; }
+    .cs-cs9 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: normal; font-style: italic; }
+    .cs-cs10 { font-family: "DejaVu Sans"; font-size: 4.939px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
+    .cs-cs11 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: normal; }
+    .cs-cs12 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: bold; font-style: normal; }
+    .cs-cs13 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: italic; }
+    .cs-cs14 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: Navy; font-weight: bold; font-style: normal; }
+    .cs-cs15 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs16 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: DarkSlateGray; font-weight: bold; font-style: italic; }
+  ]]></style>
+
+  <rect x="-242.000" y="-337.000" width="1040.000" height="1011.000" fill="#1e2430"/>
+
+  <g id="pages-strip">
+    <g id="page-1" transform="translate(16.000, 14.000)">
+      <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
+      <clipPath id="clip-page-1"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
+      <g clip-path="url(#clip-page-1)">
+        <text x="34.777" y="31.840" xml:space="preserve"><tspan class="cs-cs1">Especificacion del Formato Intermedio XML</tspan></text>
+        <text x="28.000" y="44.180" xml:space="preserve" style="word-spacing:0.248px;"><tspan class="cs-cs2">Este primer parrafo demuestra l control de estado tipografico continuo con alineacion justificada,</tspan></text>
+        <text x="20.000" y="49.680" xml:space="preserve" style="word-spacing:0.332px;"><tspan class="cs-cs2">sangria de primera linea en milimetros e interlineado metrico. El generador registra automaticamente</tspan></text>
+        <text x="20.000" y="55.180" xml:space="preserve" style="word-spacing:1.107px;"><tspan class="cs-cs2">cada familia tipografica y deduplica las combinaciones de estilo empleadas, permitiendo anidar</tspan></text>
+        <text x="20.000" y="60.680" xml:space="preserve" style="word-spacing:0.379px;"><tspan class="cs-cs3">negrita con </tspan><tspan class="cs-cs4">cursiva combinada y </tspan><tspan class="cs-cs5">subrayado simultaneo </tspan><tspan class="cs-cs2">o destacar terminos con </tspan><tspan class="cs-cs6">subrayado simple</tspan></text>
+        <text x="20.000" y="66.180" xml:space="preserve"><tspan class="cs-cs2">manteniendo referencias limpias hacia el bloque inicial de definiciones.</tspan></text>
+        <text x="32.000" y="76.800" xml:space="preserve"><tspan class="cs-cs7">[AVISO: </tspan><tspan class="cs-cs9">Todas las dimensiones equivalentes como 20mm, 2cm o 0.02m se normalizan</tspan></text>
+        <text x="32.000" y="81.800" xml:space="preserve"><tspan class="cs-cs9">internamente para evitar duplicar estilos en el catalogo XML.</tspan><tspan class="cs-cs7">]</tspan></text>
+        <text x="20.000" y="96.320" xml:space="preserve"><tspan class="cs-cs10">Capitulo 1: Arquitectura del Motor de Estados</tspan></text>
+        <text x="28.000" y="104.680" xml:space="preserve" style="word-spacing:1.023px;"><tspan class="cs-cs2">Este bloque procede de un fichero externo incorporado mediante el comando </tspan><tspan class="cs-cs11">-include-</tspan><tspan class="cs-cs2">. Al</tspan></text>
+        <text x="20.000" y="110.180" xml:space="preserve" style="word-spacing:0.039px;"><tspan class="cs-cs2">combinar </tspan><tspan class="cs-cs11">Liberation Mono </tspan><tspan class="cs-cs2">con modificadores como </tspan><tspan class="cs-cs12">variant=&quot;bold&quot; </tspan><tspan class="cs-cs2">o </tspan><tspan class="cs-cs13">slant=&quot;italic&quot;</tspan><tspan class="cs-cs2">, el registro</tspan></text>
+        <text x="20.000" y="115.680" xml:space="preserve"><tspan class="cs-cs2">inicial incorpora unicamente las variantes realmente utilizadas por cada familia.</tspan></text>
+        <text x="26.000" y="123.800" xml:space="preserve"><tspan class="cs-cs14">Formato de salida:</tspan><tspan class="cs-cs15">XML intermedio v0.2 con bloque declarativo definitions</tspan></text>
+        <text x="26.000" y="130.300" xml:space="preserve"><tspan class="cs-cs14">Unidades soportadas:</tspan><tspan class="cs-cs15">Milimetros (mm), centimetros (cm), metros (m) y puntos (pt)</tspan></text>
+        <text x="26.000" y="136.800" xml:space="preserve"><tspan class="cs-cs14">Gestion de estilos:</tspan><tspan class="cs-cs15">Internado automatico de para-style y char-style sin duplicados</tspan></text>
+        <text x="26.000" y="143.300" xml:space="preserve"><tspan class="cs-cs14">Persistencia:</tspan><tspan class="cs-cs15">Volcado secuencial de macros en comandos_auxiliares.tks</tspan></text>
+        <text x="28.000" y="149.680" xml:space="preserve" style="word-spacing:0.728px;"><tspan class="cs-cs2">Al concluir la lectura de este modulo, el analizador retoma el cursor del documento principal</tspan></text>
+        <text x="20.000" y="155.180" xml:space="preserve"><tspan class="cs-cs2">conservando intactos el entorno de macros y el estado tipografico activo.</tspan></text>
+      </g>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">1 / 2</text>
+    </g>
+    <g id="page-2" transform="translate(294.000, 14.000)">
+      <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
+      <clipPath id="clip-page-2"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
+      <g clip-path="url(#clip-page-2)">
+        <text x="21.157" y="31.840" xml:space="preserve"><tspan class="cs-cs1">Maquetacion Multipagina</tspan></text>
+        <text x="21.571" y="40.840" xml:space="preserve"><tspan class="cs-cs1">y Persistencia de Estado</tspan></text>
+        <text x="28.000" y="53.180" xml:space="preserve" style="word-spacing:0.244px;"><tspan class="cs-cs2">Tras ejecutar el salto de pagina e instanciar</tspan></text>
+        <text x="20.000" y="58.680" xml:space="preserve" style="word-spacing:3.555px;"><tspan class="cs-cs2">dos marcos simetricos en milimetros y</tspan></text>
+        <text x="20.000" y="64.180" xml:space="preserve" style="word-spacing:1.149px;"><tspan class="cs-cs2">centimetros, las macros registradas dentro del</tspan></text>
+        <text x="20.000" y="69.680" xml:space="preserve" style="word-spacing:1.559px;"><tspan class="cs-cs2">fichero incluido siguen activas en el entorno</tspan></text>
+        <text x="20.000" y="75.180" xml:space="preserve"><tspan class="cs-cs2">global:</tspan></text>
+        <text x="20.000" y="89.320" xml:space="preserve"><tspan class="cs-cs10">Mutacion Directa del Estado de</tspan></text>
+        <text x="20.000" y="96.320" xml:space="preserve"><tspan class="cs-cs10">Fuente</tspan></text>
+        <text x="28.000" y="104.680" xml:space="preserve" style="word-spacing:0.062px;"><tspan class="cs-cs2">Ademas de los modificadores acotados entre</tspan></text>
+        <text x="20.000" y="110.180" xml:space="preserve" style="word-spacing:4.512px;"><tspan class="cs-cs2">llaves, el procesador permite conmutar</tspan></text>
+        <text x="20.000" y="115.680" xml:space="preserve" style="word-spacing:0.898px;"><tspan class="cs-cs2">directamente los registros de estado como</tspan><tspan class="cs-cs16">peso</tspan></text>
+        <text x="20.000" y="121.180" xml:space="preserve" style="word-spacing:0.715px;"><tspan class="cs-cs16">negrita e inclinacion cursiva persistentes sobre</tspan></text>
+        <text x="20.000" y="126.680" xml:space="preserve"><tspan class="cs-cs16">otra familia tipografica</tspan></text>
+        <text x="28.000" y="134.680" xml:space="preserve" style="word-spacing:0.543px;"><tspan class="cs-cs2">y retomar de inmediato el estilo del cuerpo</tspan></text>
+        <text x="20.000" y="140.180" xml:space="preserve"><tspan class="cs-cs2">principal en el mismo flujo documental.</tspan></text>
+      </g>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">2 / 2</text>
+    </g>
+  </g>
+
+  <g id="hud" transform="translate(0, 0)">
+    <rect class="hud-pill" x="87.000" y="320.000" width="68.000" height="10.500" rx="5.25"/>
+    <g id="btn-prev" class="hud-btn" transform="translate(89.200, 321.550)">
+      <rect x="0" y="0" width="14" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="7" y="4.95" text-anchor="middle">&#x2190;</text>
+    </g>
+    <text id="hud-indicator" class="hud-label" x="121.000" y="326.500" text-anchor="middle">P&#xE1;g. 1 / 2</text>
+    <g id="btn-next" class="hud-btn" transform="translate(138.800, 321.550)">
+      <rect x="0" y="0" width="14" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="7" y="4.95" text-anchor="middle">&#x2192;</text>
+    </g>
+  </g>
+
+  <script><![CDATA[
+  (() => {
+    const svg = document.getElementById('doc-root');
+    const hud = document.getElementById('hud');
+    const indicator = document.getElementById('hud-indicator');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+
+    const TOTAL_PAGES = 2;
+    const VIEW_W      = 242.0000;
+    const VIEW_H      = 337.0000;
+    const STRIDE_X    = 278.0000;
+    const DURATION_MS = 380;
+
+    let currentPage = 0;
+    let currentX    = 0;
+    let animId      = null;
+    let wheelLock   = false;
+
+    function applyViewport(x) {
+      currentX = x;
+      svg.setAttribute('viewBox', `${x.toFixed(3)} 0 ${VIEW_W} ${VIEW_H}`);
+      hud.setAttribute('transform', `translate(${x.toFixed(3)}, 0)`);
+    }
+
+    function syncHudState() {
+      indicator.textContent = `P\u00e1g. ${currentPage + 1} / ${TOTAL_PAGES}`;
+      btnPrev.classList.toggle('hud-btn-disabled', currentPage <= 0);
+      btnNext.classList.toggle('hud-btn-disabled', currentPage >= TOTAL_PAGES - 1);
+    }
+
+    function goToPage(targetIdx, immediate = false) {
+      const clamped = Math.max(0, Math.min(TOTAL_PAGES - 1, targetIdx));
+      currentPage = clamped;
+      const targetX = clamped * STRIDE_X;
+      syncHudState();
+
+      try { history.replaceState(null, '', `#page=${clamped + 1}`); } catch (_) {}
+
+      if (animId !== null) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+
+      if (immediate || Math.abs(targetX - currentX) < 0.05) {
+        applyViewport(targetX);
+        return;
+      }
+
+      const startX = currentX;
+      const deltaX = targetX - startX;
+      const startTime = performance.now();
+
+      function tick(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / DURATION_MS);
+        const ease = 1 - Math.pow(1 - t, 3);
+        applyViewport(startX + deltaX * ease);
+        if (t < 1) {
+          animId = requestAnimationFrame(tick);
+        } else {
+          animId = null;
+        }
+      }
+      animId = requestAnimationFrame(tick);
+    }
+
+    btnPrev.addEventListener('click', () => goToPage(currentPage - 1));
+    btnNext.addEventListener('click', () => goToPage(currentPage + 1));
+
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowRight' || ev.key === 'PageDown' || ev.key === ' ') {
+        ev.preventDefault();
+        goToPage(currentPage + 1);
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') {
+        ev.preventDefault();
+        goToPage(currentPage - 1);
+      } else if (ev.key === 'Home') {
+        ev.preventDefault();
+        goToPage(0);
+      } else if (ev.key === 'End') {
+        ev.preventDefault();
+        goToPage(TOTAL_PAGES - 1);
+      }
+    });
+
+    window.addEventListener('wheel', (ev) => {
+      if (wheelLock) return;
+      const delta = Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY;
+      if (Math.abs(delta) < 18) return;
+      wheelLock = true;
+      goToPage(currentPage + (delta > 0 ? 1 : -1));
+      setTimeout(() => { wheelLock = false; }, 320);
+    }, { passive: true });
+
+    const match = /^#page=(\d+)$/.exec(window.location.hash);
+    const initial = match ? parseInt(match[1], 10) - 1 : 0;
+    goToPage(isNaN(initial) ? 0 : initial, true);
+  })();
+  ]]></script>
+</svg>

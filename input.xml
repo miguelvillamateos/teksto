@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document version="0.2">
+  <definitions>
+    <page-defaults width="0.21m" height="29.7cm" orientation="portrait">
+      <margins top="2.5cm" bottom="2.5cm" left="20mm" right="20mm"/>
+    </page-defaults>
+    <fonts>
+      <font-family id="f1" name="DejaVu Sans">
+        <variant id="f1-regular" weight="normal" slant="normal"/>
+        <variant id="f1-bold" weight="bold" slant="normal"/>
+        <variant id="f1-italic" weight="normal" slant="italic"/>
+        <variant id="f1-bold-italic" weight="bold" slant="italic"/>
+      </font-family>
+      <font-family id="f2" name="Liberation Serif">
+        <variant id="f2-regular" weight="normal" slant="normal"/>
+        <variant id="f2-bold" weight="bold" slant="normal"/>
+        <variant id="f2-bold-italic" weight="bold" slant="italic"/>
+      </font-family>
+      <font-family id="f3" name="Liberation Mono">
+        <variant id="f3-regular" weight="normal" slant="normal"/>
+        <variant id="f3-bold" weight="bold" slant="normal"/>
+        <variant id="f3-italic" weight="normal" slant="italic"/>
+      </font-family>
+    </fonts>
+    <styles>
+      <para-style id="ps1" align="center" line-spacing="9mm" space-before="4mm" space-after="6mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps2" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="8mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps3" align="left" line-spacing="5mm" space-before="3mm" space-after="3mm" indent-first="0mm" indent-left="1.2cm" indent-right="1.2cm"/>
+      <para-style id="ps4" align="left" line-spacing="7mm" space-before="5mm" space-after="2.5mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps5" align="left" line-spacing="5mm" space-before="0.5mm" space-after="1mm" indent-first="0mm" indent-left="6mm" indent-right="0mm"/>
+      <char-style id="cs1" font-ref="f1-bold" size="20pt" color="Navy" underline="false"/>
+      <char-style id="cs2" font-ref="f2-regular" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs3" font-ref="f2-bold" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs4" font-ref="f2-bold-italic" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs5" font-ref="f2-bold-italic" size="11pt" color="Black" underline="true"/>
+      <char-style id="cs6" font-ref="f2-regular" size="11pt" color="Black" underline="true"/>
+      <char-style id="cs7" font-ref="f1-bold" size="10pt" color="DarkRed" underline="false"/>
+      <char-style id="cs8" font-ref="f1-regular" size="10pt" color="DarkRed" underline="false"/>
+      <char-style id="cs9" font-ref="f1-italic" size="10pt" color="DarkRed" underline="false"/>
+      <char-style id="cs10" font-ref="f1-bold" size="14pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs11" font-ref="f3-regular" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs12" font-ref="f3-bold" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs13" font-ref="f3-italic" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs14" font-ref="f1-bold" size="10pt" color="Navy" underline="false"/>
+      <char-style id="cs15" font-ref="f2-regular" size="10.5pt" color="Black" underline="false"/>
+      <char-style id="cs16" font-ref="f1-bold-italic" size="10.5pt" color="DarkSlateGray" underline="false"/>
+    </styles>
+  </definitions>
+  <layout total-pages="2">
+    <frame id="fr1" page="2" x="20mm" y="25mm" width="82mm" height="24.7cm"/>
+    <frame id="fr2" page="2" x="10.8cm" y="25mm" width="82mm" height="24.7cm"/>
+  </layout>
+  <body>
+    <story id="main">
+      <p style="ps1"><span style="cs1">Especificacion del Formato Intermedio XML</span></p>
+      <p style="ps2"><span style="cs2">Este primer parrafo demuestra l control de estado tipografico continuo con alineacion justificada, sangria de primera linea en milimetros e interlineado metrico. El generador registra automaticamente cada familia tipografica y deduplica las combinaciones de estilo empleadas, permitiendo anidar </span><span style="cs3">negrita con </span><span style="cs4">cursiva combinada y </span><span style="cs5">subrayado simultaneo</span><span style="cs2"> o destacar terminos con </span><span style="cs6">subrayado simple</span><span style="cs2"> manteniendo referencias limpias hacia el bloque inicial de definiciones.</span></p>
+      <p style="ps3"><span style="cs7">[AVISO:</span><span style="cs8"> </span><span style="cs9">Todas las dimensiones equivalentes como 20mm, 2cm o 0.02m se normalizan internamente para evitar duplicar estilos en el catalogo XML.</span><span style="cs7">]</span></p>
+      <p style="ps4"><span style="cs10">Capitulo 1: Arquitectura del Motor de Estados</span></p>
+      <p style="ps2"><span style="cs2">Este bloque procede de un fichero externo incorporado mediante el comando</span><span style="cs11"> -include-</span><span style="cs2">. Al combinar</span><span style="cs11"> Liberation Mono</span><span style="cs2"> con modificadores como</span><span style="cs11"> </span><span style="cs12">variant=&quot;bold&quot;</span><span style="cs2"> o</span><span style="cs11"> </span><span style="cs13">slant=&quot;italic&quot;</span><span style="cs2">, el registro inicial incorpora unicamente las variantes realmente utilizadas por cada familia.</span></p>
+      <p style="ps5"><span style="cs14">Formato de salida:</span><span style="cs15">XML intermedio v0.2 con bloque declarativo definitions</span></p>
+      <p style="ps5"><span style="cs14">Unidades soportadas:</span><span style="cs15">Milimetros (mm), centimetros (cm), metros (m) y puntos (pt)</span></p>
+      <p style="ps5"><span style="cs14">Gestion de estilos:</span><span style="cs15">Internado automatico de para-style y char-style sin duplicados</span></p>
+      <p style="ps5"><span style="cs14">Persistencia:</span><span style="cs15">Volcado secuencial de macros en comandos_auxiliares.tks</span></p>
+      <p style="ps2"><span style="cs2">Al concluir la lectura de este modulo, el analizador retoma el cursor del documento principal conservando intactos el entorno de macros y el estado tipografico activo.</span></p>
+      <break type="page"/>
+      <p style="ps1"><span style="cs1">Maquetacion Multipagina y Persistencia de Estado</span></p>
+      <p style="ps2"><span style="cs2">Tras ejecutar el salto de pagina e instanciar dos marcos simetricos en milimetros y centimetros, las macros registradas dentro del fichero incluido siguen activas en el entorno global:</span></p>
+      <p style="ps4"><span style="cs10">Mutacion Directa del Estado de Fuente</span></p>
+      <p style="ps2"><span style="cs2">Ademas de los modificadores acotados entre llaves, el procesador permite conmutar directamente los registros de estado como</span><span style="cs16">peso negrita e inclinacion cursiva persistentes sobre otra familia tipografica</span></p>
+      <p style="ps2"><span style="cs2">y retomar de inmediato el estilo del cuerpo principal en el mismo flujo documental.</span></p>
+    </story>
+  </body>
+</document>

@@ -1,0 +1,23 @@
+% ==========================================
+% Fichero secundario: capitulo1.tks
+% ==========================================
+
+% Macro de 1 parametro para encabezados de seccion
+\newcommand{seccion}{1}{\parbreak\align{left}\linespacing{7mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{5mm}{2.5mm}\font{DejaVu Sans}\fontsize{14pt}\fontcolor{DarkSlateGray}\textbf{#1}\parbreak\cuerpobase}
+
+% Macro de 2 parametros para fichas tecnicas con sangria francesa/lateral
+\newcommand{clavevalor}{2}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \font{Liberation Serif}\fontsize{10.5pt}\fontcolor{Black}#2\parbreak\cuerpobase}
+
+% Macro de 1 parametro para fragmentos monoespaciados en linea
+\newcommand{codigo}{1}{\font{Liberation Mono}\fontsize{9.5pt}\fontcolor{Teal} #1 \font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}}
+
+\seccion{Capitulo 1: Arquitectura del Motor de Estados}
+
+Este bloque procede de un fichero externo incorporado mediante el comando \codigo{-include-}. Al combinar \codigo{Liberation Mono} con modificadores como \codigo{\textbf{variant="bold"}} o \codigo{\textit{slant="italic"}}, el registro inicial incorpora unicamente las variantes realmente utilizadas por cada familia.
+
+\clavevalor{Formato de salida}{XML intermedio v0.2 con bloque declarativo definitions}
+\clavevalor{Unidades soportadas}{Milimetros (mm), centimetros (cm), metros (m) y puntos (pt)}
+\clavevalor{Gestion de estilos}{Internado automatico de para-style y char-style sin duplicados}
+\clavevalor{Persistencia}{Volcado secuencial de macros en comandos_auxiliares.tks}
+
+Al concluir la lectura de este modulo, el analizador retoma el cursor del documento principal conservando intactos el entorno de macros y el estado tipografico activo.

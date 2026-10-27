@@ -1,0 +1,6 @@
+\newcommand{cuerpobase}{0}{\align{justify}\linespacing{5.5mm}\parindent{8mm}\parmargins{0mm}{0mm}\parspacing{0mm}{2.5mm}\font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}\fontweight{normal}\fontslant{normal}}
+\newcommand{titulo}{1}{\parbreak\align{center}\linespacing{9mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{4mm}{6mm}\font{DejaVu Sans}\fontsize{20pt}\fontcolor{Navy}\textbf{#1}\parbreak\cuerpobase}
+\newcommand{alerta}{1}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{1.2cm}{1.2cm}\parspacing{3mm}{3mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{DarkRed}\textbf{[AVISO:} \textit{#1}\textbf{]}\parbreak\cuerpobase}
+\newcommand{seccion}{1}{\parbreak\align{left}\linespacing{7mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{5mm}{2.5mm}\font{DejaVu Sans}\fontsize{14pt}\fontcolor{DarkSlateGray}\textbf{#1}\parbreak\cuerpobase}
+\newcommand{clavevalor}{2}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \font{Liberation Serif}\fontsize{10.5pt}\fontcolor{Black}#2\parbreak\cuerpobase}
+\newcommand{codigo}{1}{\font{Liberation Mono}\fontsize{9.5pt}\fontcolor{Teal} #1 \font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}}
