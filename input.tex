@@ -1,0 +1,139 @@
+% ============================================================================
+% input.tex — Documento principal en sintaxis LaTeX2e
+% Pipeline: input.tex -> input.tks (XML intermedio) -> input.svg
+% ============================================================================
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\margins{2.2cm}{2.2cm}{20mm}{20mm}
+
+% --- Definición de macros y entornos personalizados en el preámbulo ---
+\newcommand{\cuerpobase}{%
+  \align{justify}%
+  \setlength{\baselineskip}{5.5mm}%
+  \setlength{\parindent}{8mm}%
+  \parmargins{0mm}{0mm}%
+  \parspacing{0mm}{2.4mm}%
+  \rmfamily\mdseries\upshape\fontsize{11pt}\fontcolor{Black}%
+}
+
+\newcommand{\codigo}[1]{{\ttfamily\fontsize{9.5pt}\fontcolor{Teal}#1}}
+
+\newcommand{\ficha}[2]{%
+  \par{\raggedright\linespacing{5mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}%
+  \sffamily\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} %
+  \rmfamily\fontsize{10.5pt}\fontcolor{Black}#2\par}%
+}
+
+\providecommand{\versionmotor}{0.2}
+\def\etiquetarevision#1{[Rev.~#1]}
+
+\newenvironment{aviso}[1][Aviso T\'ecnico]{%
+  \par\raggedright\parmargins{8mm}{8mm}\parspacing{2mm}{2mm}%
+  \sffamily\fontsize{10pt}\fontcolor{DarkSlateGray}\textbf{#1 --- }\itshape%
+}{\par}
+
+% --- Metadatos para \maketitle ---
+\title{Demostraci\'on Integral de \LaTeXe{} en Teksto \etiquetarevision{\versionmotor}}
+\author{Equipo de Desarrollo de Teksto \and Laboratorio de Tipograf\'{\i}a Digital}
+\date{\today}
+\thanks{Pipeline completo: entrada .tex -> representaci\'on intermedia .tks -> salida vectorial .svg.}
+
+\begin{document}
+
+\cuerpobase
+\maketitle
+
+\begin{abstract}
+Este documento ejemplifica las funcionalidades implementadas en Teksto siguiendo el modelo de procesamiento de \TeX{} y \LaTeXe{}:
+expansi\'on de macros (\codigo{\textbackslash newcommand}, \codigo{\textbackslash def}, \codigo{\textbackslash newenvironment}),
+agrupamiento l\'exico con pila de estados, contadores jer\'arquicos, registros de longitud, selecci\'on de fuentes NFSS,
+versalitas (\textsc{Small Caps}), super\'{\i}ndices y sub\'{\i}ndices, seccionado autom\'atico, listas anidadas,
+entornos literales (\codigo{verbatim}) y primitivas de espaciado el\'astico horizontal y vertical.
+\end{abstract}
+
+% Inclusión del capítulo externo capitulo1.tex
+\input{capitulo1}
+
+% Salto a la segunda página y activación del modo a dos columnas
+\newpage
+\twocolumn
+
+\section{Listas Anidadas, Texto Literal y Espaciado}
+
+En esta segunda p\'agina (p\'agina actual: \thepage), maquetada a dos columnas mediante \codigo{\textbackslash twocolumn}, se verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos el\'asticos.
+
+\subsection{Entornos de Listas}
+
+\begin{enumerate}
+  \item Primer elemento numerado del nivel principal (\codigo{enumi}).
+  \item Segundo elemento con sublista anidada:
+  \begin{enumerate}
+    \item Sub-elemento alfab\'etico de nivel 2 (\codigo{enumii}).
+    \item Sub-elemento con lista de vi\~netas interna:
+    \begin{itemize}
+      \item Vi\~neta est\'andar definida por \codigo{\textbackslash labelitemi}.
+      \item[\ddag] Vi\~neta personalizada con argumento opcional \codigo{\textbackslash item[\textbackslash ddag]}.
+    \end{itemize}
+  \end{enumerate}
+  \item Tercer elemento del nivel principal.
+\end{enumerate}
+
+\begin{description}
+  \item[Entrada (.tex):] C\'odigo fuente en sintaxis est\'andar \LaTeXe{}.
+  \item[Intermedio (.tks):] Representaci\'on estructurada XML de estilos, marcos y flujo.
+  \item[Salida (.svg):] Documento vectorial multip\'agina interactivo.
+\end{description}
+
+\subsection{Modo Literal (\textbackslash verb y verbatim)}
+
+El comando en l\'{\i}nea \verb|\newcommand{\cmd}[2][def]{#1-#2}| conserva intactos los caracteres especiales, mientras que \verb*|\verb* muestra espacios| visibiliza cada espacio con \verb*| |.
+
+\begin{verbatim}
+% Bloque literal verbatim:
+\def\identidad#1{#1}
+  Sangría y   espacios   preservados.
+\end{verbatim}
+
+\subsection{Saltos, Rellenos El\'asticos y Reglas}
+
+Salto de l\'{\i}nea manual con \codigo{\textbackslash\textbackslash}:\\
+Segunda l\'{\i}nea sin justificaci\'on forzada.\\[2.5mm]
+Tercera l\'{\i}nea tras un espacio adicional de \codigo{2.5mm}.
+
+\medskip
+\noindent Ejemplos de rellenos horizontales y reglas (\codigo{\textbackslash hfill}, \codigo{\textbackslash dotfill}, \codigo{\textbackslash hrulefill}, \codigo{\textbackslash rule}):\\
+Extremo izquierdo\hfill Extremo derecho\\
+Secci\'on 1\dotfill P\'ag.~1\\
+Secci\'on 2\dotfill P\'ag.~2\\
+Firma autorizada:\hrulefill\ \rule{10mm}{1.8mm}
+
+\bigskip
+\section{Contadores, Longitudes y Ap\'endices}
+
+\newcounter{experimento}[section]
+\stepcounter{experimento}
+\addtocounter{experimento}{2}
+
+El contador de usuario \codigo{experimento} (dependiente de \codigo{section}) vale ahora \arabic{experimento} en ar\'abigo, \roman{experimento} en romano min\'uscula, \Roman{experimento} en romano may\'uscula y \Alph{experimento} en alfab\'etico.
+
+\subsection{Aritm\'etica de Longitudes y Grupos}
+
+\newlength{\margenlocal}
+\setlength{\margenlocal}{1.2em}
+\addtolength{\margenlocal}{4pt}
+
+{\setlength{\parindent}{\margenlocal}
+Este p\'arrafo modifica localmente \codigo{\textbackslash parindent} sumando unidades relativas (\codigo{1.2em}) y absolutas (\codigo{4pt}). Al cerrarse el grupo de llaves, el valor original de \codigo{\textbackslash parindent} se restaura autom\'aticamente.\par}
+
+\section*{Secci\'on sin Numerar (\textbackslash section*)}
+
+La variante con estrella \codigo{\textbackslash section*} aplica el estilo tipogr\'afico de secci\'on sin incrementar ni imprimir el contador.
+
+\appendix
+\section{Especificaci\'on del Fichero Intermedio \codigo{.tks}}
+
+Tras ejecutar \codigo{\textbackslash appendix}, las secciones principales se numeran alfab\'eticamente (\thesection). El fichero \codigo{input.tks} contiene la representaci\'on XML intermedia con las definiciones de p\'agina, familias tipogr\'aficas, estilos deduplicados (\codigo{<para-style>}, \codigo{<char-style>}) y primitivas de flujo (\codigo{<p>}, \codigo{<span>}, \codigo{<br/>}, \codigo{<hspace/>}, \codigo{<vspace/>}, \codigo{<rule/>}).
+
+\end{document}
+

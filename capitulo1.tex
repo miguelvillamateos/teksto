@@ -1,0 +1,38 @@
+% ============================================================================
+% capitulo1.tex — Módulo secundario incluido mediante \input{capitulo1}
+% Ejemplifica el motor léxico TeX, símbolos, acentos, NFSS, tamaños y bloques.
+% ============================================================================
+
+\section{Motor L\'exico \TeX{}, S\'{\i}mbolos y Tipograf\'{\i}a}
+
+Este fichero (\codigo{capitulo1.tex}) se incorpora din\'amicamente desde \codigo{input.tex} mediante \codigo{\textbackslash input\{capitulo1\}}.
+En \LaTeXe{}, un salto de l\'{\i}nea simple equivale a un espacio, una l\'{\i}nea en blanco emite \codigo{\textbackslash par}, y los comentarios con \codigo{\%} descartan el resto de la l\'{\i}nea junto con los espacios iniciales de la siguiente%
+---tal como define el motor de Knuth---evitando espacios indeseados.
+
+\subsection{Acentos Componibles, Ligaduras y Caracteres Especiales}
+
+El analizador soporta acentos con o sin llaves en cualquier vocal o consonante:
+\'a, \`e, \^i, \"u, \~n, \=o, \.z, \u{g}, \v{s}, \H{o}, \c{c}, \k{a}, \r{a}, \b{b}, \d{a}, \t{oo},
+adem\'as de letras europeas como \aa, \AA, \ae, \AE, \oe, \OE, \o, \O, \l, \L, \ss\ y sin punto (\i, \j).
+
+Las ligaduras se transforman autom\'aticamente: ``comillas dobles inglesas'', `comillas simples',
+intervalos num\'ericos con gui\'on medio (p\'ags.~15--30), incisos con raya larga---sin espacios---y signos de apertura ?`C\'omo opera el lexer? !`Con precisi\'on tipogr\'afica!
+
+\ficha{Caracteres reservados}{\# \$ \% \& \_ \{ \} \~{} \^{} \textbackslash\ \textbar\ \textless\ \textgreater}
+\ficha{S\'{\i}mbolos editoriales}{\dag\ \ddag\ \S\ \P\ \copyright\ \textregistered\ \texttrademark\ \pounds\ \euro\ \dots\ \textbullet}
+\ficha{Logotipos y fecha}{\TeX, \LaTeX, \LaTeXe{} --- Compilado el \today}
+
+\subsection{Selecci\'on de Fuentes NFSS y Escala de Tama\~nos}
+
+\ficha{Familias y series}{\textrm{Roman Serif}, \textsf{Sans Serif}, \texttt{Typewriter Mono}, \textbf{Negrita}, \textit{Cursiva}, \textsc{Versalitas}, \underline{Subrayado}}
+\ficha{Super y sub\'{\i}ndices}{F\'ormula qu\'{\i}mica H\textsubscript{2}SO\textsubscript{4}, energ\'{\i}a E=mc\textsuperscript{2}, secci\'on 1.\textsuperscript{a}}
+\ficha{Primitivas NFSS}{{\usefont{OT1}{cmss}{bx}{it} Fuente activada con \textbackslash usefont\{OT1\}\{cmss\}\{bx\}\{it\}}}
+\ficha{Escala est\'andar}{{\tiny tiny} {\scriptsize scriptsize} {\footnotesize footnotesize} {\small small} {\normalsize normalsize} {\large large} {\Large Large} {\LARGE LARGE} {\huge huge}}
+
+\subsubsection{Subsecci\'on de Tercer Nivel y T\'{\i}tulos en L\'{\i}nea}
+
+\paragraph{P\'arrafo con t\'{\i}tulo (\textbackslash paragraph)} El comando \codigo{\textbackslash paragraph} compone su t\'{\i}tulo en negrita en la misma l\'{\i}nea de inicio del p\'arrafo, seguido de un espacio horizontal \codigo{\textbackslash quad}.
+
+\begin{aviso}[Nota de Arquitectura]
+El fichero intermedio generado por la primera etapa lleva ahora la extensi\'on \codigo{.tks} (formato estructurado XML de Teksto), a partir del cual \codigo{xml2svg} produce el documento interactivo \codigo{.svg}.
+\end{aviso}

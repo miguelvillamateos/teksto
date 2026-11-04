@@ -10,7 +10,7 @@ static bool sv_equals(StrView sv, const char *literal);
 static StrView sv_trim(StrView sv);
 static StrView sv_strip_leading_backslash(StrView sv);
 static long sv_to_long(const Parser *p, StrView sv);
-static bool has_tks_extension(const char *path);
+static bool has_tex_extension(const char *path);
 static void replace_extension(const char *path, const char *new_ext, char *out_buf, size_t buf_size);
 static char *read_entire_file(const char *path, size_t *out_len);
 static char *dup_sv(StrView sv);
@@ -245,9 +245,9 @@ static void measure_format(Measure m, char *buf, size_t buf_size) {
     snprintf(buf, buf_size, "%s%s", num, suffix);
 }
 
-static bool has_tks_extension(const char *path) {
+static bool has_tex_extension(const char *path) {
     size_t len = strlen(path);
-    const char *ext = ".tks";
+    const char *ext = ".tex";
     size_t ext_len = strlen(ext);
     if (len < ext_len) return false;
     return strcmp(path + (len - ext_len), ext) == 0;
@@ -2110,9 +2110,9 @@ static void builtin_input(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
     StrView raw = sv_trim(args[0]);
     snprintf(path_buf, sizeof(path_buf), "%.*s", (int)raw.len, raw.data);
 
-    if (!has_tks_extension(path_buf)) {
+    if (!has_tex_extension(path_buf)) {
         if (strlen(path_buf) + 4 < sizeof(path_buf)) {
-            strcat(path_buf, ".tks");
+            strcat(path_buf, ".tex");
         } else {
             fprintf(stderr, "Error: ruta demasiado larga '%s'\n", path_buf);
             return;
@@ -3415,8 +3415,8 @@ static void parse_and_execute(Parser *p) {
 }
 
 static bool process_file(const char *path, MacroEnv *env, XmlGenerator *gen, size_t macro_depth) {
-    if (!has_tks_extension(path)) {
-        fprintf(stderr, "Error: '%s' no tiene extensión .tks\n", path);
+    if (!has_tex_extension(path)) {
+        fprintf(stderr, "Error: '%s' no tiene extensión .tex\n", path);
         return false;
     }
 
@@ -3447,30 +3447,34 @@ static bool process_file(const char *path, MacroEnv *env, XmlGenerator *gen, siz
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "Uso: %s <fichero_de_entrada.tks>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <fichero_de_entrada.tex> [salida.tks]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
     const char *input_path = argv[1];
-    if (!has_tks_extension(input_path)) {
-        fprintf(stderr, "Error: el fichero debe tener extensión .tks (recibido: '%s')\n", input_path);
+    if (!has_tex_extension(input_path)) {
+        fprintf(stderr, "Error: el fichero debe tener extensión .tex (recibido: '%s')\n", input_path);
         return EXIT_FAILURE;
     }
 
     MacroEnv user_macros;
     macro_env_init(&user_macros);
 
-    char xml_output_path[256];
-    replace_extension(input_path, ".xml", xml_output_path, sizeof(xml_output_path));
+    char tks_output_path[256];
+    if (argc >= 3) {
+        snprintf(tks_output_path, sizeof(tks_output_path), "%s", argv[2]);
+    } else {
+        replace_extension(input_path, ".tks", tks_output_path, sizeof(tks_output_path));
+    }
 
     XmlGenerator gen;
-    if (!xml_gen_init(&gen, xml_output_path)) {
-        perror("Error inicializando generador XML");
+    if (!xml_gen_init(&gen, tks_output_path)) {
+        perror("Error inicializando generador TKS (XML intermedio)");
         macro_env_free(&user_macros);
         return EXIT_FAILURE;
     }
 
-    printf("Procesando '%s' -> Generando '%s'...\n", input_path, xml_output_path);
+    printf("Procesando '%s' -> Generando '%s'...\n", input_path, tks_output_path);
 
     if (!process_file(input_path, &user_macros, &gen, 0)) {
         fprintf(stderr, "Fallo durante el procesamiento del documento\n");
@@ -3482,6 +3486,6 @@ int main(int argc, char **argv) {
     xml_gen_finalize(&gen);
     macro_env_free(&user_macros);
 
-    printf("Completado con éxito. Archivo generado: '%s'\n", xml_output_path);
+    printf("Completado con éxito. Archivo generado: '%s'\n", tks_output_path);
     return EXIT_SUCCESS;
 }

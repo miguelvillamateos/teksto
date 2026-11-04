@@ -1382,28 +1382,28 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "Uso: %s <documento_intermedio.xml> [salida.svg]\n", argv[0]);
+        fprintf(stderr, "Uso: %s <documento_intermedio.tks> [salida.svg]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    const char *xml_path = argv[1];
+    const char *tks_path = argv[1];
     char svg_path[256];
     if (argc >= 3) {
         snprintf(svg_path, sizeof(svg_path), "%s", argv[2]);
     } else {
-        replace_extension(xml_path, ".svg", svg_path, sizeof(svg_path));
+        replace_extension(tks_path, ".svg", svg_path, sizeof(svg_path));
     }
 
     size_t xml_len = 0;
-    char *xml_src = read_entire_file(xml_path, &xml_len);
+    char *xml_src = read_entire_file(tks_path, &xml_len);
     if (!xml_src) {
-        fprintf(stderr, "Error: no se pudo abrir '%s'\n", xml_path);
+        fprintf(stderr, "Error: no se pudo abrir '%s'\n", tks_path);
         return EXIT_FAILURE;
     }
 
     IrDocument doc;
     if (!parse_ir_xml(xml_src, xml_len, &doc)) {
-        fprintf(stderr, "Error procesando el formato XML intermedio '%s'\n", xml_path);
+        fprintf(stderr, "Error procesando el formato TKS (XML intermedio) '%s'\n", tks_path);
         free(xml_src);
         return EXIT_FAILURE;
     }
