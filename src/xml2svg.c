@@ -72,7 +72,8 @@ typedef enum : unsigned char {
     RUN_TEXT = 0,
     RUN_LINE_BREAK,
     RUN_HSPACE,
-    RUN_RULE
+    RUN_RULE,
+    RUN_BOX
 } RunKind;
 
 typedef enum : unsigned char {
@@ -89,13 +90,56 @@ typedef struct {
     double w_mm;
     double h_mm;
     double raise_mm;
+    double border_mm;
+    double pad_mm;
+    char box_align;
     HFillKind fill;
 } SpanRun;
+
+typedef struct {
+    size_t span;
+    char align;
+    int bl;
+    int br;
+    double fixed_w_mm;
+    SpanRun *runs;
+    size_t run_count;
+    size_t run_cap;
+} TableCell;
+
+typedef enum : unsigned char {
+    TROW_DATA = 0,
+    TROW_HLINE,
+    TROW_CLINE
+} TableRowKind;
+
+typedef struct {
+    TableRowKind kind;
+    int cline_from;
+    int cline_to;
+    double extra_space_mm;
+    TableCell *cells;
+    size_t cell_count;
+    size_t cell_cap;
+} TableRowItem;
+
+typedef struct {
+    size_t cols;
+    ParaAlign table_align;
+    double tabcolsep_mm;
+    double rulewidth_mm;
+    TableRowItem *rows;
+    size_t row_count;
+    size_t row_cap;
+} TableDef;
 
 typedef enum : unsigned char {
     ITEM_PARA = 0,
     ITEM_PAGE_BREAK,
-    ITEM_VSPACE
+    ITEM_VSPACE,
+    ITEM_TABLE,
+    ITEM_FOOTNOTE,
+    ITEM_MARGINPAR
 } StoryItemType;
 
 typedef struct {
@@ -106,6 +150,7 @@ typedef struct {
     double vspace_mm;
     bool vspace_starred;
     bool vspace_fill;
+    TableDef *table;
     SpanRun *runs;
     size_t run_count;
     size_t run_cap;
@@ -119,6 +164,11 @@ typedef struct {
     double margin_left_mm;
     double margin_right_mm;
     size_t declared_pages;
+
+    char page_style[32];
+    char page_numbering[32];
+    char left_mark[256];
+    char right_mark[256];
 
     FontVariant variants[MAX_FONT_VARIANTS];
     size_t variant_count;
@@ -150,6 +200,9 @@ typedef struct {
 typedef struct {
     size_t page_idx; // 0-based
     double x_mm, y_mm, w_mm, h_mm;
+    double orig_h_mm;
+    const StoryItem *footnotes[16];
+    size_t footnote_count;
     StrBuf svg_content;
 } FlowFrame;
 
@@ -161,6 +214,9 @@ typedef struct {
     double space_w_mm;
     double h_mm;
     double raise_mm;
+    double border_mm;
+    double pad_mm;
+    char box_align;
     HFillKind fill;
     bool space_after;
 } WordToken;
@@ -370,6 +426,22 @@ static void para_push_run(StoryItem *para, size_t style_idx, const char *text) {
     });
 }
 
+static void table_push_row(TableDef *tbl, TableRowItem row) {
+    if (tbl->row_count >= tbl->row_cap) {
+        tbl->row_cap = (tbl->row_cap == 0) ? 8 : tbl->row_cap * 2;
+        tbl->rows = realloc(tbl->rows, tbl->row_cap * sizeof(TableRowItem));
+    }
+    tbl->rows[tbl->row_count++] = row;
+}
+
+static void row_push_cell(TableRowItem *row, TableCell cell) {
+    if (row->cell_count >= row->cell_cap) {
+        row->cell_cap = (row->cell_cap == 0) ? 8 : row->cell_cap * 2;
+        row->cells = realloc(row->cells, row->cell_cap * sizeof(TableCell));
+    }
+    row->cells[row->cell_count++] = cell;
+}
+
 static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
     memset(doc, 0, sizeof(*doc));
     doc->page_w_mm        = 210.0;
@@ -379,28 +451,43 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
     doc->margin_left_mm   = 20.0;
     doc->margin_right_mm  = 20.0;
     doc->declared_pages   = 1;
+    snprintf(doc->page_style, sizeof(doc->page_style), "plain");
+    snprintf(doc->page_numbering, sizeof(doc->page_numbering), "arabic");
 
     XmlReader r = { .src = xml_src, .pos = 0, .len = xml_len };
     char current_family[256] = "sans-serif";
     bool in_para = false;
     bool in_span = false;
+    bool in_box  = false;
     size_t active_cs_idx = 0;
+    SpanRun pending_box  = {0};
     StoryItem current_para = {0};
+
+    TableDef *active_table   = nullptr;
+    TableRowItem current_row = {0};
+    TableCell current_cell   = {0};
+    bool in_trow = false;
+    bool in_cell = false;
+
     StrBuf span_buf;
+    StrBuf box_buf;
     sb_init(&span_buf, 256);
+    sb_init(&box_buf, 128);
 
     while (r.pos < r.len) {
         size_t lt = r.pos;
         while (lt < r.len && r.src[lt] != '<') lt++;
 
         if (lt > r.pos && in_para) {
-            if (in_span) {
+            if (in_box) {
+                xml_unescape_into(&box_buf, r.src + r.pos, lt - r.pos);
+            } else if (in_span) {
                 xml_unescape_into(&span_buf, r.src + r.pos, lt - r.pos);
             } else {
                 StrBuf tmp;
                 sb_init(&tmp, lt - r.pos + 8);
                 xml_unescape_into(&tmp, r.src + r.pos, lt - r.pos);
-                para_push_run(&current_para, 0, tmp.data);
+                para_push_run(&current_para, current_para.label_style_idx, tmp.data);
                 sb_free(&tmp);
             }
         }
@@ -435,12 +522,42 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             while (r.pos < r.len && r.src[r.pos] != '>') r.pos++;
             if (r.pos < r.len) r.pos++;
 
-            if (strcmp(tag, "span") == 0 && in_span) {
+            if (strcmp(tag, "box") == 0 && in_box) {
+                pending_box.text = dup_cstr(box_buf.data);
+                para_push_special_run(&current_para, pending_box);
+                box_buf.len = 0;
+                box_buf.data[0] = '\0';
+                in_box = false;
+            } else if (strcmp(tag, "span") == 0 && in_span) {
                 para_push_run(&current_para, active_cs_idx, span_buf.data);
                 span_buf.len = 0;
                 span_buf.data[0] = '\0';
                 in_span = false;
-            } else if (strcmp(tag, "p") == 0 && in_para) {
+            } else if (strcmp(tag, "cell") == 0 && in_cell) {
+                current_cell.runs      = current_para.runs;
+                current_cell.run_count = current_para.run_count;
+                current_cell.run_cap   = current_para.run_cap;
+                if (in_trow) {
+                    row_push_cell(&current_row, current_cell);
+                }
+                memset(&current_cell, 0, sizeof(current_cell));
+                memset(&current_para, 0, sizeof(current_para));
+                in_cell = false;
+                in_para = false;
+            } else if (strcmp(tag, "row") == 0 && in_trow) {
+                if (active_table) {
+                    table_push_row(active_table, current_row);
+                }
+                memset(&current_row, 0, sizeof(current_row));
+                in_trow = false;
+            } else if (strcmp(tag, "table") == 0 && active_table) {
+                StoryItem titem = {
+                    .type  = ITEM_TABLE,
+                    .table = active_table
+                };
+                doc_push_item(doc, titem);
+                active_table = nullptr;
+            } else if ((strcmp(tag, "p") == 0 || strcmp(tag, "footnote") == 0 || strcmp(tag, "marginpar") == 0) && in_para) {
                 doc_push_item(doc, current_para);
                 memset(&current_para, 0, sizeof(current_para));
                 in_para = false;
@@ -525,6 +642,15 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             if (b)  doc->margin_bottom_mm = parse_mm(b);
             if (l)  doc->margin_left_mm   = parse_mm(l);
             if (rg) doc->margin_right_mm  = parse_mm(rg);
+        } else if (strcmp(tag, "page-style") == 0) {
+            const char *md = get_attr(attrs, attr_count, "mode");
+            const char *nm = get_attr(attrs, attr_count, "numbering");
+            const char *lm = get_attr(attrs, attr_count, "left-mark");
+            const char *rm = get_attr(attrs, attr_count, "right-mark");
+            if (md && md[0]) snprintf(doc->page_style, sizeof(doc->page_style), "%.31s", md);
+            if (nm && nm[0]) snprintf(doc->page_numbering, sizeof(doc->page_numbering), "%.31s", nm);
+            if (lm && lm[0]) snprintf(doc->left_mark, sizeof(doc->left_mark), "%.255s", lm);
+            if (rm && rm[0]) snprintf(doc->right_mark, sizeof(doc->right_mark), "%.255s", rm);
         } else if (strcmp(tag, "font-family") == 0) {
             const char *name = get_attr(attrs, attr_count, "name");
             if (name) snprintf(current_family, sizeof(current_family), "%s", name);
@@ -589,6 +715,55 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             fr->y_mm     = parse_mm(get_attr(attrs, attr_count, "y"));
             fr->w_mm     = parse_mm(get_attr(attrs, attr_count, "width"));
             fr->h_mm     = parse_mm(get_attr(attrs, attr_count, "height"));
+        } else if (strcmp(tag, "table") == 0 && !self_closing) {
+            active_table = calloc(1, sizeof(TableDef));
+            if (active_table) {
+                const char *cols = get_attr(attrs, attr_count, "cols");
+                const char *al   = get_attr(attrs, attr_count, "align");
+                const char *tcs  = get_attr(attrs, attr_count, "tabcolsep");
+                const char *rw   = get_attr(attrs, attr_count, "rulewidth");
+                active_table->cols         = cols ? (size_t)strtoul(cols, nullptr, 10) : 1;
+                active_table->tabcolsep_mm = tcs ? parse_mm(tcs) : (6.0 * MM_PER_PT);
+                active_table->rulewidth_mm = rw ? parse_mm(rw) : (0.4 * MM_PER_PT);
+                active_table->table_align  = ALIGN_LEFT;
+                if (al) {
+                    if (strcmp(al, "center") == 0)     active_table->table_align = ALIGN_CENTER;
+                    else if (strcmp(al, "right") == 0) active_table->table_align = ALIGN_RIGHT;
+                }
+            }
+        } else if (strcmp(tag, "hline") == 0 && active_table) {
+            table_push_row(active_table, (TableRowItem){ .kind = TROW_HLINE });
+        } else if (strcmp(tag, "cline") == 0 && active_table) {
+            const char *fr_s = get_attr(attrs, attr_count, "from");
+            const char *to_s = get_attr(attrs, attr_count, "to");
+            table_push_row(active_table, (TableRowItem){
+                .kind       = TROW_CLINE,
+                .cline_from = fr_s ? atoi(fr_s) : 1,
+                .cline_to   = to_s ? atoi(to_s) : 1
+            });
+        } else if (strcmp(tag, "row") == 0 && active_table && !self_closing) {
+            memset(&current_row, 0, sizeof(current_row));
+            current_row.kind = TROW_DATA;
+            in_trow = true;
+        } else if (strcmp(tag, "row-space") == 0 && in_trow) {
+            const char *ex = get_attr(attrs, attr_count, "extra");
+            if (ex) current_row.extra_space_mm += parse_mm(ex);
+        } else if (strcmp(tag, "cell") == 0 && in_trow && !self_closing) {
+            const char *sp = get_attr(attrs, attr_count, "span");
+            const char *al = get_attr(attrs, attr_count, "align");
+            const char *bl = get_attr(attrs, attr_count, "bl");
+            const char *br = get_attr(attrs, attr_count, "br");
+            const char *w  = get_attr(attrs, attr_count, "width");
+            memset(&current_cell, 0, sizeof(current_cell));
+            current_cell.span       = sp ? (size_t)strtoul(sp, nullptr, 10) : 1;
+            current_cell.align      = (al && al[0]) ? al[0] : 'l';
+            current_cell.bl         = bl ? atoi(bl) : 0;
+            current_cell.br         = br ? atoi(br) : 0;
+            current_cell.fixed_w_mm = w ? parse_mm(w) : 0.0;
+
+            memset(&current_para, 0, sizeof(current_para));
+            in_cell = true;
+            in_para = true;
         } else if (strcmp(tag, "p") == 0 && !self_closing) {
             const char *st  = get_attr(attrs, attr_count, "style");
             const char *lbl = get_attr(attrs, attr_count, "label");
@@ -601,12 +776,51 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
                 snprintf(current_para.label, sizeof(current_para.label), "%s", lbl);
             }
             in_para = true;
+        } else if (strcmp(tag, "footnote") == 0 && !self_closing) {
+            const char *lbl = get_attr(attrs, attr_count, "label");
+            const char *st  = get_attr(attrs, attr_count, "style");
+            memset(&current_para, 0, sizeof(current_para));
+            current_para.type            = ITEM_FOOTNOTE;
+            current_para.label_style_idx = st ? find_char_style_idx(doc, st) : 0;
+            if (lbl) {
+                snprintf(current_para.label, sizeof(current_para.label), "%s", lbl);
+            }
+            in_para = true;
+        } else if (strcmp(tag, "marginpar") == 0 && !self_closing) {
+            const char *st = get_attr(attrs, attr_count, "style");
+            memset(&current_para, 0, sizeof(current_para));
+            current_para.type            = ITEM_MARGINPAR;
+            current_para.label_style_idx = st ? find_char_style_idx(doc, st) : 0;
+            in_para = true;
         } else if (strcmp(tag, "span") == 0 && in_para && !self_closing) {
             const char *st = get_attr(attrs, attr_count, "style");
             active_cs_idx    = st ? find_char_style_idx(doc, st) : 0;
             span_buf.len     = 0;
             span_buf.data[0] = '\0';
             in_span          = true;
+        } else if (strcmp(tag, "box") == 0 && in_para && !self_closing) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *w   = get_attr(attrs, attr_count, "width");
+            const char *al  = get_attr(attrs, attr_count, "align");
+            const char *brd = get_attr(attrs, attr_count, "border");
+            const char *pad = get_attr(attrs, attr_count, "pad");
+            const char *rs  = get_attr(attrs, attr_count, "raise");
+            const char *st  = get_attr(attrs, attr_count, "style");
+            memset(&pending_box, 0, sizeof(pending_box));
+            pending_box.kind      = RUN_BOX;
+            pending_box.style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx;
+            pending_box.w_mm      = w ? parse_mm(w) : 0.0;
+            pending_box.border_mm = brd ? parse_mm(brd) : 0.0;
+            pending_box.pad_mm    = pad ? parse_mm(pad) : 0.0;
+            pending_box.raise_mm  = rs ? parse_mm(rs) : 0.0;
+            pending_box.box_align = (al && al[0]) ? al[0] : 'c';
+            box_buf.len           = 0;
+            box_buf.data[0]       = '\0';
+            in_box                = true;
         } else if (strcmp(tag, "br") == 0 && in_para) {
             if (in_span && span_buf.len > 0) {
                 para_push_run(&current_para, active_cs_idx, span_buf.data);
@@ -677,6 +891,7 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
     }
 
     sb_free(&span_buf);
+    sb_free(&box_buf);
     return true;
 }
 
@@ -686,6 +901,20 @@ static void free_ir_document(IrDocument *doc) {
             free(doc->items[i].runs[j].text);
         }
         free(doc->items[i].runs);
+        if (doc->items[i].table) {
+            TableDef *tbl = doc->items[i].table;
+            for (size_t r = 0; r < tbl->row_count; r++) {
+                for (size_t c = 0; c < tbl->rows[r].cell_count; c++) {
+                    for (size_t k = 0; k < tbl->rows[r].cells[c].run_count; k++) {
+                        free(tbl->rows[r].cells[c].runs[k].text);
+                    }
+                    free(tbl->rows[r].cells[c].runs);
+                }
+                free(tbl->rows[r].cells);
+            }
+            free(tbl->rows);
+            free(tbl);
+        }
     }
     free(doc->items);
 }
@@ -711,7 +940,8 @@ static double estimate_word_width_mm(const char *word, const CharStyle *cs, cons
         } else if (step == 2 && c == 0xC2 && (unsigned char)word[i + 1] == 0xA0) {
             total_em += 0.27;
         } else if (step == 1) {
-            if (strchr("ilIjtfr.,:;!|'()[]", (int)c))      total_em += 0.30;
+            if (c == ' ')                                  total_em += 0.27;
+            else if (strchr("ilIjtfr.,:;!|'()[]", (int)c)) total_em += 0.30;
             else if (strchr("mwMW@%", (int)c))             total_em += 0.80;
             else if (isupper((int)c))                      total_em += 0.64;
             else                                           total_em += 0.50;
@@ -735,12 +965,14 @@ static double estimate_space_width_mm(const CharStyle *cs, const FontVariant *fv
 }
 
 static FlowFrame make_default_frame(const IrDocument *doc, size_t page_idx) {
+    double h = doc->page_h_mm - doc->margin_top_mm - doc->margin_bottom_mm;
     FlowFrame f = {
-        .page_idx = page_idx,
-        .x_mm     = doc->margin_left_mm,
-        .y_mm     = doc->margin_top_mm,
-        .w_mm     = doc->page_w_mm - doc->margin_left_mm - doc->margin_right_mm,
-        .h_mm     = doc->page_h_mm - doc->margin_top_mm - doc->margin_bottom_mm
+        .page_idx  = page_idx,
+        .x_mm      = doc->margin_left_mm,
+        .y_mm      = doc->margin_top_mm,
+        .w_mm      = doc->page_w_mm - doc->margin_left_mm - doc->margin_right_mm,
+        .h_mm      = h,
+        .orig_h_mm = h
     };
     sb_init(&f.svg_content, 2048);
     return f;
@@ -755,11 +987,12 @@ static void typesetter_init(Typesetter *ts, const IrDocument *doc) {
         for (size_t i = 0; i < doc->xml_frame_count; i++) {
             if (doc->xml_frames[i].page_num == p + 1 && ts->frame_count < MAX_FLOW_FRAMES) {
                 FlowFrame f = {
-                    .page_idx = p,
-                    .x_mm     = doc->xml_frames[i].x_mm,
-                    .y_mm     = doc->xml_frames[i].y_mm,
-                    .w_mm     = doc->xml_frames[i].w_mm,
-                    .h_mm     = doc->xml_frames[i].h_mm
+                    .page_idx  = p,
+                    .x_mm      = doc->xml_frames[i].x_mm,
+                    .y_mm      = doc->xml_frames[i].y_mm,
+                    .w_mm      = doc->xml_frames[i].w_mm,
+                    .h_mm      = doc->xml_frames[i].h_mm,
+                    .orig_h_mm = doc->xml_frames[i].h_mm
                 };
                 sb_init(&f.svg_content, 2048);
                 ts->frames[ts->frame_count++] = f;
@@ -993,29 +1226,94 @@ static void emit_svg_line(
                 cur_x += words[i].space_w_mm;
             }
             i++;
+        } else if (words[i].kind == RUN_BOX) {
+            size_t cs_idx = (words[i].char_style_idx < doc->char_style_count) ? words[i].char_style_idx : 0;
+            const CharStyle *cs = &doc->char_styles[cs_idx];
+            double box_w   = words[i].word_w_mm;
+            double text_w  = words[i].h_mm;
+            double brd     = words[i].border_mm;
+            double pad     = words[i].pad_mm;
+            double raise   = words[i].raise_mm;
+            double inner_w = fmax(0.0, box_w - 2.0 * pad - 2.0 * brd);
+            double font_h  = (cs->size_mm > 0.1) ? cs->size_mm : 3.88;
+
+            if (brd > 0.005) {
+                double rx = cur_x + brd * 0.5;
+                double rw = fmax(0.1, box_w - brd);
+                double rh = font_h * 1.15 + 2.0 * pad;
+                double ry = (abs_y - raise) - font_h * 0.84 - pad;
+                char rect_svg[320];
+                snprintf(rect_svg, sizeof(rect_svg),
+                         "        <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" "
+                         "fill=\"none\" stroke=\"%s\" stroke-width=\"%.3f\"/>\n",
+                         rx, ry, rw, rh, cs->color, brd);
+                sb_append_cstr(&frame->svg_content, rect_svg);
+            }
+
+            if (words[i].word && words[i].word[0] != '\0') {
+                double tx = cur_x + brd + pad;
+                if (words[i].box_align == 'c') {
+                    tx += fmax(0.0, (inner_w - text_w) * 0.5);
+                } else if (words[i].box_align == 'r') {
+                    tx += fmax(0.0, inner_w - text_w);
+                }
+                char btxt[256];
+                snprintf(btxt, sizeof(btxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\"><tspan class=\"cs-%s\">",
+                         tx, abs_y - raise, cs->id);
+                sb_append_cstr(&frame->svg_content, btxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+
+            cur_x += box_w;
+            if (i + 1 < end_idx && words[i].space_after) {
+                cur_x += words[i].space_w_mm;
+            }
+            i++;
         } else {
             i++;
         }
     }
 }
 
-static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
-    if (item->run_count == 0 && item->label[0] == '\0') return;
-
-    const ParaStyle *ps = (item->para_style_idx < doc->para_style_count)
-                          ? &doc->para_styles[item->para_style_idx]
-                          : &(ParaStyle){ .align = ALIGN_LEFT, .line_spacing_mm = 5.2 };
-
-    // 1. Tokenizar todos los tramos del párrafo en palabras y elementos inline con su estilo
+static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size_t run_count, size_t *out_count) {
+    *out_count = 0;
     size_t cap = 64, count = 0;
     WordToken *words = malloc(cap * sizeof(WordToken));
-    if (!words) return;
+    if (!words) return nullptr;
 
-    for (size_t r = 0; r < item->run_count; r++) {
-        const SpanRun *run = &item->runs[r];
+    for (size_t r = 0; r < run_count; r++) {
+        const SpanRun *run = &runs[r];
         size_t cs_idx = (run->style_idx < doc->char_style_count) ? run->style_idx : 0;
         const CharStyle *cs = &doc->char_styles[cs_idx];
         const FontVariant *fv = &doc->variants[cs->font_variant_idx];
+
+        if (run->kind == RUN_BOX) {
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            const char *bstr = run->text ? run->text : "";
+            double text_w  = estimate_word_width_mm(bstr, cs, fv);
+            double inner_w = fmax(run->w_mm, text_w);
+            double total_w = inner_w + 2.0 * run->pad_mm + 2.0 * run->border_mm;
+            words[count++] = (WordToken){
+                .kind           = RUN_BOX,
+                .char_style_idx = cs_idx,
+                .word           = dup_cstr(bstr),
+                .word_w_mm      = total_w,
+                .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = text_w,
+                .raise_mm       = run->raise_mm,
+                .border_mm      = run->border_mm,
+                .pad_mm         = run->pad_mm,
+                .box_align      = run->box_align ? run->box_align : 'c',
+                .fill           = FILL_NONE,
+                .space_after    = false
+            };
+            continue;
+        }
 
         if (run->kind != RUN_TEXT) {
             if (count >= cap) {
@@ -1037,6 +1335,7 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
         }
 
         const char *s = run->text;
+        if (!s) continue;
         size_t pos = 0;
 
         while (s[pos] != '\0') {
@@ -1080,8 +1379,27 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
         }
     }
 
-    if (count == 0) {
-        free(words);
+    *out_count = count;
+    return words;
+}
+
+static void free_word_tokens(WordToken *words, size_t count) {
+    if (!words) return;
+    for (size_t i = 0; i < count; i++) free(words[i].word);
+    free(words);
+}
+
+static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
+    if (item->run_count == 0 && item->label[0] == '\0') return;
+
+    const ParaStyle *ps = (item->para_style_idx < doc->para_style_count)
+                          ? &doc->para_styles[item->para_style_idx]
+                          : &(ParaStyle){ .align = ALIGN_LEFT, .line_spacing_mm = 5.2 };
+
+    size_t count = 0;
+    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &count);
+    if (!words || count == 0) {
+        free_word_tokens(words, count);
         return;
     }
 
@@ -1154,9 +1472,438 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
     }
 
     ts->cursor_y_mm += ps->space_after_mm;
+    free_word_tokens(words, count);
+}
 
-    for (size_t i = 0; i < count; i++) free(words[i].word);
-    free(words);
+static double measure_tokens_natural_width(const WordToken *words, size_t count) {
+    double max_line_w = 0.0;
+    double cur_w = 0.0;
+    for (size_t i = 0; i < count; i++) {
+        if (words[i].kind == RUN_LINE_BREAK) {
+            if (cur_w > max_line_w) max_line_w = cur_w;
+            cur_w = 0.0;
+            continue;
+        }
+        cur_w += words[i].word_w_mm;
+        if (i + 1 < count && words[i].space_after && words[i + 1].kind != RUN_LINE_BREAK) {
+            cur_w += words[i].space_w_mm;
+        }
+    }
+    if (cur_w > max_line_w) max_line_w = cur_w;
+    return max_line_w;
+}
+
+static size_t count_wrapped_lines(const WordToken *words, size_t count, double max_w) {
+    if (count == 0) return 1;
+    if (max_w < 5.0) max_w = 5.0;
+    size_t lines = 0;
+    size_t idx = 0;
+    while (idx < count) {
+        size_t line_end = idx;
+        double acc_w = 0.0;
+        bool forced = false;
+        while (line_end < count) {
+            if (words[line_end].kind == RUN_LINE_BREAK) {
+                forced = true;
+                break;
+            }
+            double sp = (line_end > idx && words[line_end - 1].space_after) ? words[line_end - 1].space_w_mm : 0.0;
+            if (line_end > idx && acc_w + sp + words[line_end].word_w_mm > max_w) break;
+            acc_w += sp + words[line_end].word_w_mm;
+            line_end++;
+        }
+        lines++;
+        idx = forced ? (line_end + 1) : line_end;
+    }
+    return (lines > 0) ? lines : 1;
+}
+
+static void emit_vborder_svg(StrBuf *sb, double x, double y1, double y2, int count, double rw) {
+    if (count <= 0) return;
+    char buf[256];
+    if (count == 1) {
+        snprintf(buf, sizeof(buf),
+                 "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                 x, y1, x, y2, rw);
+        sb_append_cstr(sb, buf);
+    } else {
+        snprintf(buf, sizeof(buf),
+                 "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n"
+                 "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                 x - 0.40, y1, x - 0.40, y2, rw,
+                 x + 0.40, y1, x + 0.40, y2, rw);
+        sb_append_cstr(sb, buf);
+    }
+}
+
+static void typeset_table(Typesetter *ts, const IrDocument *doc, const TableDef *tbl) {
+    if (!tbl || tbl->cols == 0 || tbl->row_count == 0) return;
+    size_t ncols = (tbl->cols <= 32) ? tbl->cols : 32;
+    double pad_x = tbl->tabcolsep_mm;
+    double rw    = (tbl->rulewidth_mm > 0.05) ? tbl->rulewidth_mm : 0.15;
+
+    // 1. Calcular el ancho de cada columna en dos pasadas (celdas de 1 col y luego multicolumna)
+    double col_w[32];
+    for (size_t c = 0; c < ncols; c++) col_w[c] = 5.0;
+
+    for (size_t r = 0; r < tbl->row_count; r++) {
+        const TableRowItem *row = &tbl->rows[r];
+        if (row->kind != TROW_DATA) continue;
+        size_t cur_c = 0;
+        for (size_t i = 0; i < row->cell_count && cur_c < ncols; i++) {
+            const TableCell *cell = &row->cells[i];
+            size_t span = (cell->span >= 1) ? cell->span : 1;
+            if (cur_c + span > ncols) span = ncols - cur_c;
+            if (span == 1) {
+                if (cell->fixed_w_mm > 0.01) {
+                    if (cell->fixed_w_mm > col_w[cur_c]) col_w[cur_c] = cell->fixed_w_mm;
+                } else {
+                    size_t wcount = 0;
+                    WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+                    double nw = measure_tokens_natural_width(wt, wcount);
+                    free_word_tokens(wt, wcount);
+                    if (nw > col_w[cur_c]) col_w[cur_c] = nw;
+                }
+            }
+            cur_c += span;
+        }
+    }
+
+    for (size_t r = 0; r < tbl->row_count; r++) {
+        const TableRowItem *row = &tbl->rows[r];
+        if (row->kind != TROW_DATA) continue;
+        size_t cur_c = 0;
+        for (size_t i = 0; i < row->cell_count && cur_c < ncols; i++) {
+            const TableCell *cell = &row->cells[i];
+            size_t span = (cell->span >= 1) ? cell->span : 1;
+            if (cur_c + span > ncols) span = ncols - cur_c;
+            if (span > 1) {
+                size_t wcount = 0;
+                WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+                double nw = measure_tokens_natural_width(wt, wcount);
+                free_word_tokens(wt, wcount);
+
+                double cur_span_w = (double)(span - 1) * 2.0 * pad_x;
+                for (size_t k = 0; k < span; k++) cur_span_w += col_w[cur_c + k];
+                if (nw > cur_span_w) {
+                    double add_each = (nw - cur_span_w) / (double)span;
+                    for (size_t k = 0; k < span; k++) col_w[cur_c + k] += add_each;
+                }
+            }
+            cur_c += span;
+        }
+    }
+
+    double total_w = 0.0;
+    for (size_t c = 0; c < ncols; c++) total_w += col_w[c] + 2.0 * pad_x;
+
+    if (!ts->at_frame_top) {
+        ts->cursor_y_mm += 2.2;
+    }
+
+    // 2. Recorrer filas y trazos horizontales
+    bool prev_was_hline = false;
+    for (size_t r = 0; r < tbl->row_count; r++) {
+        FlowFrame *fr = &ts->frames[ts->cur_frame];
+        double table_x = fr->x_mm;
+        if (tbl->table_align == ALIGN_CENTER) {
+            table_x += fmax(0.0, (fr->w_mm - total_w) * 0.5);
+        } else if (tbl->table_align == ALIGN_RIGHT) {
+            table_x += fmax(0.0, fr->w_mm - total_w);
+        }
+
+        double col_x[33];
+        col_x[0] = table_x;
+        for (size_t c = 0; c < ncols; c++) {
+            col_x[c + 1] = col_x[c] + col_w[c] + 2.0 * pad_x;
+        }
+
+        const TableRowItem *row = &tbl->rows[r];
+        if (row->kind == TROW_HLINE) {
+            if (prev_was_hline) {
+                ts->cursor_y_mm += 0.85;
+            }
+            double y = fr->y_mm + ts->cursor_y_mm;
+            char lbuf[256];
+            snprintf(lbuf, sizeof(lbuf),
+                     "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                     col_x[0], y, col_x[ncols], y, rw);
+            sb_append_cstr(&fr->svg_content, lbuf);
+            prev_was_hline = true;
+            continue;
+        }
+
+        if (row->kind == TROW_CLINE) {
+            size_t c1 = (row->cline_from >= 1) ? (size_t)(row->cline_from - 1) : 0;
+            size_t c2 = (row->cline_to >= 1) ? (size_t)row->cline_to : 1;
+            if (c1 > ncols) c1 = ncols;
+            if (c2 > ncols) c2 = ncols;
+            if (c2 > c1) {
+                double y = fr->y_mm + ts->cursor_y_mm;
+                char lbuf[256];
+                snprintf(lbuf, sizeof(lbuf),
+                         "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                         col_x[c1], y, col_x[c2], y, rw);
+                sb_append_cstr(&fr->svg_content, lbuf);
+            }
+            prev_was_hline = false;
+            continue;
+        }
+
+        prev_was_hline = false;
+
+        // Calcular la altura de la fila según el número máximo de líneas en sus celdas
+        size_t max_lines = 1;
+        size_t cur_c = 0;
+        for (size_t i = 0; i < row->cell_count && cur_c < ncols; i++) {
+            const TableCell *cell = &row->cells[i];
+            size_t span = (cell->span >= 1) ? cell->span : 1;
+            if (cur_c + span > ncols) span = ncols - cur_c;
+            double cw = (col_x[cur_c + span] - col_x[cur_c]) - 2.0 * pad_x;
+
+            size_t wcount = 0;
+            WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+            size_t nl = count_wrapped_lines(wt, wcount, cw + 0.5);
+            free_word_tokens(wt, wcount);
+            if (nl > max_lines) max_lines = nl;
+            cur_c += span;
+        }
+
+        double line_h = 4.6;
+        double row_h  = (double)max_lines * line_h + 1.6 + row->extra_space_mm;
+
+        if (ts->cursor_y_mm + row_h > fr->h_mm + 0.05 && !ts->at_frame_top) {
+            typesetter_advance_frame(ts, doc);
+            fr = &ts->frames[ts->cur_frame];
+            table_x = fr->x_mm;
+            if (tbl->table_align == ALIGN_CENTER) {
+                table_x += fmax(0.0, (fr->w_mm - total_w) * 0.5);
+            } else if (tbl->table_align == ALIGN_RIGHT) {
+                table_x += fmax(0.0, fr->w_mm - total_w);
+            }
+            col_x[0] = table_x;
+            for (size_t c = 0; c < ncols; c++) {
+                col_x[c + 1] = col_x[c] + col_w[c] + 2.0 * pad_x;
+            }
+        }
+
+        double y_top = fr->y_mm + ts->cursor_y_mm;
+        double y_bot = y_top + row_h;
+
+        cur_c = 0;
+        for (size_t i = 0; i < row->cell_count && cur_c < ncols; i++) {
+            const TableCell *cell = &row->cells[i];
+            size_t span = (cell->span >= 1) ? cell->span : 1;
+            if (cur_c + span > ncols) span = ncols - cur_c;
+
+            double x_left  = col_x[cur_c];
+            double x_right = col_x[cur_c + span];
+            emit_vborder_svg(&fr->svg_content, x_left,  y_top, y_bot, cell->bl, rw);
+            emit_vborder_svg(&fr->svg_content, x_right, y_top, y_bot, cell->br, rw);
+
+            size_t wcount = 0;
+            WordToken *words = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+            if (words && wcount > 0) {
+                ParaStyle cell_ps = {
+                    .align           = (cell->align == 'c') ? ALIGN_CENTER
+                                     : (cell->align == 'r') ? ALIGN_RIGHT
+                                     : (cell->align == 'p') ? ALIGN_JUSTIFY
+                                     : ALIGN_LEFT,
+                    .line_spacing_mm = line_h,
+                    .indent_left_mm  = (x_left + pad_x) - fr->x_mm,
+                    .indent_right_mm = (fr->x_mm + fr->w_mm) - (x_right - pad_x)
+                };
+                double max_w = (x_right - x_left) - 2.0 * pad_x + 0.5;
+                size_t idx = 0;
+                size_t line_no = 0;
+                while (idx < wcount) {
+                    size_t line_end = idx;
+                    double acc_w = 0.0;
+                    bool forced = false;
+                    while (line_end < wcount) {
+                        if (words[line_end].kind == RUN_LINE_BREAK) {
+                            forced = true;
+                            break;
+                        }
+                        double sp = (line_end > idx && words[line_end - 1].space_after)
+                                    ? words[line_end - 1].space_w_mm
+                                    : 0.0;
+                        if (line_end > idx && acc_w + sp + words[line_end].word_w_mm > max_w) break;
+                        acc_w += sp + words[line_end].word_w_mm;
+                        line_end++;
+                    }
+                    size_t next_idx = forced ? (line_end + 1) : line_end;
+                    bool is_last = (next_idx >= wcount) || forced;
+                    double base_y = ts->cursor_y_mm + 0.8 + (double)line_no * line_h + line_h * 0.76;
+                    emit_svg_line(fr, doc, &cell_ps, nullptr, 0, words, idx, line_end, acc_w, 0.0, base_y, is_last);
+                    line_no++;
+                    idx = next_idx;
+                }
+            }
+            free_word_tokens(words, wcount);
+            cur_c += span;
+        }
+
+        ts->cursor_y_mm += row_h;
+        ts->at_frame_top = false;
+    }
+
+    ts->cursor_y_mm += 2.2;
+}
+
+static void typeset_footnote(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
+    FlowFrame *fr = &ts->frames[ts->cur_frame];
+    if (fr->footnote_count >= 16) return;
+
+    size_t wcount = 0;
+    WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+    size_t nl = count_wrapped_lines(wt, wcount, fr->w_mm - 5.0);
+    free_word_tokens(wt, wcount);
+
+    double fn_h = (double)nl * 3.8 + 0.8;
+    if (fr->footnote_count == 0) {
+        fn_h += 3.2; // espacio para la fileta separadora de notas al pie
+    }
+    if (fr->h_mm > ts->cursor_y_mm + fn_h + 4.0) {
+        fr->h_mm -= fn_h;
+    }
+    fr->footnotes[fr->footnote_count++] = item;
+}
+
+static void finalize_frame_footnotes(FlowFrame *fr, const IrDocument *doc) {
+    if (fr->footnote_count == 0) return;
+
+    double total_fn_h = 0.0;
+    for (size_t f = 0; f < fr->footnote_count; f++) {
+        const StoryItem *item = fr->footnotes[f];
+        size_t wcount = 0;
+        WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+        size_t nl = count_wrapped_lines(wt, wcount, fr->w_mm - 5.0);
+        free_word_tokens(wt, wcount);
+        total_fn_h += (double)nl * 3.8 + 0.8;
+    }
+
+    double cur_y = fr->orig_h_mm - total_fn_h;
+    double rule_y = fr->y_mm + cur_y - 1.4;
+    char rbuf[256];
+    snprintf(rbuf, sizeof(rbuf),
+             "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"#334155\" stroke-width=\"0.28\"/>\n",
+             fr->x_mm, rule_y, fr->x_mm + fr->w_mm * 0.38, rule_y);
+    sb_append_cstr(&fr->svg_content, rbuf);
+
+    ParaStyle fn_ps = {
+        .align           = ALIGN_JUSTIFY,
+        .line_spacing_mm = 3.8,
+        .indent_left_mm  = 4.5,
+        .indent_right_mm = 0.0
+    };
+
+    for (size_t f = 0; f < fr->footnote_count; f++) {
+        const StoryItem *item = fr->footnotes[f];
+        size_t wcount = 0;
+        WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+        double max_w = fr->w_mm - fn_ps.indent_left_mm;
+        size_t idx = 0;
+        bool first = true;
+        while (idx < wcount) {
+            size_t line_end = idx;
+            double acc_w = 0.0;
+            bool forced = false;
+            while (line_end < wcount) {
+                if (words[line_end].kind == RUN_LINE_BREAK) { forced = true; break; }
+                double sp = (line_end > idx && words[line_end - 1].space_after) ? words[line_end - 1].space_w_mm : 0.0;
+                if (line_end > idx && acc_w + sp + words[line_end].word_w_mm > max_w) break;
+                acc_w += sp + words[line_end].word_w_mm;
+                line_end++;
+            }
+            size_t next_idx = forced ? (line_end + 1) : line_end;
+            bool is_last = (next_idx >= wcount) || forced;
+            emit_svg_line(fr, doc, &fn_ps,
+                          first ? item->label : nullptr,
+                          item->label_style_idx,
+                          words, idx, line_end, acc_w, 0.0,
+                          cur_y + 2.9, is_last);
+            cur_y += 3.8;
+            first = false;
+            idx = next_idx;
+        }
+        cur_y += 0.8;
+        free_word_tokens(words, wcount);
+    }
+}
+
+static void typeset_marginpar(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
+    FlowFrame *fr = &ts->frames[ts->cur_frame];
+    size_t wcount = 0;
+    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+    if (!words || wcount == 0) {
+        free_word_tokens(words, wcount);
+        return;
+    }
+
+    double mp_w = fmax(12.0, doc->margin_right_mm - 5.0);
+    ParaStyle mp_ps = {
+        .align           = ALIGN_LEFT,
+        .line_spacing_mm = 3.5,
+        .indent_left_mm  = fr->w_mm + 2.5,
+        .indent_right_mm = -(mp_w + 2.5)
+    };
+
+    double y_off = ts->cursor_y_mm;
+    size_t idx = 0;
+    while (idx < wcount) {
+        size_t line_end = idx;
+        double acc_w = 0.0;
+        bool forced = false;
+        while (line_end < wcount) {
+            if (words[line_end].kind == RUN_LINE_BREAK) { forced = true; break; }
+            double sp = (line_end > idx && words[line_end - 1].space_after) ? words[line_end - 1].space_w_mm : 0.0;
+            if (line_end > idx && acc_w + sp + words[line_end].word_w_mm > mp_w) break;
+            acc_w += sp + words[line_end].word_w_mm;
+            line_end++;
+        }
+        size_t next_idx = forced ? (line_end + 1) : line_end;
+        emit_svg_line(fr, doc, &mp_ps, nullptr, 0, words, idx, line_end, acc_w, 0.0, y_off + 2.7, true);
+        y_off += 3.5;
+        idx = next_idx;
+    }
+    free_word_tokens(words, wcount);
+}
+
+static void format_page_num(size_t page_num, const char *numbering, char *out, size_t out_sz) {
+    if (!numbering || strcmp(numbering, "arabic") == 0) {
+        snprintf(out, out_sz, "%zu", page_num);
+        return;
+    }
+    if (strcmp(numbering, "alph") == 0 || strcmp(numbering, "Alph") == 0) {
+        char base = (numbering[0] == 'A') ? 'A' : 'a';
+        size_t idx = (page_num >= 1 && page_num <= 26) ? (page_num - 1) : 0;
+        snprintf(out, out_sz, "%c", (char)(base + idx));
+        return;
+    }
+    if (strcmp(numbering, "roman") == 0 || strcmp(numbering, "Roman") == 0) {
+        bool upper = (numbering[0] == 'R');
+        static const int vals[] = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+        static const char *const syms_l[] = { "m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i" };
+        static const char *const syms_u[] = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+        const char *const *syms = upper ? syms_u : syms_l;
+        int v = (int)page_num;
+        out[0] = '\0';
+        size_t len = 0;
+        for (size_t i = 0; i < 13 && v > 0; i++) {
+            while (v >= vals[i]) {
+                size_t sl = strlen(syms[i]);
+                if (len + sl < out_sz - 1) {
+                    memcpy(out + len, syms[i], sl);
+                    len += sl;
+                    out[len] = '\0';
+                }
+                v -= vals[i];
+            }
+        }
+        return;
+    }
+    snprintf(out, out_sz, "%zu", page_num);
 }
 
 // ============================================================================
@@ -1248,8 +1995,35 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
         }
 
         fprintf(out, "      </g>\n");
-        fprintf(out, "      <text class=\"page-num-footer\" x=\"%.3f\" y=\"%.3f\" text-anchor=\"middle\">%zu / %zu</text>\n",
-                doc->page_w_mm * 0.5, doc->page_h_mm - 6.0, p + 1, ts->total_pages);
+
+        if (strcmp(doc->page_style, "empty") != 0) {
+            char pnum_str[32];
+            format_page_num(p + 1, doc->page_numbering, pnum_str, sizeof(pnum_str));
+
+            if (strcmp(doc->page_style, "headings") == 0 || strcmp(doc->page_style, "myheadings") == 0) {
+                double hy = fmax(8.0, doc->margin_top_mm * 0.62);
+                const char *mark = ((p % 2 == 0) && doc->right_mark[0]) ? doc->right_mark
+                                 : (doc->left_mark[0] ? doc->left_mark : doc->right_mark);
+                if (mark && mark[0] != '\0') {
+                    fprintf(out, "      <text class=\"page-num-footer\" style=\"font-style:italic;\" x=\"%.3f\" y=\"%.3f\" text-anchor=\"start\">",
+                            doc->margin_left_mm, hy);
+                    for (const char *mp = mark; *mp; mp++) {
+                        if (*mp == '&') fputs("&amp;", out);
+                        else if (*mp == '<') fputs("&lt;", out);
+                        else if (*mp == '>') fputs("&gt;", out);
+                        else fputc(*mp, out);
+                    }
+                    fprintf(out, "</text>\n");
+                }
+                fprintf(out, "      <text class=\"page-num-footer\" x=\"%.3f\" y=\"%.3f\" text-anchor=\"end\">%s</text>\n",
+                        doc->page_w_mm - doc->margin_right_mm, hy, pnum_str);
+                fprintf(out, "      <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"#cbd5e1\" stroke-width=\"0.25\"/>\n",
+                        doc->margin_left_mm, hy + 1.6, doc->page_w_mm - doc->margin_right_mm, hy + 1.6);
+            }
+
+            fprintf(out, "      <text class=\"page-num-footer\" x=\"%.3f\" y=\"%.3f\" text-anchor=\"middle\">%s / %zu</text>\n",
+                    doc->page_w_mm * 0.5, doc->page_h_mm - 6.0, pnum_str, ts->total_pages);
+        }
         fprintf(out, "    </g>\n");
     }
     fprintf(out, "  </g>\n\n");
@@ -1440,9 +2214,19 @@ int main(int argc, char **argv) {
                     ts.at_frame_top = false;
                 }
             }
+        } else if (doc.items[i].type == ITEM_TABLE) {
+            typeset_table(&ts, &doc, doc.items[i].table);
+        } else if (doc.items[i].type == ITEM_FOOTNOTE) {
+            typeset_footnote(&ts, &doc, &doc.items[i]);
+        } else if (doc.items[i].type == ITEM_MARGINPAR) {
+            typeset_marginpar(&ts, &doc, &doc.items[i]);
         } else {
             typeset_paragraph(&ts, &doc, &doc.items[i]);
         }
+    }
+
+    for (size_t f = 0; f < ts.frame_count; f++) {
+        finalize_frame_footnotes(&ts.frames[f], &doc);
     }
 
     if (!write_standalone_svg(svg_path, &doc, &ts)) {

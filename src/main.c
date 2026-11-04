@@ -435,9 +435,16 @@ static bool xml_gen_init(XmlGenerator *gen, const char *xml_path) {
         fclose(gen->file);
         return false;
     }
+    if (!sb_init(&gen->pending_footnotes, 512)) {
+        sb_free(&gen->story);
+        fclose(gen->file);
+        return false;
+    }
 
     double default_em = 11.0 * MM_PER_PT;
     snprintf(gen->doc_class, sizeof(gen->doc_class), "article");
+    snprintf(gen->page_style, sizeof(gen->page_style), "plain");
+    snprintf(gen->page_numbering, sizeof(gen->page_numbering), "arabic");
     gen->base_font_pt      = 11.0;
     gen->linespread_factor = 1.0;
 
@@ -562,6 +569,52 @@ static void xml_close_active_span(XmlGenerator *gen) {
 }
 
 static void xml_ensure_para_open(XmlGenerator *gen) {
+    if (gen->in_tabular) {
+        if (!gen->tab_row_open) {
+            sb_append_cstr(&gen->story, "        <row>\n");
+            gen->tab_row_open = true;
+            gen->tab_cur_col  = 0;
+        }
+        if (!gen->tab_cell_open) {
+            size_t span = 1;
+            char align  = 'l';
+            int bl      = 0;
+            int br      = 0;
+            double w_mm = 0.0;
+
+            if (gen->tab_has_mc_override) {
+                span  = (gen->tab_mc_span > 0) ? gen->tab_mc_span : 1;
+                align = gen->tab_mc_align ? gen->tab_mc_align : 'c';
+                bl    = gen->tab_mc_bl;
+                br    = gen->tab_mc_br;
+                gen->tab_has_mc_override = false;
+            } else if (gen->tab_col_count > 0) {
+                size_t c = (gen->tab_cur_col < gen->tab_col_count)
+                           ? gen->tab_cur_col
+                           : (gen->tab_col_count - 1);
+                align = gen->tab_cols[c].align ? gen->tab_cols[c].align : 'l';
+                bl    = gen->tab_cols[c].border_left;
+                br    = gen->tab_cols[c].border_right;
+                w_mm  = gen->tab_cols[c].width_mm;
+            }
+            gen->tab_cur_span = span;
+            if (w_mm > 0.01) {
+                sb_appendf(&gen->story,
+                           "          <cell span=\"%zu\" align=\"%c\" bl=\"%d\" br=\"%d\" width=\"%.2fmm\">",
+                           span, align, bl, br, w_mm);
+            } else {
+                sb_appendf(&gen->story,
+                           "          <cell span=\"%zu\" align=\"%c\" bl=\"%d\" br=\"%d\">",
+                           span, align, bl, br);
+            }
+            gen->tab_cell_open        = true;
+            gen->para_open            = true;
+            gen->para_has_content     = false;
+            gen->active_char_style_id = -1;
+        }
+        return;
+    }
+
     if (gen->para_open) return;
 
     ParaState effective = gen->para_state;
@@ -586,13 +639,77 @@ static void xml_ensure_para_open(XmlGenerator *gen) {
     gen->active_char_style_id = -1;
 }
 
+static void xml_table_next_cell(XmlGenerator *gen) {
+    if (!gen->in_tabular) return;
+    if (!gen->tab_cell_open) {
+        xml_ensure_para_open(gen);
+    }
+    xml_close_active_span(gen);
+    sb_append_cstr(&gen->story, "</cell>\n");
+    gen->tab_cell_open    = false;
+    gen->para_open        = false;
+    gen->para_has_content = false;
+    gen->tab_cur_col     += (gen->tab_cur_span > 0) ? gen->tab_cur_span : 1;
+    gen->tab_cur_span     = 1;
+    gen->char_state       = gen->tab_base_char_state;
+}
+
+static void xml_table_end_row(XmlGenerator *gen, Measure extra_v) {
+    if (!gen->in_tabular) return;
+    if (!gen->tab_row_open) {
+        xml_ensure_para_open(gen);
+    }
+    if (gen->tab_cell_open) {
+        xml_close_active_span(gen);
+        sb_append_cstr(&gen->story, "</cell>\n");
+        gen->tab_cell_open    = false;
+        gen->para_open        = false;
+        gen->para_has_content = false;
+        gen->tab_cur_col     += (gen->tab_cur_span > 0) ? gen->tab_cur_span : 1;
+        gen->tab_cur_span     = 1;
+    }
+    while (gen->tab_cur_col < gen->tab_col_count) {
+        xml_ensure_para_open(gen);
+        xml_close_active_span(gen);
+        sb_append_cstr(&gen->story, "</cell>\n");
+        gen->tab_cell_open    = false;
+        gen->para_open        = false;
+        gen->para_has_content = false;
+        gen->tab_cur_col     += (gen->tab_cur_span > 0) ? gen->tab_cur_span : 1;
+        gen->tab_cur_span     = 1;
+    }
+    if (fabs(extra_v.mm) > 0.01) {
+        char b[32];
+        measure_format(extra_v, b, sizeof(b));
+        sb_appendf(&gen->story, "          <row-space extra=\"%s\"/>\n", b);
+    }
+    sb_append_cstr(&gen->story, "        </row>\n");
+    gen->tab_row_open = false;
+    gen->tab_cur_col  = 0;
+    gen->char_state   = gen->tab_base_char_state;
+}
+
 static void xml_close_para(XmlGenerator *gen) {
-    if (!gen->para_open) return;
+    if (gen->in_tabular) return;
+    if (!gen->para_open) {
+        if (gen->pending_footnotes.len > 0) {
+            sb_append_mem(&gen->story, gen->pending_footnotes.data, gen->pending_footnotes.len);
+            gen->pending_footnotes.len = 0;
+            gen->pending_footnotes.data[0] = '\0';
+        }
+        return;
+    }
 
     xml_close_active_span(gen);
     sb_append_cstr(&gen->story, "</p>\n");
     gen->para_open        = false;
     gen->para_has_content = false;
+
+    if (gen->pending_footnotes.len > 0) {
+        sb_append_mem(&gen->story, gen->pending_footnotes.data, gen->pending_footnotes.len);
+        gen->pending_footnotes.len = 0;
+        gen->pending_footnotes.data[0] = '\0';
+    }
 }
 
 static void xml_activate_current_char_style(XmlGenerator *gen) {
@@ -608,6 +725,10 @@ static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
     if (text.len == 0) return;
 
     if (gen->capture_plain_buf) {
+        if (!gen->has_captured_char_state) {
+            gen->captured_char_state     = gen->char_state;
+            gen->has_captured_char_state = true;
+        }
         if (space_before && gen->capture_plain_buf->len > 0) {
             sb_append_cstr(gen->capture_plain_buf, " ");
         }
@@ -685,6 +806,34 @@ static void xml_emit_rule(XmlGenerator *gen, Measure width, Measure height, Meas
     gen->para_has_content = true;
 }
 
+static void xml_emit_box(XmlGenerator *gen, Measure width, char align, Measure border, Measure pad, Measure raise, const CharState *box_cs, StrView text, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) {
+            sb_append_cstr(gen->capture_plain_buf, " ");
+        }
+        sb_append_mem(gen->capture_plain_buf, text.data, text.len);
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, box_cs ? box_cs : &gen->char_state);
+    char bw[32], bb[32], bp[32], br[32];
+    measure_format(width,  bw, sizeof(bw));
+    measure_format(border, bb, sizeof(bb));
+    measure_format(pad,    bp, sizeof(bp));
+    measure_format(raise,  br, sizeof(br));
+    sb_appendf(&gen->story,
+               "<box width=\"%s\" align=\"%c\" border=\"%s\" pad=\"%s\" raise=\"%s\" style=\"cs%zu\">",
+               bw, align ? align : 'c', bb, bp, br, cs_id + 1);
+    sb_append_escaped_xml(&gen->story, text.data, text.len);
+    sb_append_cstr(&gen->story, "</box>");
+    gen->para_has_content = true;
+}
+
 static void xml_emit_vspace(XmlGenerator *gen, Measure height, bool starred, bool fill) {
     if (gen->capture_plain_buf) return;
     xml_close_para(gen);
@@ -728,6 +877,15 @@ static void xml_gen_finalize(XmlGenerator *gen) {
     measure_format(gen->margin_right,  b4, sizeof(b4));
     fprintf(gen->file, "      <margins top=\"%s\" bottom=\"%s\" left=\"%s\" right=\"%s\"/>\n",
             b1, b2, b3, b4);
+    fprintf(gen->file, "      <page-style mode=\"");
+    fprint_escaped_xml(gen->file, gen->page_style[0] ? gen->page_style : "plain");
+    fprintf(gen->file, "\" numbering=\"");
+    fprint_escaped_xml(gen->file, gen->page_numbering[0] ? gen->page_numbering : "arabic");
+    fprintf(gen->file, "\" left-mark=\"");
+    fprint_escaped_xml(gen->file, gen->left_mark);
+    fprintf(gen->file, "\" right-mark=\"");
+    fprint_escaped_xml(gen->file, gen->right_mark);
+    fprintf(gen->file, "\"/>\n");
     fprintf(gen->file, "    </page-defaults>\n");
 
     fprintf(gen->file, "    <fonts>\n");
@@ -821,6 +979,7 @@ static void xml_gen_finalize(XmlGenerator *gen) {
 
     fclose(gen->file);
     sb_free(&gen->story);
+    sb_free(&gen->pending_footnotes);
 }
 
 // ============================================================================
@@ -1128,6 +1287,9 @@ static void macro_env_init(MacroEnv *env) {
     macro_env_define(env, (StrView){"labelenumii", 11},  0, false, (StrView){0}, (StrView){"(\\alph{enumii})", 15}, true);
     macro_env_define(env, (StrView){"labelenumiii", 12}, 0, false, (StrView){0}, (StrView){"\\roman{enumiii}.", 16}, true);
     macro_env_define(env, (StrView){"labelenumiv", 11},  0, false, (StrView){0}, (StrView){"\\Alph{enumiv}.", 14}, true);
+
+    macro_env_define(env, (StrView){"figurename", 10},   0, false, (StrView){0}, (StrView){"Figura", 6}, true);
+    macro_env_define(env, (StrView){"tablename", 9},     0, false, (StrView){0}, (StrView){"Cuadro", 6}, true);
 }
 
 static void macro_env_free(MacroEnv *env) {
@@ -1140,8 +1302,12 @@ static void macro_env_free(MacroEnv *env) {
         free(env->envs[i].begin_body);
         free(env->envs[i].end_body);
     }
-    env->count     = 0;
-    env->env_count = 0;
+    for (size_t i = 0; i < env->savebox_count; i++) {
+        free(env->saveboxes[i].content);
+    }
+    env->count         = 0;
+    env->env_count     = 0;
+    env->savebox_count = 0;
 }
 
 static UserMacro *macro_env_find_mut(MacroEnv *env, StrView name) {
@@ -1280,6 +1446,60 @@ static void eval_tex_to_plain(Parser *p, StrView expr, char *out, size_t out_sz)
 
     snprintf(out, out_sz, "%s", plain_sb.data);
     sb_free(&plain_sb);
+}
+
+static void eval_tex_box(Parser *p, StrView expr, char *out, size_t out_sz, CharState *out_cs) {
+    if (out_sz == 0) return;
+    out[0] = '\0';
+    if (out_cs) *out_cs = p->gen->char_state;
+
+    StrBuf plain_sb;
+    if (!sb_init(&plain_sb, 128)) return;
+
+    StrBuf *prev_capture         = p->gen->capture_plain_buf;
+    bool prev_has_cap_cs         = p->gen->has_captured_char_state;
+    CharState prev_cap_cs        = p->gen->captured_char_state;
+    size_t prev_inline           = p->gen->inline_depth;
+    CharState saved_cs           = p->gen->char_state;
+    ParaState saved_ps           = p->gen->para_state;
+
+    p->gen->capture_plain_buf       = &plain_sb;
+    p->gen->has_captured_char_state = false;
+    p->gen->inline_depth++;
+    execute_tex_fragment(p, expr, false);
+    if (out_cs) {
+        *out_cs = p->gen->has_captured_char_state ? p->gen->captured_char_state : p->gen->char_state;
+    }
+    p->gen->inline_depth            = prev_inline;
+    p->gen->capture_plain_buf       = prev_capture;
+    p->gen->has_captured_char_state = prev_has_cap_cs;
+    p->gen->captured_char_state     = prev_cap_cs;
+    p->gen->char_state              = saved_cs;
+    p->gen->para_state              = saved_ps;
+
+    snprintf(out, out_sz, "%s", plain_sb.data);
+    sb_free(&plain_sb);
+}
+
+static SaveBoxDef *savebox_find_mut(MacroEnv *env, StrView name) {
+    name = sv_strip_leading_backslash(name);
+    for (size_t i = 0; i < env->savebox_count; i++) {
+        if (sv_equals(name, env->saveboxes[i].name)) return &env->saveboxes[i];
+    }
+    return nullptr;
+}
+
+static SaveBoxDef *savebox_register(MacroEnv *env, StrView name) {
+    name = sv_strip_leading_backslash(name);
+    SaveBoxDef *existing = savebox_find_mut(env, name);
+    if (existing) return existing;
+    if (env->savebox_count >= MAX_SAVEBOXES || name.len == 0 || name.len >= sizeof(env->saveboxes[0].name)) {
+        return nullptr;
+    }
+    SaveBoxDef *sb = &env->saveboxes[env->savebox_count++];
+    memset(sb, 0, sizeof(*sb));
+    snprintf(sb->name, sizeof(sb->name), "%.*s", (int)name.len, name.data);
+    return sb;
 }
 
 static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]) {
@@ -1662,6 +1882,108 @@ static void builtin_Huge(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] St
 
 static void builtin_newpage(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]);
 
+static void parse_tabular_cols_into(Parser *p, StrView spec, int *pending_left_bars) {
+    size_t i = 0;
+    while (i < spec.len && p->gen->tab_col_count < MAX_TAB_COLS) {
+        char c = spec.data[i];
+        if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+            i++;
+            continue;
+        }
+        if (c == '|') {
+            if (p->gen->tab_col_count == 0) {
+                (*pending_left_bars)++;
+            } else {
+                p->gen->tab_cols[p->gen->tab_col_count - 1].border_right++;
+            }
+            i++;
+            continue;
+        }
+        if (c == '@') {
+            i++;
+            while (i < spec.len && (spec.data[i] == ' ' || spec.data[i] == '\t')) i++;
+            if (i < spec.len && spec.data[i] == '{') {
+                int depth = 1;
+                i++;
+                while (i < spec.len && depth > 0) {
+                    if (spec.data[i] == '{') depth++;
+                    else if (spec.data[i] == '}') depth--;
+                    i++;
+                }
+            }
+            continue;
+        }
+        if (c == '*') {
+            i++;
+            while (i < spec.len && (spec.data[i] == ' ' || spec.data[i] == '\t')) i++;
+            long count = 0;
+            if (i < spec.len && spec.data[i] == '{') {
+                i++;
+                size_t nstart = i;
+                while (i < spec.len && spec.data[i] != '}') i++;
+                count = sv_to_long(p, (StrView){ spec.data + nstart, i - nstart });
+                if (i < spec.len) i++;
+            }
+            while (i < spec.len && (spec.data[i] == ' ' || spec.data[i] == '\t')) i++;
+            if (i < spec.len && spec.data[i] == '{') {
+                i++;
+                size_t bstart = i;
+                int depth = 1;
+                while (i < spec.len && depth > 0) {
+                    if (spec.data[i] == '{') depth++;
+                    else if (spec.data[i] == '}') depth--;
+                    if (depth > 0) i++;
+                }
+                StrView sub = { spec.data + bstart, i - bstart };
+                if (i < spec.len) i++;
+                for (long r = 0; r < count; r++) {
+                    parse_tabular_cols_into(p, sub, pending_left_bars);
+                }
+            }
+            continue;
+        }
+        if (c == 'l' || c == 'c' || c == 'r' || c == 'p' || c == 'm' || c == 'b') {
+            double col_w_mm = 0.0;
+            char align_ch = (c == 'c' || c == 'r') ? c : 'l';
+            i++;
+            if (c == 'p' || c == 'm' || c == 'b') {
+                while (i < spec.len && (spec.data[i] == ' ' || spec.data[i] == '\t')) i++;
+                if (i < spec.len && spec.data[i] == '{') {
+                    i++;
+                    size_t wstart = i;
+                    int depth = 1;
+                    while (i < spec.len && depth > 0) {
+                        if (spec.data[i] == '{') depth++;
+                        else if (spec.data[i] == '}') depth--;
+                        if (depth > 0) i++;
+                    }
+                    Measure mw = measure_parse(p, (StrView){ spec.data + wstart, i - wstart }, UNIT_MM);
+                    col_w_mm = mw.mm;
+                    if (i < spec.len) i++;
+                }
+            }
+            TabColSpec *col = &p->gen->tab_cols[p->gen->tab_col_count++];
+            col->align        = align_ch;
+            col->border_left  = *pending_left_bars;
+            col->border_right = 0;
+            col->width_mm     = col_w_mm;
+            *pending_left_bars = 0;
+            continue;
+        }
+        i++;
+    }
+}
+
+static void parse_tabular_cols(Parser *p, StrView spec) {
+    p->gen->tab_col_count = 0;
+    int pending_left_bars = 0;
+    parse_tabular_cols_into(p, spec, &pending_left_bars);
+    if (p->gen->tab_col_count == 0) {
+        p->gen->tab_cols[0] = (TabColSpec){ .align = 'l', .border_left = 0, .border_right = 0, .width_mm = 0.0 };
+        p->gen->tab_col_count = 1;
+    }
+}
+
 static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     StrView env_name = sv_trim(args[0]);
 
@@ -1901,6 +2223,90 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
             }
             parser_advance(p);
             return;
+        } else if (sv_equals(env_name, "minipage")) {
+            xml_close_para(p->gen);
+            StrView opt_tmp = {0};
+            while (parse_opt_arg(p, &opt_tmp)) {}
+            StrView mp_w_sv = {0};
+            parse_arg(p, &mp_w_sv);
+            Measure mp_w = measure_parse(p, mp_w_sv, UNIT_MM);
+            double usable_w = p->gen->page_width.mm - p->gen->margin_left.mm - p->gen->margin_right.mm;
+            if (p->gen->twocolumn) usable_w = (usable_w - 6.0) * 0.5;
+            double rem_right = fmax(0.0, usable_w - p->gen->para_state.indent_left.mm - mp_w.mm);
+            p->gen->para_state.indent_right = measure_make(rem_right, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*")) {
+            xml_close_para(p->gen);
+            if (sv_equals(env_name, "tabular*")) {
+                StrView tw_sv = {0};
+                parse_arg(p, &tw_sv);
+            }
+            StrView pos_opt = {0};
+            parse_opt_arg(p, &pos_opt);
+            StrView col_spec = {0};
+            parse_arg(p, &col_spec);
+
+            parse_tabular_cols(p, col_spec);
+            p->gen->in_tabular          = true;
+            p->gen->tab_cur_col         = 0;
+            p->gen->tab_row_open        = false;
+            p->gen->tab_cell_open       = false;
+            p->gen->tab_cur_span        = 1;
+            p->gen->tab_base_char_state = p->gen->char_state;
+            p->gen->tab_has_mc_override = false;
+
+            LengthDef *tcs = length_find_mut(p->env, (StrView){"tabcolsep", 9});
+            LengthDef *arw = length_find_mut(p->env, (StrView){"arrayrulewidth", 14});
+            char btcs[32] = "6pt", barw[32] = "0.4pt";
+            if (tcs) measure_format(tcs->value, btcs, sizeof(btcs));
+            if (arw) measure_format(arw->value, barw, sizeof(barw));
+
+            sb_appendf(&p->gen->story, "      <table cols=\"%zu\" align=\"%s\" tabcolsep=\"%s\" rulewidth=\"%s\">\n",
+                       p->gen->tab_col_count, align_to_str(p->gen->para_state.align), btcs, barw);
+        } else if (sv_equals(env_name, "figure") || sv_equals(env_name, "figure*") ||
+                   sv_equals(env_name, "table")  || sv_equals(env_name, "table*")) {
+            xml_close_para(p->gen);
+            StrView pos_opt = {0};
+            parse_opt_arg(p, &pos_opt);
+            bool is_tbl = (sv_equals(env_name, "table") || sv_equals(env_name, "table*"));
+            snprintf(p->gen->active_float_kind, sizeof(p->gen->active_float_kind),
+                     "%s", is_tbl ? "table" : "figure");
+            xml_emit_vspace(p->gen, measure_make(2.5, UNIT_MM, 1.0), false, false);
+        } else if (sv_equals(env_name, "lrbox")) {
+            StrView box_cmd = {0};
+            parse_cmd_or_arg(p, &box_cmd);
+            SaveBoxDef *sb = savebox_register(p->env, box_cmd);
+
+            const char *end_tag = "\\end{lrbox}";
+            size_t end_tag_len  = strlen(end_tag);
+            const char *src_end = p->lexer.src + p->lexer.len;
+            const char *raw_cur = &p->lexer.src[p->lexer.cursor];
+            if (p->current.type != TOKEN_EOF && p->current.text.data >= p->lexer.src && p->current.text.data <= src_end) {
+                raw_cur = p->current.text.data;
+            }
+            const char *found_end = nullptr;
+            for (const char *scan = raw_cur; scan + end_tag_len <= src_end; scan++) {
+                if (memcmp(scan, end_tag, end_tag_len) == 0) {
+                    found_end = scan;
+                    break;
+                }
+            }
+            const char *body_end = found_end ? found_end : src_end;
+            if (sb) {
+                free(sb->content);
+                sb->content = dup_sv(sv_trim((StrView){ raw_cur, (size_t)(body_end - raw_cur) }));
+            }
+            ActiveEnvFrame popped = p->gen->env_stack[--p->gen->env_depth];
+            p->gen->para_state = popped.saved_state.para_state;
+            p->gen->char_state = popped.saved_state.char_state;
+
+            const char *resume_ptr = found_end ? (found_end + end_tag_len) : src_end;
+            size_t target_cur = (size_t)(resume_ptr - p->lexer.src);
+            while (p->lexer.cursor < target_cur) {
+                lexer_advance(&p->lexer);
+            }
+            parser_advance(p);
+            return;
         }
     }
 }
@@ -1918,12 +2324,36 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
             execute_tex_fragment(p, (StrView){ ef.end_expansion, strlen(ef.end_expansion) }, false);
             free(ef.end_expansion);
         }
-        if (sv_equals(env_name, "center") || sv_equals(env_name, "flushleft") ||
-            sv_equals(env_name, "flushright") || sv_equals(env_name, "quote") ||
-            sv_equals(env_name, "quotation") || sv_equals(env_name, "verse") ||
-            sv_equals(env_name, "abstract") || sv_equals(env_name, "letter") ||
-            sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
-            sv_equals(env_name, "description") || sv_equals(env_name, "list")) {
+        if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*")) {
+            if (p->gen->tab_row_open) {
+                if (p->gen->para_has_content || p->gen->tab_cur_col > 0) {
+                    xml_table_end_row(p->gen, measure_make(0.0, UNIT_MM, 1.0));
+                } else {
+                    if (p->gen->tab_cell_open) {
+                        xml_close_active_span(p->gen);
+                        sb_append_cstr(&p->gen->story, "</cell>\n");
+                        p->gen->tab_cell_open = false;
+                        p->gen->para_open     = false;
+                    }
+                    sb_append_cstr(&p->gen->story, "        </row>\n");
+                    p->gen->tab_row_open = false;
+                }
+            }
+            sb_append_cstr(&p->gen->story, "      </table>\n");
+            p->gen->in_tabular = false;
+            p->gen->para_open  = false;
+        } else if (sv_equals(env_name, "figure") || sv_equals(env_name, "figure*") ||
+                   sv_equals(env_name, "table")  || sv_equals(env_name, "table*")) {
+            xml_close_para(p->gen);
+            xml_emit_vspace(p->gen, measure_make(2.5, UNIT_MM, 1.0), false, false);
+            p->gen->active_float_kind[0] = '\0';
+        } else if (sv_equals(env_name, "center") || sv_equals(env_name, "flushleft") ||
+                   sv_equals(env_name, "flushright") || sv_equals(env_name, "quote") ||
+                   sv_equals(env_name, "quotation") || sv_equals(env_name, "verse") ||
+                   sv_equals(env_name, "abstract") || sv_equals(env_name, "letter") ||
+                   sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
+                   sv_equals(env_name, "description") || sv_equals(env_name, "list") ||
+                   sv_equals(env_name, "minipage")) {
             xml_close_para(p->gen);
         } else if (sv_equals(env_name, "titlepage")) {
             xml_close_para(p->gen);
@@ -2232,6 +2662,19 @@ static void emit_section_heading(Parser *p, int level, const char *counter_name,
         }
     }
 
+    if (level <= 1 && !starred) {
+        char plain_title[128];
+        eval_tex_to_plain(p, title, plain_title, sizeof(plain_title));
+        if (level <= 0) {
+            snprintf(p->gen->left_mark, sizeof(p->gen->left_mark), "%s%s", num_prefix, plain_title);
+        } else {
+            snprintf(p->gen->right_mark, sizeof(p->gen->right_mark), "%s%s", num_prefix, plain_title);
+            if (p->gen->left_mark[0] == '\0') {
+                snprintf(p->gen->left_mark, sizeof(p->gen->left_mark), "%s%s", num_prefix, plain_title);
+            }
+        }
+    }
+
     StrBuf hbuf;
     if (!sb_init(&hbuf, 256)) return;
 
@@ -2497,7 +2940,11 @@ static bool sv_contains_cstr(StrView sv, const char *needle) {
 
 static void builtin_linebreak_cmd(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
     Measure extra = (opt_c > 0) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
-    xml_emit_line_break(p->gen, extra);
+    if (p->gen->in_tabular) {
+        xml_table_end_row(p->gen, extra);
+    } else {
+        xml_emit_line_break(p->gen, extra);
+    }
     p->cmd_space_before = false;
 }
 
@@ -2760,12 +3207,14 @@ static void builtin_em(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]
 }
 
 static void parse_inline_scoped(Parser *p, StrView fragment, CharState modified_state) {
-    xml_ensure_para_open(p->gen);
+    if (!p->gen->capture_plain_buf) {
+        xml_ensure_para_open(p->gen);
 
-    if (p->cmd_space_before && p->gen->para_has_content) {
-        xml_activate_current_char_style(p->gen);
-        sb_append_cstr(&p->gen->story, " ");
-        p->cmd_space_before = false;
+        if (p->cmd_space_before && p->gen->para_has_content) {
+            xml_activate_current_char_style(p->gen);
+            sb_append_cstr(&p->gen->story, " ");
+            p->cmd_space_before = false;
+        }
     }
 
     CharState saved_state = p->gen->char_state;
@@ -2881,6 +3330,364 @@ static void builtin_oldstylenums(Parser *p, [[maybe_unused]] bool starred, [[may
     parse_inline_scoped(p, args[0], p->gen->char_state);
 }
 
+// --- Fase 4: Cajas, Tablas, Flotantes, Notas al Pie y Estilos de Página ---
+
+static void builtin_mbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    Measure zero = measure_make(0.0, UNIT_MM, 1.0);
+    xml_emit_box(p->gen, zero, 'c', zero, zero, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_makebox(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    Measure w = (opt_c >= 1) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+    char align = 'c';
+    if (opt_c >= 2) {
+        StrView al = sv_trim(opt[1]);
+        if (al.len > 0 && (al.data[0] == 'l' || al.data[0] == 'r' || al.data[0] == 'c' || al.data[0] == 's')) {
+            align = al.data[0];
+        }
+    }
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    Measure zero = measure_make(0.0, UNIT_MM, 1.0);
+    xml_emit_box(p->gen, w, align, zero, zero, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_fbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    LengthDef *r_def = length_find_mut(p->env, (StrView){"fboxrule", 8});
+    LengthDef *s_def = length_find_mut(p->env, (StrView){"fboxsep", 7});
+    Measure border = r_def ? r_def->value : measure_make(0.4, UNIT_PT, 1.0);
+    Measure pad    = s_def ? s_def->value : measure_make(3.0, UNIT_PT, 1.0);
+    Measure zero   = measure_make(0.0, UNIT_MM, 1.0);
+
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    xml_emit_box(p->gen, zero, 'c', border, pad, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_framebox(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    LengthDef *r_def = length_find_mut(p->env, (StrView){"fboxrule", 8});
+    LengthDef *s_def = length_find_mut(p->env, (StrView){"fboxsep", 7});
+    Measure border = r_def ? r_def->value : measure_make(0.4, UNIT_PT, 1.0);
+    Measure pad    = s_def ? s_def->value : measure_make(3.0, UNIT_PT, 1.0);
+    Measure w      = (opt_c >= 1) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+    char align     = 'c';
+    if (opt_c >= 2) {
+        StrView al = sv_trim(opt[1]);
+        if (al.len > 0 && (al.data[0] == 'l' || al.data[0] == 'r' || al.data[0] == 'c' || al.data[0] == 's')) {
+            align = al.data[0];
+        }
+    }
+    Measure zero = measure_make(0.0, UNIT_MM, 1.0);
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    xml_emit_box(p->gen, w, align, border, pad, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_raisebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView lift_sv = {0}, text_sv = {0}, dummy_opt = {0};
+    if (!parse_arg(p, &lift_sv)) return;
+    while (parse_opt_arg(p, &dummy_opt)) {}
+    if (!parse_arg(p, &text_sv)) return;
+
+    Measure raise = measure_parse(p, lift_sv, UNIT_MM);
+    Measure zero  = measure_make(0.0, UNIT_MM, 1.0);
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, text_sv, plain, sizeof(plain), &box_cs);
+    xml_emit_box(p->gen, zero, 'c', zero, zero, raise, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_parbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    Measure w    = measure_parse(p, args[0], UNIT_MM);
+    Measure zero = measure_make(0.0, UNIT_MM, 1.0);
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[1], plain, sizeof(plain), &box_cs);
+    xml_emit_box(p->gen, w, 'l', zero, zero, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_newsavebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    savebox_register(p->env, name);
+}
+
+static void builtin_sbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, body = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &body)) return;
+
+    SaveBoxDef *sb = savebox_register(p->env, name);
+    if (!sb) return;
+    free(sb->content);
+    StrBuf b;
+    if (sb_init(&b, body.len + 16)) {
+        sb_appendf(&b, "\\mbox{%.*s}", (int)body.len, body.data);
+        sb->content = b.data;
+    }
+}
+
+static void builtin_savebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, opt1 = {0}, opt2 = {0}, body = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    bool has_o1 = parse_opt_arg(p, &opt1);
+    bool has_o2 = has_o1 ? parse_opt_arg(p, &opt2) : false;
+    if (!parse_arg(p, &body)) return;
+
+    SaveBoxDef *sb = savebox_register(p->env, name);
+    if (!sb) return;
+    free(sb->content);
+    StrBuf b;
+    if (sb_init(&b, body.len + 64)) {
+        if (has_o1 && has_o2) {
+            sb_appendf(&b, "\\makebox[%.*s][%.*s]{%.*s}",
+                       (int)opt1.len, opt1.data, (int)opt2.len, opt2.data, (int)body.len, body.data);
+        } else if (has_o1) {
+            sb_appendf(&b, "\\makebox[%.*s]{%.*s}",
+                       (int)opt1.len, opt1.data, (int)body.len, body.data);
+        } else {
+            sb_appendf(&b, "\\mbox{%.*s}", (int)body.len, body.data);
+        }
+        sb->content = b.data;
+    }
+}
+
+static void builtin_usebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    SaveBoxDef *sb = savebox_find_mut(p->env, name);
+    if (sb && sb->content) {
+        execute_tex_fragment(p, (StrView){ sb->content, strlen(sb->content) }, p->cmd_space_before);
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_hline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->cmd_space_before = false;
+    if (!p->gen->in_tabular) return;
+    if (p->gen->tab_row_open && (p->gen->para_has_content || p->gen->tab_cur_col > 0)) {
+        xml_table_end_row(p->gen, measure_make(0.0, UNIT_MM, 1.0));
+    }
+    sb_append_cstr(&p->gen->story, "        <hline/>\n");
+}
+
+static void builtin_cline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    p->cmd_space_before = false;
+    if (!p->gen->in_tabular) return;
+    StrView r = sv_trim(args[0]);
+    const char *dash = memchr(r.data, '-', r.len);
+    int c_from = 1, c_to = 1;
+    if (dash) {
+        c_from = (int)sv_to_long(p, (StrView){ r.data, (size_t)(dash - r.data) });
+        c_to   = (int)sv_to_long(p, (StrView){ dash + 1, (size_t)((r.data + r.len) - (dash + 1)) });
+    } else {
+        c_from = c_to = (int)sv_to_long(p, r);
+    }
+    if (c_from < 1) c_from = 1;
+    if (c_to < c_from) c_to = c_from;
+    sb_appendf(&p->gen->story, "        <cline from=\"%d\" to=\"%d\"/>\n", c_from, c_to);
+}
+
+static void builtin_multicolumn(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    long span_val = sv_to_long(p, args[0]);
+    size_t span   = (span_val >= 1) ? (size_t)span_val : 1;
+    StrView spec  = sv_trim(args[1]);
+    int bl = 0, br = 0;
+    char align = 'c';
+    bool seen_col = false;
+    for (size_t i = 0; i < spec.len; i++) {
+        char c = spec.data[i];
+        if (c == '|') {
+            if (!seen_col) bl++;
+            else br++;
+        } else if (c == 'l' || c == 'c' || c == 'r') {
+            align    = c;
+            seen_col = true;
+        }
+    }
+    if (p->gen->in_tabular) {
+        p->gen->tab_has_mc_override = true;
+        p->gen->tab_mc_span         = span;
+        p->gen->tab_mc_align        = align;
+        p->gen->tab_mc_bl           = bl;
+        p->gen->tab_mc_br           = br;
+        xml_ensure_para_open(p->gen);
+    }
+    execute_tex_fragment(p, args[2], false);
+    p->cmd_space_before = false;
+}
+
+static void builtin_vline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_rule(p->gen, measure_make(0.4, UNIT_PT, 1.0), measure_make(3.8, UNIT_MM, 1.0), measure_make(-0.8, UNIT_MM, 1.0), p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_caption(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    xml_close_para(p->gen);
+    bool is_tbl = (strcmp(p->gen->active_float_kind, "table") == 0);
+    const char *cname = is_tbl ? "table" : "figure";
+    const char *mname = is_tbl ? "\\tablename" : "\\figurename";
+
+    StrBuf cbuf;
+    if (!sb_init(&cbuf, args[0].len + 128)) return;
+    if (starred) {
+        sb_appendf(&cbuf, "\\par{\\centering\\small %.*s\\par}", (int)args[0].len, args[0].data);
+    } else {
+        counter_step(p->env, (StrView){ cname, strlen(cname) });
+        format_the_counter(p->env, p->gen, (StrView){ cname, strlen(cname) }, p->env->current_ref, sizeof(p->env->current_ref));
+        sb_appendf(&cbuf, "\\par{\\centering\\small\\textbf{%s~\\the%s:} %.*s\\par}",
+                   mname, cname, (int)args[0].len, args[0].data);
+    }
+    execute_tex_fragment(p, (StrView){ cbuf.data, cbuf.len }, false);
+    sb_free(&cbuf);
+    p->cmd_space_before = false;
+}
+
+static void emit_footnote_body(Parser *p, const char *lbl, StrView body_tex) {
+    char plain[512];
+    eval_tex_to_plain(p, body_tex, plain, sizeof(plain));
+
+    CharState fn_cs = p->gen->char_state;
+    snprintf(fn_cs.font_family, sizeof(fn_cs.font_family), "%s", DEFAULT_FONT_FAMILY);
+    fn_cs.weight     = WEIGHT_NORMAL;
+    fn_cs.slant      = SLANT_NORMAL;
+    fn_cs.size       = measure_make(8.5, UNIT_PT, 1.0);
+    fn_cs.underline  = false;
+    fn_cs.small_caps = false;
+    fn_cs.shift      = SHIFT_NORMAL;
+    snprintf(fn_cs.color, sizeof(fn_cs.color), "Black");
+    size_t cs_id = xml_intern_char_style(p->gen, &fn_cs);
+
+    StrBuf *dest = p->gen->para_open ? &p->gen->pending_footnotes : &p->gen->story;
+    sb_appendf(dest, "      <footnote label=\"");
+    sb_append_escaped_xml(dest, lbl, strlen(lbl));
+    sb_appendf(dest, "\" style=\"cs%zu\">", cs_id + 1);
+    sb_append_escaped_xml(dest, plain, strlen(plain));
+    sb_append_cstr(dest, "</footnote>\n");
+}
+
+static void builtin_footnote(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    char lbl[32];
+    if (opt_c > 0) {
+        snprintf(lbl, sizeof(lbl), "%.*s", (int)opt[0].len, opt[0].data);
+    } else {
+        counter_step(p->env, (StrView){"footnote", 8});
+        format_the_counter(p->env, p->gen, (StrView){"footnote", 8}, lbl, sizeof(lbl));
+    }
+
+    CharState saved = p->gen->char_state;
+    p->gen->char_state.shift = SHIFT_SUPER;
+    xml_emit_text(p->gen, (StrView){ lbl, strlen(lbl) }, false);
+    p->gen->char_state = saved;
+
+    emit_footnote_body(p, lbl, args[0]);
+    p->cmd_space_before = false;
+}
+
+static void builtin_footnotemark(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
+    char lbl[32];
+    if (opt_c > 0) {
+        snprintf(lbl, sizeof(lbl), "%.*s", (int)opt[0].len, opt[0].data);
+    } else {
+        counter_step(p->env, (StrView){"footnote", 8});
+        format_the_counter(p->env, p->gen, (StrView){"footnote", 8}, lbl, sizeof(lbl));
+    }
+    CharState saved = p->gen->char_state;
+    p->gen->char_state.shift = SHIFT_SUPER;
+    xml_emit_text(p->gen, (StrView){ lbl, strlen(lbl) }, false);
+    p->gen->char_state = saved;
+    p->cmd_space_before = false;
+}
+
+static void builtin_footnotetext(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    char lbl[32];
+    if (opt_c > 0) {
+        snprintf(lbl, sizeof(lbl), "%.*s", (int)opt[0].len, opt[0].data);
+    } else {
+        format_the_counter(p->env, p->gen, (StrView){"footnote", 8}, lbl, sizeof(lbl));
+    }
+    emit_footnote_body(p, lbl, args[0]);
+    p->cmd_space_before = false;
+}
+
+static void builtin_marginpar(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    char plain[256];
+    eval_tex_to_plain(p, args[0], plain, sizeof(plain));
+
+    CharState mp_cs = p->gen->char_state;
+    snprintf(mp_cs.font_family, sizeof(mp_cs.font_family), "%s", DEFAULT_SANS_FAMILY);
+    mp_cs.weight     = WEIGHT_NORMAL;
+    mp_cs.slant      = SLANT_ITALIC;
+    mp_cs.size       = measure_make(8.0, UNIT_PT, 1.0);
+    mp_cs.underline  = false;
+    mp_cs.small_caps = false;
+    mp_cs.shift      = SHIFT_NORMAL;
+    snprintf(mp_cs.color, sizeof(mp_cs.color), "DarkSlateGray");
+    size_t cs_id = xml_intern_char_style(p->gen, &mp_cs);
+
+    StrBuf *dest = p->gen->para_open ? &p->gen->pending_footnotes : &p->gen->story;
+    sb_appendf(dest, "      <marginpar style=\"cs%zu\">", cs_id + 1);
+    sb_append_escaped_xml(dest, plain, strlen(plain));
+    sb_append_cstr(dest, "</marginpar>\n");
+    p->cmd_space_before = false;
+}
+
+static void emit_page_style_update(XmlGenerator *gen) {
+    if (gen->capture_plain_buf) return;
+    StrBuf *dest = gen->para_open ? &gen->pending_footnotes : &gen->story;
+    sb_append_cstr(dest, "      <page-style mode=\"");
+    sb_append_escaped_xml(dest, gen->page_style[0] ? gen->page_style : "plain", strlen(gen->page_style[0] ? gen->page_style : "plain"));
+    sb_append_cstr(dest, "\" numbering=\"");
+    sb_append_escaped_xml(dest, gen->page_numbering[0] ? gen->page_numbering : "arabic", strlen(gen->page_numbering[0] ? gen->page_numbering : "arabic"));
+    sb_append_cstr(dest, "\" left-mark=\"");
+    sb_append_escaped_xml(dest, gen->left_mark, strlen(gen->left_mark));
+    sb_append_cstr(dest, "\" right-mark=\"");
+    sb_append_escaped_xml(dest, gen->right_mark, strlen(gen->right_mark));
+    sb_append_cstr(dest, "\"/>\n");
+}
+
+static void builtin_pagestyle(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrView st = sv_trim(args[0]);
+    snprintf(p->gen->page_style, sizeof(p->gen->page_style), "%.*s", (int)st.len, st.data);
+    emit_page_style_update(p->gen);
+}
+
+static void builtin_thispagestyle(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrView st = sv_trim(args[0]);
+    snprintf(p->gen->this_page_style, sizeof(p->gen->this_page_style), "%.*s", (int)st.len, st.data);
+}
+
+static void builtin_pagenumbering(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrView num = sv_trim(args[0]);
+    snprintf(p->gen->page_numbering, sizeof(p->gen->page_numbering), "%.*s", (int)num.len, num.data);
+    CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+    if (pc) pc->value = 1;
+    emit_page_style_update(p->gen);
+}
+
+static void builtin_markboth(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    eval_tex_to_plain(p, args[0], p->gen->left_mark, sizeof(p->gen->left_mark));
+    eval_tex_to_plain(p, args[1], p->gen->right_mark, sizeof(p->gen->right_mark));
+    emit_page_style_update(p->gen);
+}
+
+static void builtin_markright(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    eval_tex_to_plain(p, args[0], p->gen->right_mark, sizeof(p->gen->right_mark));
+    emit_page_style_update(p->gen);
+}
+
 // ============================================================================
 // 10. Tabla de Comandos Nativos (Builtins)
 // ============================================================================
@@ -2924,9 +3731,36 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "settoheight",      0, 0, false, builtin_settoheight },
     { "settodepth",       0, 0, false, builtin_settodepth },
 
-    // Inserciones especiales dinámicas
+    // Inserciones especiales dinámicas, cajas, tablas, flotantes, notas y estilo de página
     { "today",            0, 0, false, builtin_today },
     { "rule",             1, 2, false, builtin_rule },
+    { "mbox",             0, 1, false, builtin_mbox },
+    { "makebox",          2, 1, false, builtin_makebox },
+    { "fbox",             0, 1, false, builtin_fbox },
+    { "framebox",         2, 1, false, builtin_framebox },
+    { "parbox",           3, 2, false, builtin_parbox },
+    { "raisebox",         0, 0, false, builtin_raisebox },
+    { "newsavebox",       0, 0, false, builtin_newsavebox },
+    { "sbox",             0, 0, false, builtin_sbox },
+    { "savebox",          0, 0, false, builtin_savebox },
+    { "usebox",           0, 0, false, builtin_usebox },
+    { "hline",            0, 0, false, builtin_hline },
+    { "cline",            0, 1, false, builtin_cline },
+    { "multicolumn",      0, 3, false, builtin_multicolumn },
+    { "vline",            0, 0, false, builtin_vline },
+    { "extracolsep",      0, 1, false, builtin_noop },
+    { "tabularnewline",   1, 0, true,  builtin_linebreak_cmd },
+    { "caption",          1, 1, true,  builtin_caption },
+    { "suppressfloats",   1, 0, false, builtin_noop },
+    { "footnote",         1, 1, false, builtin_footnote },
+    { "footnotemark",     1, 0, false, builtin_footnotemark },
+    { "footnotetext",     1, 1, false, builtin_footnotetext },
+    { "marginpar",        1, 1, false, builtin_marginpar },
+    { "pagestyle",        0, 1, false, builtin_pagestyle },
+    { "thispagestyle",    0, 1, false, builtin_thispagestyle },
+    { "pagenumbering",    0, 1, false, builtin_pagenumbering },
+    { "markboth",         0, 2, false, builtin_markboth },
+    { "markright",        0, 1, false, builtin_markright },
 
     // Clases de documento, paquetes y archivos
     { "begin",            0, 1, false, builtin_begin },
@@ -3255,6 +4089,14 @@ static void parse_and_execute(Parser *p) {
 
         if (p->current.type == TOKEN_RBRACE) {
             xml_pop_group(p->gen);
+            parser_advance(p);
+            continue;
+        }
+
+        if (p->current.type == TOKEN_AMP) {
+            if (p->gen->in_tabular) {
+                xml_table_next_cell(p->gen);
+            }
             parser_advance(p);
             continue;
         }

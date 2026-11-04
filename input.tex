@@ -28,6 +28,12 @@
 \providecommand{\versionmotor}{0.2}
 \def\etiquetarevision#1{[Rev.~#1]}
 
+\pagestyle{headings}
+\markboth{Manual de \LaTeXe{} en Teksto}{Arquitectura \TeX{} -> .tks -> .svg}
+
+\newsavebox{\cajasello}
+\sbox{\cajasello}{\fbox{\textbf{VALIDADO}}}
+
 \newenvironment{aviso}[1][Aviso T\'ecnico]{%
   \par\raggedright\parmargins{8mm}{8mm}\parspacing{2mm}{2mm}%
   \sffamily\fontsize{10pt}\fontcolor{DarkSlateGray}\textbf{#1 --- }\itshape%
@@ -54,10 +60,6 @@ entornos literales (\codigo{verbatim}) y primitivas de espaciado el\'astico hori
 
 % Inclusión del capítulo externo capitulo1.tex
 \input{capitulo1}
-
-% Salto a la segunda página y activación del modo a dos columnas
-\newpage
-\twocolumn
 
 \section{Listas Anidadas, Texto Literal y Espaciado}
 
@@ -129,6 +131,26 @@ Este p\'arrafo modifica localmente \codigo{\textbackslash parindent} sumando uni
 \section*{Secci\'on sin Numerar (\textbackslash section*)}
 
 La variante con estrella \codigo{\textbackslash section*} aplica el estilo tipogr\'afico de secci\'on sin incrementar ni imprimir el contador.
+
+\section{Cajas LR, Tablas y Elementos Flotantes}
+
+Ejemplos de cajas horizontales: \mbox{ irrompible }, \fbox{con borde}, \framebox[24mm][c]{\textbf{centrada}}, desplazamiento vertical con \raisebox{1.2mm}{\small arriba} y \raisebox{-1.0mm}{\small abajo}, y caja prealmacenada: \usebox{\cajasello}.
+
+\begin{table}[htb]
+\begin{center}
+\begin{tabular}{||l|c|r||}
+\hline\hline
+\multicolumn{3}{||c||}{\textbf{Resumen del Pipeline de Teksto}} \\
+\hline
+\textbf{Etapa} & \textbf{Formato} & \textbf{Salida} \\
+\cline{2-3}
+Frontend \TeX{} & \codigo{.tex} & \codigo{input.tks} \\
+Motor Gr\'afico & \codigo{.tks} & \codigo{input.svg} \\
+\hline\hline
+\end{tabular}
+\end{center}
+\caption{Tabla con bordes dobles, \textbackslash multicolumn y \textbackslash cline.}
+\end{table}
 
 \appendix
 \section{Especificaci\'on del Fichero Intermedio \codigo{.tks}}

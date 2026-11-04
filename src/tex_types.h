@@ -28,6 +28,8 @@ constexpr size_t MAX_CHAR_STYLES = 1024;
 
 constexpr size_t MAX_COUNTERS = 128;
 constexpr size_t MAX_LENGTHS = 128;
+constexpr size_t MAX_SAVEBOXES = 64;
+constexpr size_t MAX_TAB_COLS = 32;
 
 constexpr double MM_PER_CM = 10.0;
 constexpr double MM_PER_M = 1000.0;
@@ -153,6 +155,7 @@ typedef enum {
   TOKEN_COMMAND,
   TOKEN_LBRACE,
   TOKEN_RBRACE,
+  TOKEN_AMP,
   TOKEN_TEXT,
   TOKEN_PAR
 } TokenType;
@@ -205,6 +208,18 @@ typedef struct {
 } LengthDef;
 
 typedef struct {
+  char name[48];
+  char *content;
+} SaveBoxDef;
+
+typedef struct {
+  char align;       // 'l', 'c', 'r', 'p'
+  int border_left;  // 0, 1, 2
+  int border_right; // 0, 1, 2
+  double width_mm;  // >0 para p{width}
+} TabColSpec;
+
+typedef struct {
   UserMacro items[MAX_MACROS];
   size_t count;
 
@@ -216,6 +231,9 @@ typedef struct {
 
   LengthDef lengths[MAX_LENGTHS];
   size_t length_count;
+
+  SaveBoxDef saveboxes[MAX_SAVEBOXES];
+  size_t savebox_count;
 
   bool allow_at;
   char current_ref[64];
@@ -311,6 +329,30 @@ typedef struct {
   char pending_item_label[128];
   bool has_pending_item_label;
 
+  // Estado de tablas (tabular / tabular*)
+  bool in_tabular;
+  TabColSpec tab_cols[MAX_TAB_COLS];
+  size_t tab_col_count;
+  size_t tab_cur_col;
+  bool tab_row_open;
+  bool tab_cell_open;
+  size_t tab_cur_span;
+  CharState tab_base_char_state;
+  bool tab_has_mc_override;
+  size_t tab_mc_span;
+  char tab_mc_align;
+  int tab_mc_bl;
+  int tab_mc_br;
+
+  // Estado de flotantes, notas al pie y estilo de página
+  char active_float_kind[16];
+  StrBuf pending_footnotes;
+  char page_style[32];
+  char this_page_style[32];
+  char page_numbering[16];
+  char left_mark[128];
+  char right_mark[128];
+
   // Registros deduplicados para el bloque <definitions>
   FontFamilyDef fonts[MAX_FONT_FAMS];
   size_t font_count;
@@ -324,6 +366,8 @@ typedef struct {
   // Control de emisión del flujo <body>
   StrBuf story;
   StrBuf *capture_plain_buf;
+  CharState captured_char_state;
+  bool has_captured_char_state;
   bool para_open;
   bool para_has_content;
   int active_char_style_id; // -1 si no hay <span> abierto

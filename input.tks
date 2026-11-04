@@ -3,6 +3,7 @@
   <definitions>
     <page-defaults width="210mm" height="297mm" orientation="portrait">
       <margins top="2.2cm" bottom="2.2cm" left="20mm" right="20mm"/>
+      <page-style mode="headings" numbering="arabic" left-mark="Manual de LaTeX2ε en Teksto" right-mark="A. Especificación del Fichero Intermedio.tks"/>
     </page-defaults>
     <fonts>
       <font-family id="f1" name="Liberation Serif">
@@ -68,20 +69,22 @@
       <char-style id="cs25" font-ref="f1-regular" size="17.28pt" color="Black" underline="false"/>
       <char-style id="cs26" font-ref="f1-regular" size="20.74pt" color="Black" underline="false"/>
       <char-style id="cs27" font-ref="f3-bold" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs28" font-ref="f3-bold" size="10pt" color="DarkSlateGray" underline="false"/>
-      <char-style id="cs29" font-ref="f3-italic" size="10pt" color="DarkSlateGray" underline="false"/>
-      <char-style id="cs30" font-ref="f2-italic" size="9.5pt" color="Teal" underline="false"/>
-      <char-style id="cs31" font-ref="f1-bold" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs32" font-ref="f2-regular" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs33" font-ref="f2-bold" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs28" font-ref="f1-regular" size="11pt" color="Black" underline="false" shift="super"/>
+      <char-style id="cs29" font-ref="f1-regular" size="8.5pt" color="Black" underline="false"/>
+      <char-style id="cs30" font-ref="f3-italic" size="8pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs31" font-ref="f3-bold" size="10pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs32" font-ref="f3-italic" size="10pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs33" font-ref="f2-italic" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs34" font-ref="f1-bold" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs35" font-ref="f2-regular" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs36" font-ref="f2-bold" size="9.5pt" color="Teal" underline="false"/>
     </styles>
   </definitions>
-  <layout total-pages="2">
-    <frame id="fr1" page="2" x="20mm" y="2.2cm" width="82mm" height="253mm"/>
-    <frame id="fr2" page="2" x="108mm" y="2.2cm" width="82mm" height="253mm"/>
-  </layout>
+  <layout total-pages="1"/>
   <body>
     <story id="main">
+      <page-style mode="headings" numbering="arabic" left-mark="" right-mark=""/>
+      <page-style mode="headings" numbering="arabic" left-mark="Manual de LaTeX2ε en Teksto" right-mark="Arquitectura TeX -&gt; .tks -&gt; .svg"/>
       <p style="ps1"><span style="cs1">Demostración Integral de LaTeX2ε en Teksto [Rev. 0.2]</span></p>
       <p style="ps2"><span style="cs2">Equipo de Desarrollo de Teksto    •   Laboratorio de Tipografía Digital</span></p>
       <p style="ps3"><span style="cs3">4 de noviembre de 2026</span></p>
@@ -102,11 +105,12 @@
       <p style="ps11"><span style="cs11">Primitivas NFSS:</span><span style="cs12"> </span><span style="cs21"> Fuente activada con \usefont{OT1}{cmss}{bx}{it}</span></p>
       <p style="ps11"><span style="cs11">Escala estándar:</span><span style="cs12"> </span><span style="cs22">tiny</span><span style="cs12"> </span><span style="cs23">scriptsize</span><span style="cs12"> </span><span style="cs4">footnotesize</span><span style="cs12"> </span><span style="cs6">small</span><span style="cs12"> </span><span style="cs3">normalsize</span><span style="cs12"> </span><span style="cs2">large</span><span style="cs12"> </span><span style="cs24">Large</span><span style="cs12"> </span><span style="cs25">LARGE</span><span style="cs12"> </span><span style="cs26">huge</span></p>
       <p style="ps12"><span style="cs27">1.2.1 Subsección de Tercer Nivel y Títulos en Línea</span></p>
-      <p style="ps8"><span style="cs27">Párrafo con título (\paragraph)</span><span style="cs3"> El comando </span><span style="cs7">\paragraph</span><span style="cs3"> compone su título en negrita en la misma línea de inicio del párrafo, seguido de un espacio horizontal </span><span style="cs7">\quad</span><span style="cs3">.</span></p>
-      <p style="ps13"><span style="cs28">Nota de Arquitectura —</span><span style="cs29"> El fichero intermedio generado por la primera etapa lleva ahora la extensión </span><span style="cs30">.tks</span><span style="cs29"> (formato estructurado XML de Teksto), a partir del cual </span><span style="cs30">xml2svg</span><span style="cs29"> produce el documento interactivo </span><span style="cs30">.svg</span><span style="cs29">.</span></p>
-      <break type="page"/>
+      <p style="ps8"><span style="cs27">Párrafo con título (\paragraph)</span><span style="cs3"> El comando </span><span style="cs7">\paragraph</span><span style="cs3"> compone su título en negrita en la misma línea de inicio del párrafo, seguido de un espacio horizontal </span><span style="cs7">\quad</span><span style="cs28">1</span><span style="cs3">.</span></p>
+      <footnote label="1" style="cs29">Las notas al pie (\footnote) se numeran automáticamente, reservan espacio en el borde inferior del marco activo y se separan mediante una fileta horizontal.</footnote>
+      <marginpar style="cs30">Nota al margen con \marginpar</marginpar>
+      <p style="ps13"><span style="cs31">Nota de Arquitectura —</span><span style="cs32"> El fichero intermedio generado por la primera etapa lleva ahora la extensión </span><span style="cs33">.tks</span><span style="cs32"> (formato estructurado XML de Teksto), a partir del cual </span><span style="cs33">xml2svg</span><span style="cs32"> produce el documento interactivo </span><span style="cs33">.svg</span><span style="cs32">.</span></p>
       <p style="ps7"><span style="cs9">2. Listas Anidadas, Texto Literal y Espaciado</span></p>
-      <p style="ps8"><span style="cs3">En esta segunda página (página actual: 2), maquetada a dos columnas mediante </span><span style="cs7">\twocolumn</span><span style="cs3">, se verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</span></p>
+      <p style="ps8"><span style="cs3">En esta segunda página (página actual: 1), maquetada a dos columnas mediante </span><span style="cs7">\twocolumn</span><span style="cs3">, se verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</span></p>
       <p style="ps9"><span style="cs10">2.1 Entornos de Listas</span></p>
       <p style="ps14" label="1." label-style="cs3"><span style="cs3">Primer elemento numerado del nivel principal (</span><span style="cs7">enumi</span><span style="cs3">).</span></p>
       <p style="ps14" label="2." label-style="cs3"><span style="cs3">Segundo elemento con sublista anidada:</span></p>
@@ -115,12 +119,12 @@
       <p style="ps16" label="•" label-style="cs3"><span style="cs3">Viñeta estándar definida por </span><span style="cs7">\labelitemi</span><span style="cs3">.</span></p>
       <p style="ps16" label="‡" label-style="cs3"><span style="cs3">Viñeta personalizada con argumento opcional </span><span style="cs7">\item[\ddag]</span><span style="cs3">.</span></p>
       <p style="ps14" label="3." label-style="cs3"><span style="cs3">Tercer elemento del nivel principal.</span></p>
-      <p style="ps17"><span style="cs31">Entrada (.tex):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Código fuente en sintaxis estándar LaTeX2ε.</span></p>
-      <p style="ps17"><span style="cs31">Intermedio (.tks):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Representación estructurada XML de estilos, marcos y flujo.</span></p>
-      <p style="ps17"><span style="cs31">Salida (.svg):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Documento vectorial multipágina interactivo.</span></p>
+      <p style="ps17"><span style="cs34">Entrada (.tex):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Código fuente en sintaxis estándar LaTeX2ε.</span></p>
+      <p style="ps17"><span style="cs34">Intermedio (.tks):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Representación estructurada XML de estilos, marcos y flujo.</span></p>
+      <p style="ps17"><span style="cs34">Salida (.svg):</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Documento vectorial multipágina interactivo.</span></p>
       <p style="ps9"><span style="cs10">2.2 Modo Literal (\verb y verbatim)</span></p>
-      <p style="ps8"><span style="cs3">El comando en línea </span><span style="cs32">\newcommand{\cmd}[2][def]{#1-#2}</span><span style="cs3"> conserva intactos los caracteres especiales, mientras que </span><span style="cs32">\verb*␣muestra␣espacios</span><span style="cs3"> visibiliza cada espacio con </span><span style="cs32">␣</span><span style="cs3">.</span></p>
-      <p style="ps18"><span style="cs32">% Bloque literal verbatim:</span><br/><span style="cs32">\def\identidad#1{#1}</span><br/><span style="cs32">  Sangría y   espacios   preservados.</span></p>
+      <p style="ps8"><span style="cs3">El comando en línea </span><span style="cs35">\newcommand{\cmd}[2][def]{#1-#2}</span><span style="cs3"> conserva intactos los caracteres especiales, mientras que </span><span style="cs35">\verb*␣muestra␣espacios</span><span style="cs3"> visibiliza cada espacio con </span><span style="cs35">␣</span><span style="cs3">.</span></p>
+      <p style="ps18"><span style="cs35">% Bloque literal verbatim:</span><br/><span style="cs35">\def\identidad#1{#1}</span><br/><span style="cs35">  Sangría y   espacios   preservados.</span></p>
       <p style="ps9"><span style="cs10">2.3 Saltos, Rellenos Elásticos y Reglas</span></p>
       <p style="ps8"><span style="cs3">Salto de línea manual con </span><span style="cs7">\\</span><span style="cs3">:</span><br/><span style="cs3"> Segunda línea sin justificación forzada.</span><br extra="2.5mm"/><span style="cs3"> Tercera línea tras un espacio adicional de </span><span style="cs7">2.5mm</span><span style="cs3">.</span></p>
       <vspace height="6pt"/>
@@ -132,7 +136,38 @@
       <p style="ps8"><span style="cs3">Este párrafo modifica localmente </span><span style="cs7">\parindent</span><span style="cs3"> sumando unidades relativas (</span><span style="cs7">1.2em</span><span style="cs3">) y absolutas (</span><span style="cs7">4pt</span><span style="cs3">). Al cerrarse el grupo de llaves, el valor original de </span><span style="cs7">\parindent</span><span style="cs3"> se restaura automáticamente.</span></p>
       <p style="ps7"><span style="cs9">Sección sin Numerar (\section*)</span></p>
       <p style="ps8"><span style="cs3">La variante con estrella </span><span style="cs7">\section*</span><span style="cs3"> aplica el estilo tipográfico de sección sin incrementar ni imprimir el contador.</span></p>
-      <p style="ps7"><span style="cs9">A. Especificación del Fichero Intermedio </span><span style="cs33">.tks</span></p>
+      <p style="ps7"><span style="cs9">4. Cajas LR, Tablas y Elementos Flotantes</span></p>
+      <p style="ps8"><span style="cs3">Ejemplos de cajas horizontales: </span><box width="0mm" align="c" border="0mm" pad="0mm" raise="0mm" style="cs3">irrompible</box><span style="cs3">, </span><box width="0mm" align="c" border="0.4pt" pad="3pt" raise="0mm" style="cs3">con borde</box><span style="cs3">, </span><box width="24mm" align="c" border="0.4pt" pad="3pt" raise="0mm" style="cs34">centrada</box><span style="cs3">, desplazamiento vertical con </span><box width="0mm" align="c" border="0mm" pad="0mm" raise="1.2mm" style="cs6">arriba</box><span style="cs3"> y </span><box width="0mm" align="c" border="0mm" pad="0mm" raise="-1mm" style="cs6">abajo</box><span style="cs3">, y caja prealmacenada: </span><box width="0mm" align="c" border="0mm" pad="0mm" raise="0mm" style="cs3">VALIDADO</box><span style="cs3">.</span></p>
+      <vspace height="2.5mm"/>
+      <table cols="3" align="center" tabcolsep="6pt" rulewidth="0.4pt">
+        <hline/>
+        <hline/>
+        <row>
+          <cell span="3" align="c" bl="2" br="2"><span style="cs34">Resumen del Pipeline de Teksto</span></cell>
+        </row>
+        <hline/>
+        <row>
+          <cell span="1" align="l" bl="2" br="1"><span style="cs34">Etapa</span></cell>
+          <cell span="1" align="c" bl="0" br="1"><span style="cs34">Formato</span></cell>
+          <cell span="1" align="r" bl="0" br="2"><span style="cs34">Salida</span></cell>
+        </row>
+        <cline from="2" to="3"/>
+        <row>
+          <cell span="1" align="l" bl="2" br="1"><span style="cs3">Frontend TeX</span></cell>
+          <cell span="1" align="c" bl="0" br="1"><span style="cs7">.tex</span></cell>
+          <cell span="1" align="r" bl="0" br="2"><span style="cs7">input.tks</span></cell>
+        </row>
+        <row>
+          <cell span="1" align="l" bl="2" br="1"><span style="cs3">Motor Gráfico</span></cell>
+          <cell span="1" align="c" bl="0" br="1"><span style="cs7">.tks</span></cell>
+          <cell span="1" align="r" bl="0" br="2"><span style="cs7">input.svg</span></cell>
+        </row>
+        <hline/>
+        <hline/>
+      </table>
+      <p style="ps5"><span style="cs5">Cuadro 1:</span><span style="cs6"> Tabla con bordes dobles, \multicolumn y \cline.</span></p>
+      <vspace height="2.5mm"/>
+      <p style="ps7"><span style="cs9">A. Especificación del Fichero Intermedio </span><span style="cs36">.tks</span></p>
       <p style="ps8"><span style="cs3">Tras ejecutar </span><span style="cs7">\appendix</span><span style="cs3">, las secciones principales se numeran alfabéticamente (A). El fichero </span><span style="cs7">input.tks</span><span style="cs3"> contiene la representación XML intermedia con las definiciones de página, familias tipográficas, estilos deduplicados (</span><span style="cs7">&lt;para-style&gt;</span><span style="cs3">, </span><span style="cs7">&lt;char-style&gt;</span><span style="cs3">) y primitivas de flujo (</span><span style="cs7">&lt;p&gt;</span><span style="cs3">, </span><span style="cs7">&lt;span&gt;</span><span style="cs3">, </span><span style="cs7">&lt;br/&gt;</span><span style="cs3">, </span><span style="cs7">&lt;hspace/&gt;</span><span style="cs3">, </span><span style="cs7">&lt;vspace/&gt;</span><span style="cs3">, </span><span style="cs7">&lt;rule/&gt;</span><span style="cs3">).</span></p>
     </story>
   </body>

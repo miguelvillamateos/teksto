@@ -140,6 +140,16 @@ static inline Token lexer_next_token(Lexer *l) {
                      .space_before = skipped_space};
     }
 
+    // Separador de alineación/columna TeX '&'
+    if (c == '&') {
+      lexer_advance(l);
+      return (Token){.type = TOKEN_AMP,
+                     .text = {start, 1},
+                     .line = line,
+                     .col = col,
+                     .space_before = skipped_space};
+    }
+
     // Carácter activo '~' (espacio irrompible en TeX)
     if (c == '~') {
       lexer_advance(l);
@@ -294,8 +304,8 @@ static inline Token lexer_next_token(Lexer *l) {
     while (l->cursor < l->len) {
       char next = lexer_peek(l);
       if (next == '\\' || next == '{' || next == '}' || next == '%' ||
-          next == '~' || next == '\n' || next == ' ' || next == '\t' ||
-          next == '\r') {
+          next == '&' || next == '~' || next == '\n' || next == ' ' ||
+          next == '\t' || next == '\r') {
         break;
       }
       if ((next == '-' && lexer_peek_ahead(l, 1) == '-') ||
