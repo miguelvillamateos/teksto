@@ -76,7 +76,8 @@ typedef enum : unsigned char {
     RUN_BOX,
     RUN_MFRAC,
     RUN_MSQRT,
-    RUN_MOVER
+    RUN_MOVER,
+    RUN_PAGE_REF
 } RunKind;
 
 typedef enum : unsigned char {
@@ -100,6 +101,9 @@ typedef struct {
     bool has_bar;
     bool has_paren;
     HFillKind fill;
+    char *href;       // destino del hiperenlace (nullptr si no es enlace)
+    char *anchor;     // identificadores de ancla (separados por ';') situados al inicio del run
+    char *ref_target; // destino de ancla para RUN_PAGE_REF
 } SpanRun;
 
 typedef struct {
@@ -235,6 +239,67 @@ typedef struct {
 // ============================================================================
 
 typedef struct {
+    char key[256];
+    int  page_num;
+} AnchorMapEntry;
+
+typedef struct {
+    AnchorMapEntry *entries;
+    size_t count;
+    size_t cap;
+} AnchorMap;
+
+static void anchor_map_init(AnchorMap *m) {
+    m->entries = nullptr;
+    m->count = 0;
+    m->cap = 0;
+}
+
+static void anchor_map_free(AnchorMap *m) {
+    free(m->entries);
+    m->entries = nullptr;
+    m->count = 0;
+    m->cap = 0;
+}
+
+static void anchor_map_set(AnchorMap *m, const char *key, int page_num) {
+    if (!m || !key || key[0] == '\0') return;
+    for (size_t i = 0; i < m->count; i++) {
+        if (strcmp(m->entries[i].key, key) == 0) {
+            m->entries[i].page_num = page_num;
+            return;
+        }
+    }
+    if (m->count >= m->cap) {
+        m->cap = (m->cap == 0) ? 64 : m->cap * 2;
+        m->entries = realloc(m->entries, m->cap * sizeof(AnchorMapEntry));
+    }
+    snprintf(m->entries[m->count].key, sizeof(m->entries[m->count].key), "%s", key);
+    m->entries[m->count].page_num = page_num;
+    m->count++;
+}
+
+static int anchor_map_get(const AnchorMap *m, const char *key) {
+    if (!m || !key || key[0] == '\0') return 1;
+    for (size_t i = 0; i < m->count; i++) {
+        if (strcmp(m->entries[i].key, key) == 0) return m->entries[i].page_num;
+    }
+    if (strncmp(key, "dest-", 5) == 0) {
+        const char *sub = key + 5;
+        for (size_t i = 0; i < m->count; i++) {
+            if (strcmp(m->entries[i].key, sub) == 0) return m->entries[i].page_num;
+        }
+    } else {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "dest-%s", key);
+        for (size_t i = 0; i < m->count; i++) {
+            if (strcmp(m->entries[i].key, buf) == 0) return m->entries[i].page_num;
+        }
+    }
+    return 1;
+}
+
+typedef struct {
     char *data;
     size_t len;
     size_t cap;
@@ -247,6 +312,7 @@ typedef struct {
     const StoryItem *footnotes[16];
     size_t footnote_count;
     StrBuf svg_content;
+    AnchorMap *anchor_map;
 } FlowFrame;
 
 typedef struct {
@@ -265,6 +331,8 @@ typedef struct {
     bool has_paren;
     HFillKind fill;
     bool space_after;
+    const char *href;   // prestado del SpanRun de origen
+    const char *anchor; // prestado del SpanRun de origen
 } WordToken;
 
 typedef struct {
@@ -275,6 +343,7 @@ typedef struct {
     size_t cur_frame;
     double cursor_y_mm;
     bool at_frame_top;
+    AnchorMap *anchor_map;
 } Typesetter;
 
 // ============================================================================
@@ -455,10 +524,18 @@ static void doc_push_item(IrDocument *doc, StoryItem item) {
     doc->items[doc->item_count++] = item;
 }
 
+// Estado del lector XML para hiperenlaces: href del <span> activo y anclas pendientes de asignar
+static char g_span_href[256];
+static char g_pending_anchor[512];
+
 static void para_push_special_run(StoryItem *para, SpanRun run) {
     if (para->run_count >= para->run_cap) {
         para->run_cap = (para->run_cap == 0) ? 8 : para->run_cap * 2;
         para->runs = realloc(para->runs, para->run_cap * sizeof(SpanRun));
+    }
+    if (g_pending_anchor[0] != '\0') {
+        run.anchor = dup_cstr(g_pending_anchor);
+        g_pending_anchor[0] = '\0';
     }
     para->runs[para->run_count++] = run;
 }
@@ -468,8 +545,27 @@ static void para_push_run(StoryItem *para, size_t style_idx, const char *text) {
     para_push_special_run(para, (SpanRun){
         .kind      = RUN_TEXT,
         .style_idx = style_idx,
-        .text      = dup_cstr(text)
+        .text      = dup_cstr(text),
+        .href      = (g_span_href[0] != '\0') ? dup_cstr(g_span_href) : nullptr
     });
+}
+
+static void queue_anchor(const char *id) {
+    if (!id || id[0] == '\0') return;
+    size_t cur = strlen(g_pending_anchor);
+    size_t len = strlen(id);
+    if (cur == 0 && len < sizeof(g_pending_anchor)) {
+        memcpy(g_pending_anchor, id, len + 1);
+    } else if (cur + 1 + len < sizeof(g_pending_anchor)) {
+        g_pending_anchor[cur] = ';';
+        memcpy(g_pending_anchor + cur + 1, id, len + 1);
+    }
+}
+
+// Al cerrar un párrafo/celda, las anclas sin texto posterior se fijan con un run de anchura nula
+static void flush_pending_anchor_run(StoryItem *para) {
+    if (g_pending_anchor[0] == '\0') return;
+    para_push_special_run(para, (SpanRun){ .kind = RUN_HSPACE, .w_mm = 0.0, .fill = FILL_NONE });
 }
 
 static void table_push_row(TableDef *tbl, TableRowItem row) {
@@ -609,7 +705,9 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
                 span_buf.len = 0;
                 span_buf.data[0] = '\0';
                 in_span = false;
+                g_span_href[0] = '\0';
             } else if (strcmp(tag, "cell") == 0 && in_cell) {
+                flush_pending_anchor_run(&current_para);
                 current_cell.runs      = current_para.runs;
                 current_cell.run_count = current_para.run_count;
                 current_cell.run_cap   = current_para.run_cap;
@@ -634,6 +732,7 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
                 doc_push_item(doc, titem);
                 active_table = nullptr;
             } else if ((strcmp(tag, "p") == 0 || strcmp(tag, "footnote") == 0 || strcmp(tag, "marginpar") == 0) && in_para) {
+                flush_pending_anchor_run(&current_para);
                 doc_push_item(doc, current_para);
                 memset(&current_para, 0, sizeof(current_para));
                 in_para = false;
@@ -870,10 +969,38 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             in_para = true;
         } else if (strcmp(tag, "span") == 0 && in_para && !self_closing) {
             const char *st = get_attr(attrs, attr_count, "style");
+            const char *hr = get_attr(attrs, attr_count, "href");
             active_cs_idx    = st ? find_char_style_idx(doc, st) : 0;
             span_buf.len     = 0;
             span_buf.data[0] = '\0';
             in_span          = true;
+            snprintf(g_span_href, sizeof(g_span_href), "%s", hr ? hr : "");
+        } else if (strcmp(tag, "anchor") == 0) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            queue_anchor(get_attr(attrs, attr_count, "id"));
+        } else if (strcmp(tag, "page-ref") == 0 || strcmp(tag, "counter") == 0 || strcmp(tag, "page-num") == 0) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *rf = get_attr(attrs, attr_count, "ref");
+            if (!rf)    rf = get_attr(attrs, attr_count, "target");
+            const char *st = get_attr(attrs, attr_count, "style");
+            const char *hr = get_attr(attrs, attr_count, "href");
+            size_t cs_idx  = st ? find_char_style_idx(doc, st) : active_cs_idx;
+
+            SpanRun r = {
+                .kind       = RUN_PAGE_REF,
+                .style_idx  = cs_idx,
+                .href       = (hr && hr[0]) ? dup_cstr(hr) : nullptr,
+                .ref_target = (rf && rf[0]) ? dup_cstr(rf) : nullptr
+            };
+            para_push_special_run(&current_para, r);
         } else if (strcmp(tag, "box") == 0 && in_para && !self_closing) {
             if (in_span && span_buf.len > 0) {
                 para_push_run(&current_para, active_cs_idx, span_buf.data);
@@ -1097,6 +1224,9 @@ static void free_ir_document(IrDocument *doc) {
         for (size_t j = 0; j < doc->items[i].run_count; j++) {
             free(doc->items[i].runs[j].text);
             free(doc->items[i].runs[j].aux_text);
+            free(doc->items[i].runs[j].href);
+            free(doc->items[i].runs[j].anchor);
+            free(doc->items[i].runs[j].ref_target);
         }
         free(doc->items[i].runs);
         if (doc->items[i].table) {
@@ -1106,6 +1236,9 @@ static void free_ir_document(IrDocument *doc) {
                     for (size_t k = 0; k < tbl->rows[r].cells[c].run_count; k++) {
                         free(tbl->rows[r].cells[c].runs[k].text);
                         free(tbl->rows[r].cells[c].runs[k].aux_text);
+                        free(tbl->rows[r].cells[c].runs[k].href);
+                        free(tbl->rows[r].cells[c].runs[k].anchor);
+                        free(tbl->rows[r].cells[c].runs[k].ref_target);
                     }
                     free(tbl->rows[r].cells[c].runs);
                 }
@@ -1185,8 +1318,9 @@ static FlowFrame make_default_frame(const IrDocument *doc, size_t page_idx) {
     return f;
 }
 
-static void typesetter_init(Typesetter *ts, const IrDocument *doc) {
+static void typesetter_init(Typesetter *ts, const IrDocument *doc, AnchorMap *anchor_map) {
     memset(ts, 0, sizeof(*ts));
+    ts->anchor_map  = anchor_map;
     ts->total_pages = (doc->declared_pages > 0) ? doc->declared_pages : 1;
 
     for (size_t p = 0; p < ts->total_pages; p++) {
@@ -1194,12 +1328,13 @@ static void typesetter_init(Typesetter *ts, const IrDocument *doc) {
         for (size_t i = 0; i < doc->xml_frame_count; i++) {
             if (doc->xml_frames[i].page_num == p + 1 && ts->frame_count < MAX_FLOW_FRAMES) {
                 FlowFrame f = {
-                    .page_idx  = p,
-                    .x_mm      = doc->xml_frames[i].x_mm,
-                    .y_mm      = doc->xml_frames[i].y_mm,
-                    .w_mm      = doc->xml_frames[i].w_mm,
-                    .h_mm      = doc->xml_frames[i].h_mm,
-                    .orig_h_mm = doc->xml_frames[i].h_mm
+                    .page_idx   = p,
+                    .x_mm       = doc->xml_frames[i].x_mm,
+                    .y_mm       = doc->xml_frames[i].y_mm,
+                    .w_mm       = doc->xml_frames[i].w_mm,
+                    .h_mm       = doc->xml_frames[i].h_mm,
+                    .orig_h_mm  = doc->xml_frames[i].h_mm,
+                    .anchor_map = anchor_map
                 };
                 sb_init(&f.svg_content, 2048);
                 ts->frames[ts->frame_count++] = f;
@@ -1207,7 +1342,9 @@ static void typesetter_init(Typesetter *ts, const IrDocument *doc) {
             }
         }
         if (!found_explicit && ts->frame_count < MAX_FLOW_FRAMES) {
-            ts->frames[ts->frame_count++] = make_default_frame(doc, p);
+            FlowFrame df = make_default_frame(doc, p);
+            df.anchor_map = anchor_map;
+            ts->frames[ts->frame_count++] = df;
         }
     }
 
@@ -1221,7 +1358,9 @@ static void typesetter_advance_frame(Typesetter *ts, const IrDocument *doc) {
         ts->cur_frame++;
     } else if (ts->frame_count < MAX_FLOW_FRAMES) {
         size_t new_page = ts->total_pages++;
-        ts->frames[ts->frame_count++] = make_default_frame(doc, new_page);
+        FlowFrame df = make_default_frame(doc, new_page);
+        df.anchor_map = ts->anchor_map;
+        ts->frames[ts->frame_count++] = df;
         ts->cur_frame = ts->frame_count - 1;
     }
     ts->cursor_y_mm  = 0.0;
@@ -1243,12 +1382,29 @@ static void typesetter_page_break(Typesetter *ts, const IrDocument *doc) {
 
     if (ts->frame_count < MAX_FLOW_FRAMES) {
         while (ts->total_pages <= target_page) {
-            ts->frames[ts->frame_count++] = make_default_frame(doc, ts->total_pages++);
+            FlowFrame df = make_default_frame(doc, ts->total_pages++);
+            df.anchor_map = ts->anchor_map;
+            ts->frames[ts->frame_count++] = df;
         }
         ts->cur_frame    = ts->frame_count - 1;
         ts->cursor_y_mm  = 0.0;
         ts->at_frame_top = true;
     }
+}
+
+static bool same_href(const char *a, const char *b) {
+    if (!a || !b) return a == b;
+    return strcmp(a, b) == 0;
+}
+
+// Abre un hiperenlace SVG <a>: los internos (#...) los resuelve el visor; los externos abren pestaña nueva
+static void svg_open_link(StrBuf *sb, const char *href) {
+    bool internal = (href[0] == '#');
+    sb_append_cstr(sb, internal ? "<a class=\"tks-link tks-int\" href=\"" : "<a class=\"tks-link tks-ext\" target=\"_blank\" href=\"");
+    sb_append_escaped_xml(sb, href);
+    sb_append_cstr(sb, "\" xlink:href=\"");
+    sb_append_escaped_xml(sb, href);
+    sb_append_cstr(sb, "\">");
 }
 
 static void emit_svg_line(
@@ -1279,6 +1435,31 @@ static void emit_svg_line(
     }
 
     if (start_idx >= end_idx) return;
+
+    // Marcadores de ancla (destinos de \label, \hypertarget, secciones, \bibitem, \index) al inicio de la línea
+    for (size_t k = start_idx; k < end_idx; k++) {
+        if (!words[k].anchor) continue;
+        const char *cur = words[k].anchor;
+        while (*cur != '\0') {
+            const char *semi = strchr(cur, ';');
+            size_t len = semi ? (size_t)(semi - cur) : strlen(cur);
+            if (len > 0 && len < 200) {
+                char idbuf[208];
+                memcpy(idbuf, cur, len);
+                idbuf[len] = '\0';
+                if (frame->anchor_map) {
+                    anchor_map_set(frame->anchor_map, idbuf, (int)frame->page_idx + 1);
+                }
+                char mhdr[192];
+                snprintf(mhdr, sizeof(mhdr), "        <rect class=\"tks-anchor\" x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"8.0\" opacity=\"0\" id=\"",
+                         frame->x_mm, frame->y_mm + baseline_y_mm - 5.5, frame->w_mm);
+                sb_append_cstr(&frame->svg_content, mhdr);
+                sb_append_escaped_xml(&frame->svg_content, idbuf);
+                sb_append_cstr(&frame->svg_content, "\"/>\n");
+            }
+            cur = semi ? (semi + 1) : (cur + len);
+        }
+    }
 
     double avail_w = frame->w_mm - ps->indent_left_mm - ps->indent_right_mm - line_indent_mm;
     if (avail_w < 5.0) avail_w = frame->w_mm;
@@ -1330,11 +1511,13 @@ static void emit_svg_line(
         size_t i = start_idx;
         while (i < end_idx) {
             size_t cs_idx = words[i].char_style_idx;
+            const char *href = words[i].href;
+            if (href) svg_open_link(&frame->svg_content, href);
             char tspan_open[96];
             snprintf(tspan_open, sizeof(tspan_open), "<tspan class=\"cs-%s\">", doc->char_styles[cs_idx].id);
             sb_append_cstr(&frame->svg_content, tspan_open);
 
-            while (i < end_idx && words[i].char_style_idx == cs_idx) {
+            while (i < end_idx && words[i].char_style_idx == cs_idx && same_href(words[i].href, href)) {
                 sb_append_escaped_xml(&frame->svg_content, words[i].word);
                 if (i + 1 < end_idx && words[i].space_after) {
                     sb_append_cstr(&frame->svg_content, " ");
@@ -1342,6 +1525,7 @@ static void emit_svg_line(
                 i++;
             }
             sb_append_cstr(&frame->svg_content, "</tspan>");
+            if (href) sb_append_cstr(&frame->svg_content, "</a>");
         }
 
         sb_append_cstr(&frame->svg_content, "</text>\n");
@@ -1366,11 +1550,13 @@ static void emit_svg_line(
 
             while (i < end_idx && words[i].kind == RUN_TEXT) {
                 size_t cs_idx = words[i].char_style_idx;
+                const char *href = words[i].href;
+                if (href) svg_open_link(&frame->svg_content, href);
                 char tspan_open[96];
                 snprintf(tspan_open, sizeof(tspan_open), "<tspan class=\"cs-%s\">", doc->char_styles[cs_idx].id);
                 sb_append_cstr(&frame->svg_content, tspan_open);
 
-                while (i < end_idx && words[i].kind == RUN_TEXT && words[i].char_style_idx == cs_idx) {
+                while (i < end_idx && words[i].kind == RUN_TEXT && words[i].char_style_idx == cs_idx && same_href(words[i].href, href)) {
                     sb_append_escaped_xml(&frame->svg_content, words[i].word);
                     cur_x += words[i].word_w_mm;
                     if (i + 1 < end_idx && words[i].space_after) {
@@ -1382,6 +1568,7 @@ static void emit_svg_line(
                     i++;
                 }
                 sb_append_cstr(&frame->svg_content, "</tspan>");
+                if (href) sb_append_cstr(&frame->svg_content, "</a>");
             }
             sb_append_cstr(&frame->svg_content, "</text>\n");
         } else if (words[i].kind == RUN_HSPACE) {
@@ -1647,17 +1834,67 @@ static void emit_svg_line(
     }
 }
 
-static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size_t run_count, size_t *out_count) {
+static void assign_run_link_meta(WordToken *words, size_t first, size_t count, const SpanRun *run, const char **carry_anchor) {
+    if (!run) return;
+    for (size_t k = first; k < count; k++) {
+        words[k].href = run->href;
+    }
+    if (count > first) {
+        if (*carry_anchor && !words[first].anchor) {
+            words[first].anchor = *carry_anchor;
+            *carry_anchor = nullptr;
+        }
+        if (run->anchor) {
+            if (!words[first].anchor) words[first].anchor = run->anchor;
+            else if (!*carry_anchor)  *carry_anchor = run->anchor;
+        }
+    } else if (run->anchor && !*carry_anchor) {
+        *carry_anchor = run->anchor;
+    }
+}
+
+static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size_t run_count, size_t *out_count, const AnchorMap *anchor_map) {
     *out_count = 0;
     size_t cap = 64, count = 0;
     WordToken *words = malloc(cap * sizeof(WordToken));
     if (!words) return nullptr;
 
+    const SpanRun *prev_run   = nullptr;
+    size_t prev_first         = 0;
+    const char *carry_anchor  = nullptr;
+
     for (size_t r = 0; r < run_count; r++) {
+        assign_run_link_meta(words, prev_first, count, prev_run, &carry_anchor);
+        prev_run   = &runs[r];
+        prev_first = count;
+
         const SpanRun *run = &runs[r];
         size_t cs_idx = (run->style_idx < doc->char_style_count) ? run->style_idx : 0;
         const CharStyle *cs = &doc->char_styles[cs_idx];
         const FontVariant *fv = &doc->variants[cs->font_variant_idx];
+
+        if (run->kind == RUN_PAGE_REF) {
+            int pnum = anchor_map ? anchor_map_get(anchor_map, run->ref_target) : 1;
+            char pbuf[32];
+            snprintf(pbuf, sizeof(pbuf), "%d", pnum > 0 ? pnum : 1);
+            char *pstr = dup_cstr(pbuf);
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            words[count++] = (WordToken){
+                .kind           = RUN_TEXT,
+                .char_style_idx = cs_idx,
+                .word           = pstr,
+                .word_w_mm      = estimate_word_width_mm(pstr, cs, fv),
+                .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = 0.0,
+                .raise_mm       = 0.0,
+                .fill           = FILL_NONE,
+                .space_after    = false
+            };
+            continue;
+        }
 
         if (run->kind == RUN_BOX) {
             if (count >= cap) {
@@ -1816,6 +2053,11 @@ static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size
         }
     }
 
+    assign_run_link_meta(words, prev_first, count, prev_run, &carry_anchor);
+    if (carry_anchor && count > 0 && !words[count - 1].anchor) {
+        words[count - 1].anchor = carry_anchor;
+    }
+
     *out_count = count;
     return words;
 }
@@ -1837,7 +2079,7 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
                           : &(ParaStyle){ .align = ALIGN_LEFT, .line_spacing_mm = 5.2 };
 
     size_t count = 0;
-    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &count);
+    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &count, ts->anchor_map);
     if (!words || count == 0) {
         free_word_tokens(words, count);
         return;
@@ -2006,7 +2248,7 @@ static void typeset_table(Typesetter *ts, const IrDocument *doc, const TableDef 
                     if (cell->fixed_w_mm > col_w[cur_c]) col_w[cur_c] = cell->fixed_w_mm;
                 } else {
                     size_t wcount = 0;
-                    WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+                    WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount, ts->anchor_map);
                     double nw = measure_tokens_natural_width(wt, wcount);
                     free_word_tokens(wt, wcount);
                     if (nw > col_w[cur_c]) col_w[cur_c] = nw;
@@ -2026,7 +2268,7 @@ static void typeset_table(Typesetter *ts, const IrDocument *doc, const TableDef 
             if (cur_c + span > ncols) span = ncols - cur_c;
             if (span > 1) {
                 size_t wcount = 0;
-                WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+                WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount, ts->anchor_map);
                 double nw = measure_tokens_natural_width(wt, wcount);
                 free_word_tokens(wt, wcount);
 
@@ -2109,7 +2351,7 @@ static void typeset_table(Typesetter *ts, const IrDocument *doc, const TableDef 
             double cw = (col_x[cur_c + span] - col_x[cur_c]) - 2.0 * pad_x;
 
             size_t wcount = 0;
-            WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+            WordToken *wt = tokenize_runs(doc, cell->runs, cell->run_count, &wcount, ts->anchor_map);
             size_t nl = count_wrapped_lines(wt, wcount, cw + 0.5);
             free_word_tokens(wt, wcount);
             if (nl > max_lines) max_lines = nl;
@@ -2149,7 +2391,7 @@ static void typeset_table(Typesetter *ts, const IrDocument *doc, const TableDef 
             emit_vborder_svg(&fr->svg_content, x_right, y_top, y_bot, cell->br, rw);
 
             size_t wcount = 0;
-            WordToken *words = tokenize_runs(doc, cell->runs, cell->run_count, &wcount);
+            WordToken *words = tokenize_runs(doc, cell->runs, cell->run_count, &wcount, ts->anchor_map);
             if (words && wcount > 0) {
                 ParaStyle cell_ps = {
                     .align           = (cell->align == 'c') ? ALIGN_CENTER
@@ -2203,7 +2445,7 @@ static void typeset_footnote(Typesetter *ts, const IrDocument *doc, const StoryI
     if (fr->footnote_count >= 16) return;
 
     size_t wcount = 0;
-    WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+    WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount, ts->anchor_map);
     size_t nl = count_wrapped_lines(wt, wcount, fr->w_mm - 5.0);
     free_word_tokens(wt, wcount);
 
@@ -2224,7 +2466,7 @@ static void finalize_frame_footnotes(FlowFrame *fr, const IrDocument *doc) {
     for (size_t f = 0; f < fr->footnote_count; f++) {
         const StoryItem *item = fr->footnotes[f];
         size_t wcount = 0;
-        WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+        WordToken *wt = tokenize_runs(doc, item->runs, item->run_count, &wcount, fr->anchor_map);
         size_t nl = count_wrapped_lines(wt, wcount, fr->w_mm - 5.0);
         free_word_tokens(wt, wcount);
         total_fn_h += (double)nl * 3.8 + 0.8;
@@ -2248,7 +2490,7 @@ static void finalize_frame_footnotes(FlowFrame *fr, const IrDocument *doc) {
     for (size_t f = 0; f < fr->footnote_count; f++) {
         const StoryItem *item = fr->footnotes[f];
         size_t wcount = 0;
-        WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+        WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount, fr->anchor_map);
         double max_w = fr->w_mm - fn_ps.indent_left_mm;
         size_t idx = 0;
         bool first = true;
@@ -2282,7 +2524,7 @@ static void finalize_frame_footnotes(FlowFrame *fr, const IrDocument *doc) {
 static void typeset_marginpar(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
     FlowFrame *fr = &ts->frames[ts->cur_frame];
     size_t wcount = 0;
-    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount);
+    WordToken *words = tokenize_runs(doc, item->runs, item->run_count, &wcount, ts->anchor_map);
     if (!words || wcount == 0) {
         free_word_tokens(words, wcount);
         return;
@@ -2509,7 +2751,7 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
 
     fprintf(out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     fprintf(out,
-            "<svg id=\"doc-root\" xmlns=\"http://www.w3.org/2000/svg\" "
+            "<svg id=\"doc-root\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
             "width=\"100%%\" height=\"100%%\" "
             "viewBox=\"0 0 %.3f %.3f\" "
             "preserveAspectRatio=\"xMidYMid meet\">\n",
@@ -2531,6 +2773,14 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "    .hud-btn:hover { fill: #334155; }\n");
     fprintf(out, "    .hud-btn-disabled { opacity: 0.38; cursor: default; pointer-events: none; }\n");
     fprintf(out, "    .hud-label { font-family: system-ui, sans-serif; font-size: 3.6px; fill: #f8fafc; user-select: none; pointer-events: none; }\n");
+    fprintf(out, "    .tks-link { cursor: pointer; }\n");
+    fprintf(out, "    .tks-link text, .tks-link tspan { cursor: pointer; }\n");
+    fprintf(out, "    .tks-link:hover tspan { text-decoration: underline; }\n");
+    fprintf(out, "    .tks-ext tspan { text-decoration: underline; text-decoration-color: rgba(65, 105, 225, 0.45); }\n");
+    fprintf(out, "    .tks-anchor { pointer-events: none; }\n");
+    fprintf(out, "    .tks-highlight-box { fill: #fef08a; fill-opacity: 0.42; stroke: #eab308; stroke-width: 0.45px; stroke-dasharray: 2.0 1.2; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1), fill-opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1); }\n");
+    fprintf(out, "    .tks-highlight-bar { fill: #eab308; fill-opacity: 0.95; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1); }\n");
+    fprintf(out, "    .tks-fade-out { opacity: 0 !important; fill-opacity: 0 !important; }\n");
 
     for (size_t i = 0; i < doc->char_style_count; i++) {
         const CharStyle *cs = &doc->char_styles[i];
@@ -2670,7 +2920,7 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "    </g>\n");
     fprintf(out, "  </g>\n\n");
 
-    // 5. Controlador JavaScript embebido: ViewBox Sliding + Zoom & Pan + Teclado + Rueda + Hash URL
+    // 5. Controlador JavaScript embebido: ViewBox Sliding + Zoom & Pan + Teclado + Rueda + Hiperenlaces + Hash URL
     fprintf(out, "  <script><![CDATA[\n");
     fprintf(out, "  (() => {\n");
     fprintf(out, "    const svg = document.getElementById('doc-root');\n");
@@ -2698,6 +2948,7 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "    let animId      = null;\n");
     fprintf(out, "    let wheelLock   = false;\n");
     fprintf(out, "    let isDragging  = false;\n");
+    fprintf(out, "    let hasDragged  = false;\n");
     fprintf(out, "    let dragStartX  = 0.0;\n");
     fprintf(out, "    let dragStartY  = 0.0;\n");
     fprintf(out, "    let dragPanX0   = 0.0;\n");
@@ -2752,7 +3003,7 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      syncHudState();\n");
     fprintf(out, "      applyViewport(currentX);\n");
     fprintf(out, "    }\n\n");
-    fprintf(out, "    function goToPage(targetIdx, immediate = false) {\n");
+    fprintf(out, "    function goToPage(targetIdx, immediate = false, updateHash = true) {\n");
     fprintf(out, "      const clamped = Math.max(0, Math.min(TOTAL_PAGES - 1, targetIdx));\n");
     fprintf(out, "      if (clamped !== currentPage) {\n");
     fprintf(out, "        panX = 0.0;\n");
@@ -2761,7 +3012,9 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      currentPage = clamped;\n");
     fprintf(out, "      const targetX = clamped * STRIDE_X;\n");
     fprintf(out, "      syncHudState();\n\n");
-    fprintf(out, "      try { history.replaceState(null, '', `#page=${clamped + 1}`); } catch (_) {}\n\n");
+    fprintf(out, "      if (updateHash) {\n");
+    fprintf(out, "        try { history.replaceState(null, '', `#page=${clamped + 1}`); } catch (_) {}\n");
+    fprintf(out, "      }\n\n");
     fprintf(out, "      if (animId !== null) {\n");
     fprintf(out, "        cancelAnimationFrame(animId);\n");
     fprintf(out, "        animId = null;\n");
@@ -2786,6 +3039,102 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      }\n");
     fprintf(out, "      animId = requestAnimationFrame(tick);\n");
     fprintf(out, "    }\n\n");
+    fprintf(out, "    function findAnchorElement(rawId) {\n");
+    fprintf(out, "      if (!rawId) return null;\n");
+    fprintf(out, "      let clean = rawId.startsWith('#') ? rawId.substring(1) : rawId;\n");
+    fprintf(out, "      if (!clean) return null;\n");
+    fprintf(out, "      let el = document.getElementById(clean);\n");
+    fprintf(out, "      if (el) return el;\n");
+    fprintf(out, "      el = document.getElementById('dest-' + clean);\n");
+    fprintf(out, "      if (el) return el;\n");
+    fprintf(out, "      if (clean.startsWith('dest-')) {\n");
+    fprintf(out, "        el = document.getElementById(clean.substring(5));\n");
+    fprintf(out, "        if (el) return el;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      if (clean.startsWith('pdest-')) {\n");
+    fprintf(out, "        const sub = clean.substring(6);\n");
+    fprintf(out, "        el = document.getElementById('dest-' + sub) || document.getElementById(sub);\n");
+    fprintf(out, "        if (el) return el;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      try {\n");
+    fprintf(out, "        const decoded = decodeURIComponent(clean);\n");
+    fprintf(out, "        if (decoded !== clean) {\n");
+    fprintf(out, "          el = document.getElementById(decoded) || document.getElementById('dest-' + decoded);\n");
+    fprintf(out, "          if (el) return el;\n");
+    fprintf(out, "        }\n");
+    fprintf(out, "      } catch (_) {}\n");
+    fprintf(out, "      return null;\n");
+    fprintf(out, "    }\n\n");
+    fprintf(out, "    function showDestinationHighlight(targetEl) {\n");
+    fprintf(out, "      if (!targetEl) return;\n");
+    fprintf(out, "      const pageEl = targetEl.closest('[id^=\"page-\"]');\n");
+    fprintf(out, "      if (!pageEl) return;\n");
+    fprintf(out, "      const old = svg.querySelectorAll('.tks-dest-highlight');\n");
+    fprintf(out, "      old.forEach(el => el.remove());\n");
+    fprintf(out, "      const x = parseFloat(targetEl.getAttribute('x')) || 0;\n");
+    fprintf(out, "      const y = parseFloat(targetEl.getAttribute('y')) || 0;\n");
+    fprintf(out, "      const w = parseFloat(targetEl.getAttribute('width')) || 170;\n");
+    fprintf(out, "      const h = parseFloat(targetEl.getAttribute('height')) || 8;\n");
+    fprintf(out, "      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');\n");
+    fprintf(out, "      g.setAttribute('class', 'tks-dest-highlight');\n");
+    fprintf(out, "      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');\n");
+    fprintf(out, "      rect.setAttribute('class', 'tks-highlight-box');\n");
+    fprintf(out, "      rect.setAttribute('x', (x - 2.0).toFixed(3));\n");
+    fprintf(out, "      rect.setAttribute('y', (y - 1.0).toFixed(3));\n");
+    fprintf(out, "      rect.setAttribute('width', (w + 4.0).toFixed(3));\n");
+    fprintf(out, "      rect.setAttribute('height', (h + 2.0).toFixed(3));\n");
+    fprintf(out, "      rect.setAttribute('rx', '1.8');\n");
+    fprintf(out, "      const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');\n");
+    fprintf(out, "      bar.setAttribute('class', 'tks-highlight-bar');\n");
+    fprintf(out, "      bar.setAttribute('x', (x - 5.5).toFixed(3));\n");
+    fprintf(out, "      bar.setAttribute('y', (y - 1.0).toFixed(3));\n");
+    fprintf(out, "      bar.setAttribute('width', '2.5');\n");
+    fprintf(out, "      bar.setAttribute('height', (h + 2.0).toFixed(3));\n");
+    fprintf(out, "      bar.setAttribute('rx', '1.2');\n");
+    fprintf(out, "      g.appendChild(rect);\n");
+    fprintf(out, "      g.appendChild(bar);\n");
+    fprintf(out, "      pageEl.appendChild(g);\n");
+    fprintf(out, "      setTimeout(() => {\n");
+    fprintf(out, "        rect.classList.add('tks-fade-out');\n");
+    fprintf(out, "        bar.classList.add('tks-fade-out');\n");
+    fprintf(out, "      }, 700);\n");
+    fprintf(out, "      setTimeout(() => { g.remove(); }, 2300);\n");
+    fprintf(out, "    }\n\n");
+    fprintf(out, "    function navigateToDestination(hash, immediate = false, pushState = true) {\n");
+    fprintf(out, "      if (!hash) return;\n");
+    fprintf(out, "      const clean = hash.startsWith('#') ? hash.substring(1) : hash;\n");
+    fprintf(out, "      const pageMatch = /^page[=-]?(\\d+)$/i.exec(clean);\n");
+    fprintf(out, "      if (pageMatch) {\n");
+    fprintf(out, "        const p = parseInt(pageMatch[1], 10) - 1;\n");
+    fprintf(out, "        goToPage(p, immediate, true);\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      const targetEl = findAnchorElement(clean);\n");
+    fprintf(out, "      if (!targetEl) {\n");
+    fprintf(out, "        const numOnly = parseInt(clean, 10);\n");
+    fprintf(out, "        if (!isNaN(numOnly) && numOnly >= 1 && numOnly <= TOTAL_PAGES) {\n");
+    fprintf(out, "          goToPage(numOnly - 1, immediate, true);\n");
+    fprintf(out, "        }\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      const pageEl = targetEl.closest('[id^=\"page-\"]');\n");
+    fprintf(out, "      if (!pageEl) return;\n");
+    fprintf(out, "      const m = /^page-(\\d+)$/.exec(pageEl.id);\n");
+    fprintf(out, "      const pIdx = m ? parseInt(m[1], 10) - 1 : 0;\n");
+    fprintf(out, "      goToPage(pIdx, immediate, false);\n");
+    fprintf(out, "      if (pushState) {\n");
+    fprintf(out, "        try { history.pushState(null, '', '#' + clean); } catch (_) {}\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      if (zoom > 1.0) {\n");
+    fprintf(out, "        const anchorY = parseFloat(targetEl.getAttribute('y')) || 0;\n");
+    fprintf(out, "        const deskPadTop = %.4f;\n", DESK_PAD_TOP);
+    fprintf(out, "        const anchorDeskY = deskPadTop + anchorY;\n");
+    fprintf(out, "        panY = anchorDeskY - VIEW_H * 0.5;\n");
+    fprintf(out, "        clampPan();\n");
+    fprintf(out, "        applyViewport(currentX);\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      showDestinationHighlight(targetEl);\n");
+    fprintf(out, "    }\n\n");
     fprintf(out, "    btnPrev.addEventListener('click', () => goToPage(currentPage - 1));\n");
     fprintf(out, "    btnNext.addEventListener('click', () => goToPage(currentPage + 1));\n");
     fprintf(out, "    btnZoomOut.addEventListener('click', () => setZoom(zoom - ZOOM_STEP));\n");
@@ -2794,6 +3143,7 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "    svg.addEventListener('mousedown', (ev) => {\n");
     fprintf(out, "      if (zoom <= 1.0 || ev.button !== 0 || hud.contains(ev.target)) return;\n");
     fprintf(out, "      isDragging = true;\n");
+    fprintf(out, "      hasDragged = false;\n");
     fprintf(out, "      dragStartX = ev.clientX;\n");
     fprintf(out, "      dragStartY = ev.clientY;\n");
     fprintf(out, "      dragPanX0  = panX;\n");
@@ -2802,19 +3152,37 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "    });\n\n");
     fprintf(out, "    window.addEventListener('mousemove', (ev) => {\n");
     fprintf(out, "      if (!isDragging) return;\n");
+    fprintf(out, "      const dx = ev.clientX - dragStartX;\n");
+    fprintf(out, "      const dy = ev.clientY - dragStartY;\n");
+    fprintf(out, "      if (Math.hypot(dx, dy) > 4) hasDragged = true;\n");
     fprintf(out, "      const rect = svg.getBoundingClientRect();\n");
     fprintf(out, "      if (rect.width <= 0 || rect.height <= 0) return;\n");
     fprintf(out, "      const scaleX = (VIEW_W / zoom) / rect.width;\n");
     fprintf(out, "      const scaleY = (VIEW_H / zoom) / rect.height;\n");
     fprintf(out, "      const scale  = Math.max(scaleX, scaleY);\n");
-    fprintf(out, "      panX = dragPanX0 - (ev.clientX - dragStartX) * scale;\n");
-    fprintf(out, "      panY = dragPanY0 - (ev.clientY - dragStartY) * scale;\n");
+    fprintf(out, "      panX = dragPanX0 - dx * scale;\n");
+    fprintf(out, "      panY = dragPanY0 - dy * scale;\n");
     fprintf(out, "      applyViewport(currentX);\n");
     fprintf(out, "    });\n\n");
     fprintf(out, "    window.addEventListener('mouseup', () => {\n");
     fprintf(out, "      if (isDragging) {\n");
     fprintf(out, "        isDragging = false;\n");
     fprintf(out, "        syncHudState();\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "    });\n\n");
+    fprintf(out, "    svg.addEventListener('click', (ev) => {\n");
+    fprintf(out, "      if (hasDragged) {\n");
+    fprintf(out, "        hasDragged = false;\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      const link = ev.target.closest('a');\n");
+    fprintf(out, "      if (!link) return;\n");
+    fprintf(out, "      const href = link.getAttribute('href') || link.getAttribute('xlink:href') || '';\n");
+    fprintf(out, "      if (!href) return;\n");
+    fprintf(out, "      if (href.startsWith('#')) {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        ev.stopPropagation();\n");
+    fprintf(out, "        navigateToDestination(href, false, true);\n");
     fprintf(out, "      }\n");
     fprintf(out, "    });\n\n");
     fprintf(out, "    window.addEventListener('keydown', (ev) => {\n");
@@ -2866,9 +3234,16 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      goToPage(currentPage + (delta > 0 ? 1 : -1));\n");
     fprintf(out, "      setTimeout(() => { wheelLock = false; }, 320);\n");
     fprintf(out, "    }, { passive: false });\n\n");
-    fprintf(out, "    const match = /^#page=(\\d+)$/.exec(window.location.hash);\n");
-    fprintf(out, "    const initial = match ? parseInt(match[1], 10) - 1 : 0;\n");
-    fprintf(out, "    goToPage(isNaN(initial) ? 0 : initial, true);\n");
+    fprintf(out, "    window.addEventListener('hashchange', () => {\n");
+    fprintf(out, "      if (window.location.hash) {\n");
+    fprintf(out, "        navigateToDestination(window.location.hash, false, false);\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "    });\n\n");
+    fprintf(out, "    if (window.location.hash) {\n");
+    fprintf(out, "      navigateToDestination(window.location.hash, true, false);\n");
+    fprintf(out, "    } else {\n");
+    fprintf(out, "      goToPage(0, true, true);\n");
+    fprintf(out, "    }\n");
     fprintf(out, "  })();\n");
     fprintf(out, "  ]]></script>\n");
     fprintf(out, "</svg>\n");
@@ -2878,8 +3253,56 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
 }
 
 // ============================================================================
-// 8. Función Principal (main)
+// 8. Maquetación del Documento y Función Principal (main)
 // ============================================================================
+
+static void typeset_document(Typesetter *ts, const IrDocument *doc, AnchorMap *anchor_map) {
+    typesetter_init(ts, doc, anchor_map);
+
+    for (size_t i = 0; i < doc->item_count; i++) {
+        if (doc->items[i].type == ITEM_PAGE_BREAK) {
+            typesetter_page_break(ts, doc);
+        } else if (doc->items[i].type == ITEM_VSPACE) {
+            FlowFrame *fr = &ts->frames[ts->cur_frame];
+            if (doc->items[i].vspace_fill) {
+                double upcoming_h = 0.0;
+                for (size_t k = i + 1; k < doc->item_count; k++) {
+                    if (doc->items[k].type == ITEM_PAGE_BREAK) break;
+                    if (doc->items[k].type == ITEM_VSPACE) {
+                        upcoming_h += doc->items[k].vspace_mm;
+                    } else if (doc->items[k].type == ITEM_PARA && doc->items[k].para_style_idx < doc->para_style_count) {
+                        const ParaStyle *ps = &doc->para_styles[doc->items[k].para_style_idx];
+                        upcoming_h += ps->space_before_mm + ps->line_spacing_mm * 1.5 + ps->space_after_mm;
+                    }
+                }
+                double target_y = fr->h_mm - upcoming_h;
+                if (target_y > ts->cursor_y_mm) {
+                    ts->cursor_y_mm = target_y;
+                    ts->at_frame_top = false;
+                }
+            } else if (!ts->at_frame_top || doc->items[i].vspace_starred) {
+                ts->cursor_y_mm = fmax(0.0, ts->cursor_y_mm + doc->items[i].vspace_mm);
+                if (doc->items[i].vspace_starred) {
+                    ts->at_frame_top = false;
+                }
+            }
+        } else if (doc->items[i].type == ITEM_TABLE) {
+            typeset_table(ts, doc, doc->items[i].table);
+        } else if (doc->items[i].type == ITEM_PICTURE) {
+            typeset_picture(ts, doc, doc->items[i].picture);
+        } else if (doc->items[i].type == ITEM_FOOTNOTE) {
+            typeset_footnote(ts, doc, &doc->items[i]);
+        } else if (doc->items[i].type == ITEM_MARGINPAR) {
+            typeset_marginpar(ts, doc, &doc->items[i]);
+        } else {
+            typeset_paragraph(ts, doc, &doc->items[i]);
+        }
+    }
+
+    for (size_t f = 0; f < ts->frame_count; f++) {
+        finalize_frame_footnotes(&ts->frames[f], doc);
+    }
+}
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -2910,58 +3333,25 @@ int main(int argc, char **argv) {
     }
     free(xml_src);
 
+    AnchorMap anchor_map;
+    anchor_map_init(&anchor_map);
+
+    // Pasada 1: maquetación preliminar para registrar páginas de todas las anclas y referencias
+    Typesetter ts_pass1;
+    typeset_document(&ts_pass1, &doc, &anchor_map);
+    for (size_t i = 0; i < ts_pass1.frame_count; i++) {
+        sb_free(&ts_pass1.frames[i].svg_content);
+    }
+
+    // Pasada 2: maquetación definitiva con números reales de página en <page-ref>
     Typesetter ts;
-    typesetter_init(&ts, &doc);
-
-    for (size_t i = 0; i < doc.item_count; i++) {
-        if (doc.items[i].type == ITEM_PAGE_BREAK) {
-            typesetter_page_break(&ts, &doc);
-        } else if (doc.items[i].type == ITEM_VSPACE) {
-            FlowFrame *fr = &ts.frames[ts.cur_frame];
-            if (doc.items[i].vspace_fill) {
-                // Estimar la altura de los elementos que restan antes del siguiente salto de página
-                double upcoming_h = 0.0;
-                for (size_t k = i + 1; k < doc.item_count; k++) {
-                    if (doc.items[k].type == ITEM_PAGE_BREAK) break;
-                    if (doc.items[k].type == ITEM_VSPACE) {
-                        upcoming_h += doc.items[k].vspace_mm;
-                    } else if (doc.items[k].type == ITEM_PARA && doc.items[k].para_style_idx < doc.para_style_count) {
-                        const ParaStyle *ps = &doc.para_styles[doc.items[k].para_style_idx];
-                        upcoming_h += ps->space_before_mm + ps->line_spacing_mm * 1.5 + ps->space_after_mm;
-                    }
-                }
-                double target_y = fr->h_mm - upcoming_h;
-                if (target_y > ts.cursor_y_mm) {
-                    ts.cursor_y_mm = target_y;
-                    ts.at_frame_top = false;
-                }
-            } else if (!ts.at_frame_top || doc.items[i].vspace_starred) {
-                ts.cursor_y_mm = fmax(0.0, ts.cursor_y_mm + doc.items[i].vspace_mm);
-                if (doc.items[i].vspace_starred) {
-                    ts.at_frame_top = false;
-                }
-            }
-        } else if (doc.items[i].type == ITEM_TABLE) {
-            typeset_table(&ts, &doc, doc.items[i].table);
-        } else if (doc.items[i].type == ITEM_PICTURE) {
-            typeset_picture(&ts, &doc, doc.items[i].picture);
-        } else if (doc.items[i].type == ITEM_FOOTNOTE) {
-            typeset_footnote(&ts, &doc, &doc.items[i]);
-        } else if (doc.items[i].type == ITEM_MARGINPAR) {
-            typeset_marginpar(&ts, &doc, &doc.items[i]);
-        } else {
-            typeset_paragraph(&ts, &doc, &doc.items[i]);
-        }
-    }
-
-    for (size_t f = 0; f < ts.frame_count; f++) {
-        finalize_frame_footnotes(&ts.frames[f], &doc);
-    }
+    typeset_document(&ts, &doc, &anchor_map);
 
     if (!write_standalone_svg(svg_path, &doc, &ts)) {
         fprintf(stderr, "Error escribiendo fichero SVG '%s'\n", svg_path);
         for (size_t i = 0; i < ts.frame_count; i++) sb_free(&ts.frames[i].svg_content);
         free_ir_document(&doc);
+        anchor_map_free(&anchor_map);
         return EXIT_FAILURE;
     }
 
@@ -2972,5 +3362,6 @@ int main(int argc, char **argv) {
         sb_free(&ts.frames[i].svg_content);
     }
     free_ir_document(&doc);
+    anchor_map_free(&anchor_map);
     return EXIT_SUCCESS;
 }

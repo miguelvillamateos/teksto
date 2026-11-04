@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="doc-root" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 242.000 337.000" preserveAspectRatio="xMidYMid meet">
+<svg id="doc-root" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%" viewBox="0 0 242.000 337.000" preserveAspectRatio="xMidYMid meet">
   <defs>
     <filter id="page-shadow" x="-8%" y="-5%" width="116%" height="114%">
       <feDropShadow dx="0" dy="2.2" stdDeviation="2.8" flood-color="#0b0f19" flood-opacity="0.38"/>
@@ -14,6 +14,14 @@
     .hud-btn:hover { fill: #334155; }
     .hud-btn-disabled { opacity: 0.38; cursor: default; pointer-events: none; }
     .hud-label { font-family: system-ui, sans-serif; font-size: 3.6px; fill: #f8fafc; user-select: none; pointer-events: none; }
+    .tks-link { cursor: pointer; }
+    .tks-link text, .tks-link tspan { cursor: pointer; }
+    .tks-link:hover tspan { text-decoration: underline; }
+    .tks-ext tspan { text-decoration: underline; text-decoration-color: rgba(65, 105, 225, 0.45); }
+    .tks-anchor { pointer-events: none; }
+    .tks-highlight-box { fill: #fef08a; fill-opacity: 0.42; stroke: #eab308; stroke-width: 0.45px; stroke-dasharray: 2.0 1.2; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1), fill-opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .tks-highlight-bar { fill: #eab308; fill-opacity: 0.95; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .tks-fade-out { opacity: 0 !important; fill-opacity: 0 !important; }
     .cs-cs1 { font-family: "Liberation Serif"; font-size: 6.096px; fill: Black; font-weight: bold; font-style: normal; }
     .cs-cs2 { font-family: "Liberation Serif"; font-size: 4.233px; fill: Black; font-weight: normal; font-style: normal; }
     .cs-cs3 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
@@ -75,71 +83,77 @@
         <text x="32.000" y="82.090" xml:space="preserve" style="word-spacing:1.202px;"><tspan class="cs-cs6">seccionado automático, listas anidadas, entornos literales (</tspan><tspan class="cs-cs7">verbatim</tspan><tspan class="cs-cs6">), modo matemático,</tspan></text>
         <text x="32.000" y="86.590" xml:space="preserve"><tspan class="cs-cs6">gráficos vectoriales (</tspan><tspan class="cs-cs7">picture</tspan><tspan class="cs-cs6">), referencias cruzadas y bibliografía.</tspan></text>
         <text x="20.000" y="99.995" xml:space="preserve"><tspan class="cs-cs9">Índice general</tspan></text>
-        <text x="20.000" y="108.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="24.557" y="108.730" xml:space="preserve"><tspan class="cs-cs10">Motor Léxico TeX, Símbolos y Tipografía</tspan></text>
+        <text x="20.000" y="108.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:0" xlink:href="#dest-toc:0"><tspan class="cs-cs10">1</tspan></a></text>
+        <text x="24.557" y="108.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:0" xlink:href="#dest-toc:0"><tspan class="cs-cs10">Motor Léxico TeX, Símbolos y Tipografía</tspan></a></text>
         <line x1="99.536" y1="108.380" x2="187.143" y2="108.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="108.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="26.000" y="115.230" xml:space="preserve"><tspan class="cs-cs3">1.1</tspan></text>
-        <text x="33.545" y="115.230" xml:space="preserve"><tspan class="cs-cs3">Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
+        <text x="187.943" y="108.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:0" xlink:href="#pdest-toc:0"><tspan class="cs-cs10">1</tspan></a></text>
+        <text x="26.000" y="115.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:1" xlink:href="#dest-toc:1"><tspan class="cs-cs3">1.1</tspan></a></text>
+        <text x="33.545" y="115.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:1" xlink:href="#dest-toc:1"><tspan class="cs-cs3">Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></a></text>
         <line x1="130.000" y1="114.880" x2="187.260" y2="114.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="115.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="26.000" y="121.730" xml:space="preserve"><tspan class="cs-cs3">1.2</tspan></text>
-        <text x="33.545" y="121.730" xml:space="preserve"><tspan class="cs-cs3">Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
+        <text x="188.060" y="115.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:1" xlink:href="#pdest-toc:1"><tspan class="cs-cs3">1</tspan></a></text>
+        <text x="26.000" y="121.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:2" xlink:href="#dest-toc:2"><tspan class="cs-cs3">1.2</tspan></a></text>
+        <text x="33.545" y="121.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:2" xlink:href="#dest-toc:2"><tspan class="cs-cs3">Selección de Fuentes NFSS y Escala de Tamaños</tspan></a></text>
         <line x1="117.971" y1="121.380" x2="187.260" y2="121.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="121.730" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="32.000" y="128.230" xml:space="preserve"><tspan class="cs-cs3">1.2.1</tspan></text>
-        <text x="42.649" y="128.230" xml:space="preserve"><tspan class="cs-cs3">Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
+        <text x="188.060" y="121.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:2" xlink:href="#pdest-toc:2"><tspan class="cs-cs3">2</tspan></a></text>
+        <text x="32.000" y="128.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:3" xlink:href="#dest-toc:3"><tspan class="cs-cs3">1.2.1</tspan></a></text>
+        <text x="42.649" y="128.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:3" xlink:href="#dest-toc:3"><tspan class="cs-cs3">Subsección de Tercer Nivel y Títulos en Línea</tspan></a></text>
         <line x1="122.030" y1="127.880" x2="187.260" y2="127.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="128.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="20.000" y="134.730" xml:space="preserve"><tspan class="cs-cs10">2</tspan></text>
-        <text x="24.557" y="134.730" xml:space="preserve"><tspan class="cs-cs10">Listas Anidadas, Texto Literal y Espaciado</tspan></text>
+        <text x="188.060" y="128.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:3" xlink:href="#pdest-toc:3"><tspan class="cs-cs3">2</tspan></a></text>
+        <text x="20.000" y="134.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:4" xlink:href="#dest-toc:4"><tspan class="cs-cs10">2</tspan></a></text>
+        <text x="24.557" y="134.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:4" xlink:href="#dest-toc:4"><tspan class="cs-cs10">Listas Anidadas, Texto Literal y Espaciado</tspan></a></text>
         <line x1="101.346" y1="134.380" x2="187.143" y2="134.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="134.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="26.000" y="141.230" xml:space="preserve"><tspan class="cs-cs3">2.1</tspan></text>
-        <text x="33.545" y="141.230" xml:space="preserve"><tspan class="cs-cs3">Entornos de Listas</tspan></text>
+        <text x="187.943" y="134.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:4" xlink:href="#pdest-toc:4"><tspan class="cs-cs10">2</tspan></a></text>
+        <text x="26.000" y="141.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:5" xlink:href="#dest-toc:5"><tspan class="cs-cs3">2.1</tspan></a></text>
+        <text x="33.545" y="141.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:5" xlink:href="#dest-toc:5"><tspan class="cs-cs3">Entornos de Listas</tspan></a></text>
         <line x1="65.467" y1="140.880" x2="187.260" y2="140.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="141.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="26.000" y="147.730" xml:space="preserve"><tspan class="cs-cs3">2.2</tspan></text>
-        <text x="33.545" y="147.730" xml:space="preserve"><tspan class="cs-cs3">Modo Literal (</tspan><tspan class="cs-cs11"> verbatim)\dotfill 1\par}</tspan></text>
-        <text x="26.000" y="154.230" xml:space="preserve"><tspan class="cs-cs3">2.3</tspan></text>
-        <text x="33.545" y="154.230" xml:space="preserve"><tspan class="cs-cs3">Saltos, Rellenos Elásticos y Reglas</tspan></text>
+        <text x="188.060" y="141.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:5" xlink:href="#pdest-toc:5"><tspan class="cs-cs3">2</tspan></a></text>
+        <text x="26.000" y="147.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:6" xlink:href="#dest-toc:6"><tspan class="cs-cs3">2.2</tspan></a></text>
+        <text x="33.545" y="147.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:6" xlink:href="#dest-toc:6"><tspan class="cs-cs3">Modo Literal (</tspan></a><a class="tks-link tks-int" href="#dest-toc:6" xlink:href="#dest-toc:6"><tspan class="cs-cs11"> verbatim)</tspan></a></text>
+        <line x1="80.834" y1="147.380" x2="187.260" y2="147.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="147.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:6" xlink:href="#pdest-toc:6"><tspan class="cs-cs3">2</tspan></a></text>
+        <text x="26.000" y="154.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:7" xlink:href="#dest-toc:7"><tspan class="cs-cs3">2.3</tspan></a></text>
+        <text x="33.545" y="154.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:7" xlink:href="#dest-toc:7"><tspan class="cs-cs3">Saltos, Rellenos Elásticos y Reglas</tspan></a></text>
         <line x1="93.950" y1="153.880" x2="187.260" y2="153.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="154.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="20.000" y="160.730" xml:space="preserve"><tspan class="cs-cs10">3</tspan></text>
-        <text x="24.557" y="160.730" xml:space="preserve"><tspan class="cs-cs10">Contadores, Longitudes y Apéndices</tspan></text>
+        <text x="188.060" y="154.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:7" xlink:href="#pdest-toc:7"><tspan class="cs-cs3">3</tspan></a></text>
+        <text x="20.000" y="160.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:8" xlink:href="#dest-toc:8"><tspan class="cs-cs10">3</tspan></a></text>
+        <text x="24.557" y="160.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:8" xlink:href="#dest-toc:8"><tspan class="cs-cs10">Contadores, Longitudes y Apéndices</tspan></a></text>
         <line x1="89.131" y1="160.380" x2="187.143" y2="160.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="160.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="26.000" y="167.230" xml:space="preserve"><tspan class="cs-cs3">3.1</tspan></text>
-        <text x="33.545" y="167.230" xml:space="preserve"><tspan class="cs-cs3">Aritmética de Longitudes y Grupos</tspan></text>
+        <text x="187.943" y="160.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:8" xlink:href="#pdest-toc:8"><tspan class="cs-cs10">3</tspan></a></text>
+        <text x="26.000" y="167.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:9" xlink:href="#dest-toc:9"><tspan class="cs-cs3">3.1</tspan></a></text>
+        <text x="33.545" y="167.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:9" xlink:href="#dest-toc:9"><tspan class="cs-cs3">Aritmética de Longitudes y Grupos</tspan></a></text>
         <line x1="91.466" y1="166.880" x2="187.260" y2="166.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="167.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="20.000" y="173.730" xml:space="preserve"><tspan class="cs-cs10">4</tspan></text>
-        <text x="24.557" y="173.730" xml:space="preserve"><tspan class="cs-cs10">Cajas LR, Tablas y Elementos Flotantes</tspan></text>
+        <text x="188.060" y="167.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:9" xlink:href="#pdest-toc:9"><tspan class="cs-cs3">3</tspan></a></text>
+        <text x="20.000" y="173.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:10" xlink:href="#dest-toc:10"><tspan class="cs-cs10">4</tspan></a></text>
+        <text x="24.557" y="173.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:10" xlink:href="#dest-toc:10"><tspan class="cs-cs10">Cajas LR, Tablas y Elementos Flotantes</tspan></a></text>
         <line x1="96.574" y1="173.380" x2="187.143" y2="173.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="173.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="20.000" y="180.230" xml:space="preserve"><tspan class="cs-cs10">5</tspan></text>
-        <text x="24.557" y="180.230" xml:space="preserve"><tspan class="cs-cs10">Modo Matemático, Gráficos Vectoriales y Referencias</tspan></text>
+        <text x="187.943" y="173.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:10" xlink:href="#pdest-toc:10"><tspan class="cs-cs10">3</tspan></a></text>
+        <text x="20.000" y="180.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:12" xlink:href="#dest-toc:12"><tspan class="cs-cs10">5</tspan></a></text>
+        <text x="24.557" y="180.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:12" xlink:href="#dest-toc:12"><tspan class="cs-cs10">Modo Matemático, Gráficos Vectoriales y Referencias</tspan></a></text>
         <line x1="119.280" y1="179.880" x2="187.143" y2="179.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="180.230" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
-        <text x="26.000" y="186.730" xml:space="preserve"><tspan class="cs-cs3">5.1</tspan></text>
-        <text x="33.545" y="186.730" xml:space="preserve"><tspan class="cs-cs3">Diagrama Vectorial con el Entornopicture</tspan></text>
+        <text x="187.943" y="180.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:12" xlink:href="#pdest-toc:12"><tspan class="cs-cs10">4</tspan></a></text>
+        <text x="26.000" y="186.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:13" xlink:href="#dest-toc:13"><tspan class="cs-cs3">5.1</tspan></a></text>
+        <text x="33.545" y="186.730" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:13" xlink:href="#dest-toc:13"><tspan class="cs-cs3">Diagrama Vectorial con el Entornopicture</tspan></a></text>
         <line x1="101.866" y1="186.380" x2="187.260" y2="186.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="188.060" y="186.730" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
-        <text x="20.000" y="193.230" xml:space="preserve"><tspan class="cs-cs10">A</tspan></text>
-        <text x="25.133" y="193.230" xml:space="preserve"><tspan class="cs-cs10">Especificación del Fichero Intermedio.tks</tspan></text>
+        <text x="188.060" y="186.730" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:13" xlink:href="#pdest-toc:13"><tspan class="cs-cs3">4</tspan></a></text>
+        <text x="20.000" y="193.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:14" xlink:href="#dest-toc:14"><tspan class="cs-cs10">A</tspan></a></text>
+        <text x="25.133" y="193.230" xml:space="preserve"><a class="tks-link tks-int" href="#dest-toc:14" xlink:href="#dest-toc:14"><tspan class="cs-cs10">Especificación del Fichero Intermedio.tks</tspan></a></text>
         <line x1="99.003" y1="192.880" x2="187.143" y2="192.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="187.943" y="193.230" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="187.943" y="193.230" xml:space="preserve"><a class="tks-link tks-int" href="#pdest-toc:14" xlink:href="#pdest-toc:14"><tspan class="cs-cs10">4</tspan></a></text>
+        <rect class="tks-anchor" x="20.000" y="202.475" width="170.000" height="8.0" opacity="0" id="dest-toc:0"/>
         <text x="20.000" y="207.975" xml:space="preserve"><tspan class="cs-cs9">1. Motor Léxico TeX, Símbolos y Tipografía</tspan></text>
-        <text x="26.000" y="216.710" xml:space="preserve" style="word-spacing:2.519px;"><tspan class="cs-cs3">Este fichero (</tspan><tspan class="cs-cs7">capitulo1.tex</tspan><tspan class="cs-cs3">) se incorpora dinámicamente desde </tspan><tspan class="cs-cs7">input.tex </tspan><tspan class="cs-cs3">mediante</tspan></text>
-        <text x="26.000" y="222.210" xml:space="preserve" style="word-spacing:0.320px;"><tspan class="cs-cs7">\input{capitulo1}</tspan><tspan class="cs-cs3">. En LaTeX2ε, un salto de línea simple equivale a un espacio, una línea en</tspan></text>
-        <text x="26.000" y="227.710" xml:space="preserve" style="word-spacing:0.231px;"><tspan class="cs-cs3">blanco emite </tspan><tspan class="cs-cs7">\par</tspan><tspan class="cs-cs3">, y los comentarios con </tspan><tspan class="cs-cs7">% </tspan><tspan class="cs-cs3">descartan el resto de la línea junto con los espacios</tspan></text>
-        <text x="26.000" y="233.210" xml:space="preserve"><tspan class="cs-cs3">iniciales de la siguiente—tal como define el motor de Knuth—evitando espacios indeseados.</tspan></text>
-        <text x="20.000" y="242.634" xml:space="preserve"><tspan class="cs-cs12">1.1 Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
-        <text x="26.000" y="250.410" xml:space="preserve" style="word-spacing:0.194px;"><tspan class="cs-cs3">El analizador soporta acentos con o sin llaves en cualquier vocal o consonante: á, è, î, ü, ñ, ō, ż,</tspan></text>
-        <text x="26.000" y="255.910" xml:space="preserve" style="word-spacing:0.376px;"><tspan class="cs-cs3">ğ, š, ő, ç, ą, å, ḇ, ạ, oo͡, además de letras europeas como å, Å, æ, Æ, œ, Œ, ø, Ø, ł, Ł, ß y sin</tspan></text>
-        <text x="26.000" y="261.410" xml:space="preserve"><tspan class="cs-cs3">punto (ı, ȷ).</tspan></text>
-        <text x="34.000" y="267.910" xml:space="preserve" style="word-spacing:1.572px;"><tspan class="cs-cs3">Las ligaduras se transforman automáticamente: “comillas dobles inglesas”, `comillas</tspan></text>
-        <text x="26.000" y="273.410" xml:space="preserve" style="word-spacing:1.627px;"><tspan class="cs-cs3">simples&apos;, intervalos numéricos con guión medio (págs. 15–30), incisos con raya larga—sin</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="210.710" width="170.000" height="8.0" opacity="0" id="dest-sec:lexico"/>
+        <rect class="tks-anchor" x="20.000" y="210.710" width="170.000" height="8.0" opacity="0" id="dest-idx:lexer_TeX"/>
+        <rect class="tks-anchor" x="20.000" y="210.710" width="170.000" height="8.0" opacity="0" id="dest-idx:tipografia_digital"/>
+        <text x="20.000" y="216.210" xml:space="preserve" style="word-spacing:3.269px;"><tspan class="cs-cs3">Este fichero (</tspan><tspan class="cs-cs7">capitulo1.tex</tspan><tspan class="cs-cs3">) se incorpora dinámicamente desde </tspan><tspan class="cs-cs7">input.tex </tspan><tspan class="cs-cs3">mediante</tspan></text>
+        <text x="20.000" y="221.710" xml:space="preserve" style="word-spacing:0.748px;"><tspan class="cs-cs7">\input{capitulo1}</tspan><tspan class="cs-cs3">. En LaTeX2ε, un salto de línea simple equivale a un espacio, una línea en</tspan></text>
+        <text x="20.000" y="227.210" xml:space="preserve" style="word-spacing:0.584px;"><tspan class="cs-cs3">blanco emite </tspan><tspan class="cs-cs7">\par</tspan><tspan class="cs-cs3">, y los comentarios con </tspan><tspan class="cs-cs7">% </tspan><tspan class="cs-cs3">descartan el resto de la línea junto con los espacios</tspan></text>
+        <text x="20.000" y="232.710" xml:space="preserve"><tspan class="cs-cs3">iniciales de la siguiente—tal como define el motor de Knuth—evitando espacios indeseados.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="238.534" width="170.000" height="8.0" opacity="0" id="dest-toc:1"/>
+        <text x="20.000" y="244.034" xml:space="preserve"><tspan class="cs-cs12">1.1 Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
+        <text x="20.000" y="251.310" xml:space="preserve" style="word-spacing:0.059px;"><tspan class="cs-cs3">El analizador soporta acentos con o sin llaves en cualquier vocal o consonante: á, è, î, ü, ñ, ō, ż, ğ, š,</tspan></text>
+        <text x="20.000" y="256.810" xml:space="preserve"><tspan class="cs-cs3">ő, ç, ą, å, ḇ, ạ, oo͡, además de letras europeas como å, Å, æ, Æ, œ, Œ, ø, Ø, ł, Ł, ß y sin punto (ı, ȷ).</tspan></text>
+        <text x="28.000" y="264.710" xml:space="preserve" style="word-spacing:0.223px;"><tspan class="cs-cs3">Las ligaduras se transforman automáticamente: “comillas dobles inglesas”, `comillas simples&apos;,</tspan></text>
+        <text x="20.000" y="270.210" xml:space="preserve" style="word-spacing:0.187px;"><tspan class="cs-cs3">intervalos numéricos con guión medio (págs. 15–30), incisos con raya larga—sin espacios—y signos de</tspan></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Arquitectura TeX -&gt; .tks -&gt; .svg</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">1</text>
@@ -150,51 +164,55 @@
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-2"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-2)">
-        <text x="26.000" y="26.180" xml:space="preserve"><tspan class="cs-cs3">espacios—y signos de apertura ¿Cómo opera el lexer? ¡Con precisión tipográfica!</tspan></text>
-        <text x="26.000" y="32.300" xml:space="preserve"><tspan class="cs-cs13">Caracteres reservados: </tspan><tspan class="cs-cs14"># $ % &amp; _ { } ~ ^ \ | &lt; &gt;</tspan></text>
-        <text x="26.000" y="38.800" xml:space="preserve"><tspan class="cs-cs13">Símbolos editoriales: </tspan><tspan class="cs-cs14">† ‡ § ¶ © ® ™ £ € … •</tspan></text>
-        <text x="26.000" y="45.300" xml:space="preserve"><tspan class="cs-cs13">Logotipos y fecha: </tspan><tspan class="cs-cs14">TeX, LaTeX, LaTeX2ε — Compilado el 4 de noviembre de 2026</tspan></text>
-        <text x="20.000" y="55.104" xml:space="preserve"><tspan class="cs-cs12">1.2 Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
-        <text x="26.000" y="62.500" xml:space="preserve"><tspan class="cs-cs13">Familias y series: </tspan><tspan class="cs-cs14">Roman Serif, </tspan><tspan class="cs-cs15">Sans Serif</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs16">Typewriter Mono</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs17">Negrita</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs18">Cursiva</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs19">Versalitas</tspan><tspan class="cs-cs14">,</tspan></text>
-        <text x="26.000" y="67.500" xml:space="preserve"><tspan class="cs-cs20">Subrayado</tspan></text>
-        <text x="26.000" y="74.000" xml:space="preserve"><tspan class="cs-cs13">Super y subíndices: </tspan><tspan class="cs-cs14">Fórmula química H</tspan><tspan class="cs-cs21">2</tspan><tspan class="cs-cs14">SO</tspan><tspan class="cs-cs21">4</tspan><tspan class="cs-cs14">, energía E=mc</tspan><tspan class="cs-cs22">2</tspan><tspan class="cs-cs14">, sección 1.</tspan><tspan class="cs-cs22">a</tspan></text>
-        <text x="26.000" y="80.500" xml:space="preserve"><tspan class="cs-cs13">Primitivas NFSS: </tspan><tspan class="cs-cs23">Fuente activada con \usefont{OT1}{cmss}{bx}{it}</tspan></text>
-        <text x="26.000" y="89.200" xml:space="preserve"><tspan class="cs-cs13">Escala estándar: </tspan><tspan class="cs-cs24">tiny </tspan><tspan class="cs-cs25">scriptsize </tspan><tspan class="cs-cs4">footnotesize </tspan><tspan class="cs-cs6">small </tspan><tspan class="cs-cs3">normalsize </tspan><tspan class="cs-cs2">large </tspan><tspan class="cs-cs26">Large </tspan><tspan class="cs-cs27">LARGE </tspan><tspan class="cs-cs28">huge</tspan></text>
-        <text x="20.000" y="95.462" xml:space="preserve"><tspan class="cs-cs29">1.2.1 Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
-        <text x="26.000" y="102.530" xml:space="preserve" style="word-spacing:0.821px;"><tspan class="cs-cs29">Párrafo con título (\paragraph) </tspan><tspan class="cs-cs3">El comando </tspan><tspan class="cs-cs7">\paragraph </tspan><tspan class="cs-cs3">compone su título en negrita en la</tspan></text>
-        <text x="26.000" y="108.030" xml:space="preserve"><tspan class="cs-cs3">misma línea de inicio del párrafo, seguido de un espacio horizontal </tspan><tspan class="cs-cs7">\quad</tspan><tspan class="cs-cs30">1</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="192.500" y="112.550" xml:space="preserve"><tspan class="cs-cs32">Nota al</tspan></text>
-        <text x="192.500" y="116.050" xml:space="preserve"><tspan class="cs-cs32">margen con</tspan></text>
-        <text x="192.500" y="119.550" xml:space="preserve"><tspan class="cs-cs32">\marginpar</tspan></text>
-        <text x="28.000" y="116.030" xml:space="preserve"><tspan class="cs-cs33">Nota de Arquitectura — </tspan><tspan class="cs-cs34">El fichero intermedio generado por la primera etapa lleva ahora la extensión</tspan></text>
-        <text x="28.000" y="121.530" xml:space="preserve"><tspan class="cs-cs35">.tks </tspan><tspan class="cs-cs34">(formato estructurado XML de Teksto), a partir del cual </tspan><tspan class="cs-cs35">xml2svg </tspan><tspan class="cs-cs34">produce el documento</tspan></text>
-        <text x="28.000" y="127.030" xml:space="preserve"><tspan class="cs-cs34">interactivo </tspan><tspan class="cs-cs35">.svg</tspan><tspan class="cs-cs34">.</tspan></text>
-        <text x="20.000" y="140.275" xml:space="preserve"><tspan class="cs-cs9">2. Listas Anidadas, Texto Literal y Espaciado</tspan></text>
-        <text x="26.000" y="149.010" xml:space="preserve" style="word-spacing:0.385px;"><tspan class="cs-cs3">En esta segunda página (página actual: 1), maquetada a dos columnas mediante </tspan><tspan class="cs-cs7">\twocolumn</tspan><tspan class="cs-cs3">, se</tspan></text>
-        <text x="26.000" y="154.510" xml:space="preserve"><tspan class="cs-cs3">verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</tspan></text>
-        <text x="20.000" y="163.934" xml:space="preserve"><tspan class="cs-cs12">2.1 Entornos de Listas</tspan></text>
-        <text x="31.800" y="172.010" text-anchor="end"><tspan class="cs-cs3">1.</tspan></text>
-        <text x="34.000" y="172.010" xml:space="preserve"><tspan class="cs-cs3">Primer elemento numerado del nivel principal (</tspan><tspan class="cs-cs7">enumi</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="31.800" y="179.510" text-anchor="end"><tspan class="cs-cs3">2.</tspan></text>
-        <text x="34.000" y="179.510" xml:space="preserve"><tspan class="cs-cs3">Segundo elemento con sublista anidada:</tspan></text>
-        <text x="38.300" y="187.010" text-anchor="end"><tspan class="cs-cs3">(a)</tspan></text>
-        <text x="40.500" y="187.010" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento alfabético de nivel 2 (</tspan><tspan class="cs-cs7">enumii</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="38.300" y="194.510" text-anchor="end"><tspan class="cs-cs3">(b)</tspan></text>
-        <text x="40.500" y="194.510" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento con lista de viñetas interna:</tspan></text>
-        <text x="46.300" y="202.010" text-anchor="end"><tspan class="cs-cs3">•</tspan></text>
-        <text x="48.500" y="202.010" xml:space="preserve"><tspan class="cs-cs3">Viñeta estándar definida por </tspan><tspan class="cs-cs7">\labelitemi</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="46.300" y="209.510" text-anchor="end"><tspan class="cs-cs3">‡</tspan></text>
-        <text x="48.500" y="209.510" xml:space="preserve"><tspan class="cs-cs3">Viñeta personalizada con argumento opcional </tspan><tspan class="cs-cs7">\item[\ddag]</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="31.800" y="217.010" text-anchor="end"><tspan class="cs-cs3">3.</tspan></text>
-        <text x="34.000" y="217.010" xml:space="preserve"><tspan class="cs-cs3">Tercer elemento del nivel principal.</tspan></text>
-        <text x="30.000" y="224.710" xml:space="preserve"><tspan class="cs-cs10">Entrada (.tex):</tspan></text>
-        <text x="56.859" y="224.710" xml:space="preserve"><tspan class="cs-cs3">Código fuente en sintaxis estándar LaTeX2ε.</tspan></text>
-        <text x="30.000" y="232.610" xml:space="preserve"><tspan class="cs-cs10">Intermedio (.tks):</tspan></text>
-        <text x="62.041" y="232.610" xml:space="preserve"><tspan class="cs-cs3">Representación estructurada XML de estilos, marcos y flujo.</tspan></text>
-        <text x="30.000" y="240.510" xml:space="preserve"><tspan class="cs-cs10">Salida (.svg):</tspan></text>
-        <text x="55.625" y="240.510" xml:space="preserve"><tspan class="cs-cs3">Documento vectorial multipágina interactivo.</tspan></text>
-        <text x="20.000" y="250.834" xml:space="preserve"><tspan class="cs-cs12">2.2 Modo Literal (\verb y verbatim)</tspan></text>
-        <text x="26.000" y="258.610" xml:space="preserve" style="word-spacing:2.374px;"><tspan class="cs-cs3">El comando en línea </tspan><tspan class="cs-cs11">\newcommand{\cmd}[2][def]{#1-#2} </tspan><tspan class="cs-cs3">conserva intactos los</tspan></text>
+        <text x="20.000" y="26.180" xml:space="preserve"><tspan class="cs-cs3">apertura ¿Cómo opera el lexer? ¡Con precisión tipográfica!</tspan></text>
+        <text x="26.000" y="34.200" xml:space="preserve"><tspan class="cs-cs13">Caracteres reservados: </tspan><tspan class="cs-cs14"># $ % &amp; _ { } ~ ^ \ | &lt; &gt;</tspan></text>
+        <text x="26.000" y="40.700" xml:space="preserve"><tspan class="cs-cs13">Símbolos editoriales: </tspan><tspan class="cs-cs14">† ‡ § ¶ © ® ™ £ € … •</tspan></text>
+        <text x="26.000" y="47.200" xml:space="preserve"><tspan class="cs-cs13">Logotipos y fecha: </tspan><tspan class="cs-cs14">TeX, LaTeX, LaTeX2ε — Compilado el 4 de noviembre de 2026</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="51.504" width="170.000" height="8.0" opacity="0" id="dest-toc:2"/>
+        <text x="20.000" y="57.004" xml:space="preserve"><tspan class="cs-cs12">1.2 Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
+        <text x="26.000" y="64.400" xml:space="preserve"><tspan class="cs-cs13">Familias y series: </tspan><tspan class="cs-cs14">Roman Serif, </tspan><tspan class="cs-cs15">Sans Serif</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs16">Typewriter Mono</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs17">Negrita</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs18">Cursiva</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs19">Versalitas</tspan><tspan class="cs-cs14">,</tspan></text>
+        <text x="26.000" y="69.400" xml:space="preserve"><tspan class="cs-cs20">Subrayado</tspan></text>
+        <text x="26.000" y="75.900" xml:space="preserve"><tspan class="cs-cs13">Super y subíndices: </tspan><tspan class="cs-cs14">Fórmula química H</tspan><tspan class="cs-cs21">2</tspan><tspan class="cs-cs14">SO</tspan><tspan class="cs-cs21">4</tspan><tspan class="cs-cs14">, energía E=mc</tspan><tspan class="cs-cs22">2</tspan><tspan class="cs-cs14">, sección 1.</tspan><tspan class="cs-cs22">a</tspan></text>
+        <text x="26.000" y="82.400" xml:space="preserve"><tspan class="cs-cs13">Primitivas NFSS: </tspan><tspan class="cs-cs23">Fuente activada con \usefont{OT1}{cmss}{bx}{it}</tspan></text>
+        <text x="26.000" y="91.100" xml:space="preserve"><tspan class="cs-cs13">Escala estándar: </tspan><tspan class="cs-cs24">tiny </tspan><tspan class="cs-cs25">scriptsize </tspan><tspan class="cs-cs4">footnotesize </tspan><tspan class="cs-cs6">small </tspan><tspan class="cs-cs3">normalsize </tspan><tspan class="cs-cs2">large </tspan><tspan class="cs-cs26">Large </tspan><tspan class="cs-cs27">LARGE </tspan><tspan class="cs-cs28">huge</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="91.862" width="170.000" height="8.0" opacity="0" id="dest-toc:3"/>
+        <text x="20.000" y="97.362" xml:space="preserve"><tspan class="cs-cs29">1.2.1 Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
+        <text x="20.000" y="103.930" xml:space="preserve" style="word-spacing:0.312px;"><tspan class="cs-cs29">Párrafo con título (\paragraph) </tspan><tspan class="cs-cs3">El comando </tspan><tspan class="cs-cs7">\paragraph </tspan><tspan class="cs-cs3">compone su título en negrita en la misma</tspan></text>
+        <text x="20.000" y="109.430" xml:space="preserve"><tspan class="cs-cs3">línea de inicio del párrafo, seguido de un espacio horizontal </tspan><tspan class="cs-cs7">\quad</tspan><tspan class="cs-cs30">1</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="192.500" y="115.850" xml:space="preserve"><tspan class="cs-cs32">Nota al</tspan></text>
+        <text x="192.500" y="119.350" xml:space="preserve"><tspan class="cs-cs32">margen con</tspan></text>
+        <text x="192.500" y="122.850" xml:space="preserve"><tspan class="cs-cs32">\marginpar</tspan></text>
+        <text x="28.000" y="119.330" xml:space="preserve"><tspan class="cs-cs33">Nota de Arquitectura — </tspan><tspan class="cs-cs34">El fichero intermedio generado por la primera etapa lleva ahora la extensión</tspan></text>
+        <text x="28.000" y="124.830" xml:space="preserve"><tspan class="cs-cs35">.tks </tspan><tspan class="cs-cs34">(formato estructurado XML de Teksto), a partir del cual </tspan><tspan class="cs-cs35">xml2svg </tspan><tspan class="cs-cs34">produce el documento</tspan></text>
+        <text x="28.000" y="130.330" xml:space="preserve"><tspan class="cs-cs34">interactivo </tspan><tspan class="cs-cs35">.svg</tspan><tspan class="cs-cs34">.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="138.075" width="170.000" height="8.0" opacity="0" id="dest-toc:4"/>
+        <text x="20.000" y="143.575" xml:space="preserve"><tspan class="cs-cs9">2. Listas Anidadas, Texto Literal y Espaciado</tspan></text>
+        <text x="20.000" y="151.810" xml:space="preserve" style="word-spacing:0.847px;"><tspan class="cs-cs3">En esta segunda página (página actual: 1), maquetada a dos columnas mediante </tspan><tspan class="cs-cs7">\twocolumn</tspan><tspan class="cs-cs3">, se</tspan></text>
+        <text x="20.000" y="157.310" xml:space="preserve"><tspan class="cs-cs3">verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="163.134" width="170.000" height="8.0" opacity="0" id="dest-toc:5"/>
+        <text x="20.000" y="168.634" xml:space="preserve"><tspan class="cs-cs12">2.1 Entornos de Listas</tspan></text>
+        <text x="25.800" y="176.710" text-anchor="end"><tspan class="cs-cs3">1.</tspan></text>
+        <text x="28.000" y="176.710" xml:space="preserve"><tspan class="cs-cs3">Primer elemento numerado del nivel principal (</tspan><tspan class="cs-cs7">enumi</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="25.800" y="184.210" text-anchor="end"><tspan class="cs-cs3">2.</tspan></text>
+        <text x="28.000" y="184.210" xml:space="preserve"><tspan class="cs-cs3">Segundo elemento con sublista anidada:</tspan></text>
+        <text x="32.300" y="191.710" text-anchor="end"><tspan class="cs-cs3">(a)</tspan></text>
+        <text x="34.500" y="191.710" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento alfabético de nivel 2 (</tspan><tspan class="cs-cs7">enumii</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="32.300" y="199.210" text-anchor="end"><tspan class="cs-cs3">(b)</tspan></text>
+        <text x="34.500" y="199.210" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento con lista de viñetas interna:</tspan></text>
+        <text x="40.300" y="206.710" text-anchor="end"><tspan class="cs-cs3">•</tspan></text>
+        <text x="42.500" y="206.710" xml:space="preserve"><tspan class="cs-cs3">Viñeta estándar definida por </tspan><tspan class="cs-cs7">\labelitemi</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="40.300" y="214.210" text-anchor="end"><tspan class="cs-cs3">‡</tspan></text>
+        <text x="42.500" y="214.210" xml:space="preserve"><tspan class="cs-cs3">Viñeta personalizada con argumento opcional </tspan><tspan class="cs-cs7">\item[\ddag]</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="25.800" y="221.710" text-anchor="end"><tspan class="cs-cs3">3.</tspan></text>
+        <text x="28.000" y="221.710" xml:space="preserve"><tspan class="cs-cs3">Tercer elemento del nivel principal.</tspan></text>
+        <text x="24.000" y="229.410" xml:space="preserve"><tspan class="cs-cs10">Entrada (.tex):</tspan></text>
+        <text x="50.859" y="229.410" xml:space="preserve"><tspan class="cs-cs3">Código fuente en sintaxis estándar LaTeX2ε.</tspan></text>
+        <text x="24.000" y="237.310" xml:space="preserve"><tspan class="cs-cs10">Intermedio (.tks):</tspan></text>
+        <text x="56.041" y="237.310" xml:space="preserve"><tspan class="cs-cs3">Representación estructurada XML de estilos, marcos y flujo.</tspan></text>
+        <text x="24.000" y="245.210" xml:space="preserve"><tspan class="cs-cs10">Salida (.svg):</tspan></text>
+        <text x="49.625" y="245.210" xml:space="preserve"><tspan class="cs-cs3">Documento vectorial multipágina interactivo.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="250.034" width="170.000" height="8.0" opacity="0" id="dest-toc:6"/>
+        <text x="20.000" y="255.534" xml:space="preserve"><tspan class="cs-cs12">2.2 Modo Literal (\verb y verbatim)</tspan></text>
         <line x1="20.000" y1="265.200" x2="84.600" y2="265.200" stroke="#334155" stroke-width="0.28"/>
         <text x="22.300" y="269.500" text-anchor="end"><tspan class="cs-cs31">1</tspan></text>
         <text x="24.500" y="269.500" xml:space="preserve" style="word-spacing:0.316px;"><tspan class="cs-cs31">Las notas al pie (\footnote) se numeran automáticamente, reservan espacio en el borde inferior del marco activo y se separan</tspan></text>
@@ -209,93 +227,98 @@
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-3"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-3)">
-        <text x="26.000" y="26.180" xml:space="preserve" style="word-spacing:0.326px;"><tspan class="cs-cs3">caracteres especiales, mientras que </tspan><tspan class="cs-cs11">\verb*␣muestra␣espacios </tspan><tspan class="cs-cs3">visibiliza cada espacio con</tspan></text>
-        <text x="26.000" y="31.680" xml:space="preserve"><tspan class="cs-cs11">␣</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="30.000" y="38.180" xml:space="preserve"><tspan class="cs-cs11">% Bloque literal verbatim:</tspan></text>
-        <text x="30.000" y="43.680" xml:space="preserve"><tspan class="cs-cs11">\def\identidad#1{#1}</tspan></text>
-        <text x="30.000" y="49.180" xml:space="preserve"><tspan class="cs-cs11">  Sangría y   espacios   preservados.</tspan></text>
-        <text x="20.000" y="58.604" xml:space="preserve"><tspan class="cs-cs12">2.3 Saltos, Rellenos Elásticos y Reglas</tspan></text>
-        <text x="26.000" y="66.380" xml:space="preserve"><tspan class="cs-cs3">Salto de línea manual con </tspan><tspan class="cs-cs7">\\</tspan><tspan class="cs-cs3">:</tspan></text>
-        <text x="26.000" y="71.880" xml:space="preserve"><tspan class="cs-cs3">Segunda línea sin justificación forzada.</tspan></text>
-        <text x="26.000" y="79.880" xml:space="preserve"><tspan class="cs-cs3">Tercera línea tras un espacio adicional de </tspan><tspan class="cs-cs7">2.5mm</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="26.000" y="88.497" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de rellenos horizontales y reglas (</tspan><tspan class="cs-cs7">\hfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\dotfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\hrulefill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\rule</tspan><tspan class="cs-cs3">):</tspan></text>
-        <text x="26.000" y="93.997" xml:space="preserve"><tspan class="cs-cs3">Extremo izquierdo</tspan></text>
-        <text x="162.409" y="93.997" xml:space="preserve"><tspan class="cs-cs3">Extremo derecho</tspan></text>
-        <text x="26.000" y="99.497" xml:space="preserve"><tspan class="cs-cs3">Sección 1</tspan></text>
-        <line x1="43.215" y1="99.147" x2="178.606" y2="99.147" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="179.406" y="99.497" xml:space="preserve"><tspan class="cs-cs3">Pág. 1</tspan></text>
-        <text x="26.000" y="104.997" xml:space="preserve"><tspan class="cs-cs3">Sección 2</tspan></text>
-        <line x1="43.215" y1="104.647" x2="178.606" y2="104.647" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="179.406" y="104.997" xml:space="preserve"><tspan class="cs-cs3">Pág. 2</tspan></text>
-        <text x="26.000" y="110.497" xml:space="preserve"><tspan class="cs-cs3">Firma autorizada:</tspan></text>
-        <line x1="55.543" y1="110.147" x2="178.552" y2="110.147" stroke="Black" stroke-width="0.35"/>
-        <rect x="178.952" y="108.697" width="10.000" height="1.800" fill="Black"/>
-        <text x="20.000" y="126.475" xml:space="preserve"><tspan class="cs-cs9">3. Contadores, Longitudes y Apéndices</tspan></text>
-        <text x="26.000" y="135.210" xml:space="preserve" style="word-spacing:0.734px;"><tspan class="cs-cs3">El contador de usuario </tspan><tspan class="cs-cs7">experimento </tspan><tspan class="cs-cs3">(dependiente de </tspan><tspan class="cs-cs7">section</tspan><tspan class="cs-cs3">) vale ahora 3 en arábigo, iii en</tspan></text>
-        <text x="26.000" y="140.710" xml:space="preserve"><tspan class="cs-cs3">romano minúscula, III en romano mayúscula y C en alfabético.</tspan></text>
-        <text x="20.000" y="150.134" xml:space="preserve"><tspan class="cs-cs12">3.1 Aritmética de Longitudes y Grupos</tspan></text>
-        <text x="26.000" y="157.910" xml:space="preserve" style="word-spacing:0.427px;"><tspan class="cs-cs3">Este párrafo modifica localmente </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">sumando unidades relativas (</tspan><tspan class="cs-cs7">1.2em</tspan><tspan class="cs-cs3">) y absolutas (</tspan></text>
-        <text x="26.000" y="163.410" xml:space="preserve"><tspan class="cs-cs7">4pt</tspan><tspan class="cs-cs3">). Al cerrarse el grupo de llaves, el valor original de </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">se restaura automáticamente.</tspan></text>
-        <text x="20.000" y="175.155" xml:space="preserve"><tspan class="cs-cs9">Sección sin Numerar (\section*)</tspan></text>
-        <text x="26.000" y="183.890" xml:space="preserve" style="word-spacing:0.854px;"><tspan class="cs-cs3">La variante con estrella </tspan><tspan class="cs-cs7">\section* </tspan><tspan class="cs-cs3">aplica el estilo tipográfico de sección sin incrementar ni</tspan></text>
-        <text x="26.000" y="189.390" xml:space="preserve"><tspan class="cs-cs3">imprimir el contador.</tspan></text>
-        <text x="20.000" y="201.135" xml:space="preserve"><tspan class="cs-cs9">4. Cajas LR, Tablas y Elementos Flotantes</tspan></text>
-        <text x="26.000" y="209.870" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de cajas horizontales:</tspan></text>
-        <text x="80.017" y="209.870" xml:space="preserve"><tspan class="cs-cs3">irrompible</tspan></text>
-        <text x="96.704" y="209.870" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <rect x="98.986" y="205.552" width="18.052" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
-        <text x="100.115" y="209.870" xml:space="preserve"><tspan class="cs-cs3">con borde</tspan></text>
-        <text x="117.108" y="209.870" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <rect x="119.391" y="205.552" width="26.258" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
-        <text x="125.116" y="209.870" xml:space="preserve"><tspan class="cs-cs10">centrada</tspan></text>
-        <text x="145.719" y="209.870" xml:space="preserve"><tspan class="cs-cs3">, desplazamiento vertical</tspan></text>
-        <text x="26.000" y="215.370" xml:space="preserve"><tspan class="cs-cs3">con</tspan></text>
-        <text x="32.869" y="214.170" xml:space="preserve"><tspan class="cs-cs6">arriba</tspan></text>
-        <text x="42.288" y="215.370" xml:space="preserve"><tspan class="cs-cs3">y</tspan></text>
-        <text x="45.276" y="216.370" xml:space="preserve"><tspan class="cs-cs6">abajo</tspan></text>
-        <text x="53.390" y="215.370" xml:space="preserve"><tspan class="cs-cs3">, y caja prealmacenada:</tspan></text>
-        <text x="93.670" y="215.370" xml:space="preserve"><tspan class="cs-cs3">VALIDADO</tspan></text>
-        <text x="112.219" y="215.370" xml:space="preserve"><tspan class="cs-cs3">.</tspan></text>
-        <line x1="71.086" y1="221.890" x2="138.914" y2="221.890" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.086" y1="222.740" x2="138.914" y2="222.740" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="222.740" x2="70.686" y2="228.940" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="222.740" x2="71.486" y2="228.940" stroke="Black" stroke-width="0.141"/>
-        <line x1="138.514" y1="222.740" x2="138.514" y2="228.940" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="222.740" x2="139.314" y2="228.940" stroke="Black" stroke-width="0.141"/>
-        <text x="76.743" y="227.036" xml:space="preserve"><tspan class="cs-cs10">Resumen del Pipeline de Teksto</tspan></text>
-        <line x1="71.086" y1="228.940" x2="138.914" y2="228.940" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="228.940" x2="70.686" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="228.940" x2="71.486" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="228.940" x2="97.788" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Etapa</tspan></text>
-        <line x1="116.583" y1="228.940" x2="116.583" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <text x="99.905" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Formato</tspan></text>
-        <line x1="138.514" y1="228.940" x2="138.514" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="228.940" x2="139.314" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <text x="125.526" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Salida</tspan></text>
-        <line x1="97.788" y1="235.140" x2="138.914" y2="235.140" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="235.140" x2="70.686" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="235.140" x2="71.486" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="235.140" x2="97.788" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="239.436" xml:space="preserve"><tspan class="cs-cs3">Frontend TeX</tspan></text>
-        <line x1="116.583" y1="235.140" x2="116.583" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <text x="103.164" y="239.436" xml:space="preserve"><tspan class="cs-cs7">.tex</tspan></text>
-        <line x1="138.514" y1="235.140" x2="138.514" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="235.140" x2="139.314" y2="241.340" stroke="Black" stroke-width="0.141"/>
-        <text x="118.699" y="239.436" xml:space="preserve"><tspan class="cs-cs7">input.tks</tspan></text>
-        <line x1="70.686" y1="241.340" x2="70.686" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="241.340" x2="71.486" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="241.340" x2="97.788" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="245.636" xml:space="preserve"><tspan class="cs-cs3">Motor Gráfico</tspan></text>
-        <line x1="116.583" y1="241.340" x2="116.583" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <text x="103.164" y="245.636" xml:space="preserve"><tspan class="cs-cs7">.tks</tspan></text>
-        <line x1="138.514" y1="241.340" x2="138.514" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="241.340" x2="139.314" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <text x="118.699" y="245.636" xml:space="preserve"><tspan class="cs-cs7">input.svg</tspan></text>
-        <line x1="71.086" y1="247.540" x2="138.914" y2="247.540" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.086" y1="248.390" x2="138.914" y2="248.390" stroke="Black" stroke-width="0.141"/>
-        <text x="63.584" y="254.510" xml:space="preserve"><tspan class="cs-cs5">Cuadro 1: </tspan><tspan class="cs-cs6">Tabla con bordes dobles, \multicolumn y \cline.</tspan></text>
-        <text x="20.000" y="268.515" xml:space="preserve"><tspan class="cs-cs9">5. Modo Matemático, Gráficos Vectoriales y Referencias</tspan></text>
+        <text x="20.000" y="26.180" xml:space="preserve" style="word-spacing:0.562px;"><tspan class="cs-cs3">El comando en línea </tspan><tspan class="cs-cs11">\newcommand{\cmd}[2][def]{#1-#2} </tspan><tspan class="cs-cs3">conserva intactos los caracteres</tspan></text>
+        <text x="20.000" y="31.680" xml:space="preserve"><tspan class="cs-cs3">especiales, mientras que </tspan><tspan class="cs-cs11">\verb*␣muestra␣espacios </tspan><tspan class="cs-cs3">visibiliza cada espacio con </tspan><tspan class="cs-cs11">␣</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="24.000" y="39.580" xml:space="preserve"><tspan class="cs-cs11">% Bloque literal verbatim:</tspan></text>
+        <text x="24.000" y="45.080" xml:space="preserve"><tspan class="cs-cs11">\def\identidad#1{#1}</tspan></text>
+        <text x="24.000" y="50.580" xml:space="preserve"><tspan class="cs-cs11">  Sangría y   espacios   preservados.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="56.404" width="170.000" height="8.0" opacity="0" id="dest-toc:7"/>
+        <text x="20.000" y="61.904" xml:space="preserve"><tspan class="cs-cs12">2.3 Saltos, Rellenos Elásticos y Reglas</tspan></text>
+        <text x="20.000" y="69.180" xml:space="preserve"><tspan class="cs-cs3">Salto de línea manual con </tspan><tspan class="cs-cs7">\\</tspan><tspan class="cs-cs3">:</tspan></text>
+        <text x="20.000" y="74.680" xml:space="preserve"><tspan class="cs-cs3">Segunda línea sin justificación forzada.</tspan></text>
+        <text x="20.000" y="82.680" xml:space="preserve"><tspan class="cs-cs3">Tercera línea tras un espacio adicional de </tspan><tspan class="cs-cs7">2.5mm</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="20.000" y="92.697" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de rellenos horizontales y reglas (</tspan><tspan class="cs-cs7">\hfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\dotfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\hrulefill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\rule</tspan><tspan class="cs-cs3">):</tspan></text>
+        <text x="20.000" y="98.197" xml:space="preserve"><tspan class="cs-cs3">Extremo izquierdo</tspan></text>
+        <text x="162.409" y="98.197" xml:space="preserve"><tspan class="cs-cs3">Extremo derecho</tspan></text>
+        <text x="20.000" y="103.697" xml:space="preserve"><tspan class="cs-cs3">Sección 1</tspan></text>
+        <line x1="37.215" y1="103.347" x2="178.606" y2="103.347" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="179.406" y="103.697" xml:space="preserve"><tspan class="cs-cs3">Pág. 1</tspan></text>
+        <text x="20.000" y="109.197" xml:space="preserve"><tspan class="cs-cs3">Sección 2</tspan></text>
+        <line x1="37.215" y1="108.847" x2="178.606" y2="108.847" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="179.406" y="109.197" xml:space="preserve"><tspan class="cs-cs3">Pág. 2</tspan></text>
+        <text x="20.000" y="114.697" xml:space="preserve"><tspan class="cs-cs3">Firma autorizada:</tspan></text>
+        <line x1="49.543" y1="114.347" x2="178.552" y2="114.347" stroke="Black" stroke-width="0.35"/>
+        <rect x="178.952" y="112.897" width="10.000" height="1.800" fill="Black"/>
+        <rect class="tks-anchor" x="20.000" y="127.075" width="170.000" height="8.0" opacity="0" id="dest-toc:8"/>
+        <text x="20.000" y="132.575" xml:space="preserve"><tspan class="cs-cs9">3. Contadores, Longitudes y Apéndices</tspan></text>
+        <text x="20.000" y="140.810" xml:space="preserve" style="word-spacing:0.213px;"><tspan class="cs-cs3">El contador de usuario </tspan><tspan class="cs-cs7">experimento </tspan><tspan class="cs-cs3">(dependiente de </tspan><tspan class="cs-cs7">section</tspan><tspan class="cs-cs3">) vale ahora 3 en arábigo, iii en romano</tspan></text>
+        <text x="20.000" y="146.310" xml:space="preserve"><tspan class="cs-cs3">minúscula, III en romano mayúscula y C en alfabético.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="152.134" width="170.000" height="8.0" opacity="0" id="dest-toc:9"/>
+        <text x="20.000" y="157.634" xml:space="preserve"><tspan class="cs-cs12">3.1 Aritmética de Longitudes y Grupos</tspan></text>
+        <text x="20.000" y="164.910" xml:space="preserve" style="word-spacing:0.213px;"><tspan class="cs-cs3">Este párrafo modifica localmente </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">sumando unidades relativas (</tspan><tspan class="cs-cs7">1.2em</tspan><tspan class="cs-cs3">) y absolutas (</tspan><tspan class="cs-cs7">4pt</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="20.000" y="170.410" xml:space="preserve"><tspan class="cs-cs3">Al cerrarse el grupo de llaves, el valor original de </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">se restaura automáticamente.</tspan></text>
+        <text x="20.000" y="184.055" xml:space="preserve"><tspan class="cs-cs9">Sección sin Numerar (\section*)</tspan></text>
+        <text x="20.000" y="192.290" xml:space="preserve" style="word-spacing:0.149px;"><tspan class="cs-cs3">La variante con estrella </tspan><tspan class="cs-cs7">\section* </tspan><tspan class="cs-cs3">aplica el estilo tipográfico de sección sin incrementar ni imprimir</tspan></text>
+        <text x="20.000" y="197.790" xml:space="preserve"><tspan class="cs-cs3">el contador.</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="205.935" width="170.000" height="8.0" opacity="0" id="dest-toc:10"/>
+        <text x="20.000" y="211.435" xml:space="preserve"><tspan class="cs-cs9">4. Cajas LR, Tablas y Elementos Flotantes</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="214.170" width="170.000" height="8.0" opacity="0" id="dest-idx:cajas_LR"/>
+        <rect class="tks-anchor" x="20.000" y="214.170" width="170.000" height="8.0" opacity="0" id="dest-idx:tablas_tabular"/>
+        <text x="20.000" y="219.670" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de cajas horizontales:</tspan></text>
+        <text x="74.017" y="219.670" xml:space="preserve"><tspan class="cs-cs3">irrompible</tspan></text>
+        <text x="90.704" y="219.670" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <rect x="92.986" y="215.352" width="18.052" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
+        <text x="94.115" y="219.670" xml:space="preserve"><tspan class="cs-cs3">con borde</tspan></text>
+        <text x="111.108" y="219.670" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <rect x="113.391" y="215.352" width="26.258" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
+        <text x="119.116" y="219.670" xml:space="preserve"><tspan class="cs-cs10">centrada</tspan></text>
+        <text x="139.719" y="219.670" xml:space="preserve"><tspan class="cs-cs3">, desplazamiento vertical con</tspan></text>
+        <text x="20.000" y="223.970" xml:space="preserve"><tspan class="cs-cs6">arriba</tspan></text>
+        <text x="29.419" y="225.170" xml:space="preserve"><tspan class="cs-cs3">y</tspan></text>
+        <text x="32.407" y="226.170" xml:space="preserve"><tspan class="cs-cs6">abajo</tspan></text>
+        <text x="40.521" y="225.170" xml:space="preserve"><tspan class="cs-cs3">, y caja prealmacenada:</tspan></text>
+        <text x="80.801" y="225.170" xml:space="preserve"><tspan class="cs-cs3">VALIDADO</tspan></text>
+        <text x="99.350" y="225.170" xml:space="preserve"><tspan class="cs-cs3">.</tspan></text>
+        <line x1="71.086" y1="233.590" x2="138.914" y2="233.590" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.086" y1="234.440" x2="138.914" y2="234.440" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="234.440" x2="70.686" y2="240.640" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="234.440" x2="71.486" y2="240.640" stroke="Black" stroke-width="0.141"/>
+        <line x1="138.514" y1="234.440" x2="138.514" y2="240.640" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="234.440" x2="139.314" y2="240.640" stroke="Black" stroke-width="0.141"/>
+        <text x="76.743" y="238.736" xml:space="preserve"><tspan class="cs-cs10">Resumen del Pipeline de Teksto</tspan></text>
+        <line x1="71.086" y1="240.640" x2="138.914" y2="240.640" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="240.640" x2="70.686" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="240.640" x2="71.486" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="240.640" x2="97.788" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="244.936" xml:space="preserve"><tspan class="cs-cs10">Etapa</tspan></text>
+        <line x1="116.583" y1="240.640" x2="116.583" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <text x="99.905" y="244.936" xml:space="preserve"><tspan class="cs-cs10">Formato</tspan></text>
+        <line x1="138.514" y1="240.640" x2="138.514" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="240.640" x2="139.314" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <text x="125.526" y="244.936" xml:space="preserve"><tspan class="cs-cs10">Salida</tspan></text>
+        <line x1="97.788" y1="246.840" x2="138.914" y2="246.840" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="246.840" x2="70.686" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="246.840" x2="71.486" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="246.840" x2="97.788" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="251.136" xml:space="preserve"><tspan class="cs-cs3">Frontend TeX</tspan></text>
+        <line x1="116.583" y1="246.840" x2="116.583" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <text x="103.164" y="251.136" xml:space="preserve"><tspan class="cs-cs7">.tex</tspan></text>
+        <line x1="138.514" y1="246.840" x2="138.514" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="246.840" x2="139.314" y2="253.040" stroke="Black" stroke-width="0.141"/>
+        <text x="118.699" y="251.136" xml:space="preserve"><tspan class="cs-cs7">input.tks</tspan></text>
+        <line x1="70.686" y1="253.040" x2="70.686" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="253.040" x2="71.486" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="253.040" x2="97.788" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="257.336" xml:space="preserve"><tspan class="cs-cs3">Motor Gráfico</tspan></text>
+        <line x1="116.583" y1="253.040" x2="116.583" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <text x="103.164" y="257.336" xml:space="preserve"><tspan class="cs-cs7">.tks</tspan></text>
+        <line x1="138.514" y1="253.040" x2="138.514" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="253.040" x2="139.314" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <text x="118.699" y="257.336" xml:space="preserve"><tspan class="cs-cs7">input.svg</tspan></text>
+        <line x1="71.086" y1="259.240" x2="138.914" y2="259.240" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.086" y1="260.090" x2="138.914" y2="260.090" stroke="Black" stroke-width="0.141"/>
+        <rect class="tks-anchor" x="20.000" y="260.210" width="170.000" height="8.0" opacity="0" id="dest-toc:11"/>
+        <text x="60.584" y="265.710" xml:space="preserve"><tspan class="cs-cs5">Cuadro 1: </tspan><tspan class="cs-cs6">Tabla con bordes dobles, \multicolumn y \cline.</tspan></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Arquitectura TeX -&gt; .tks -&gt; .svg</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">3</text>
@@ -306,71 +329,81 @@
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-4"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-4)">
-        <text x="26.000" y="26.180" xml:space="preserve" style="word-spacing:0.808px;"><tspan class="cs-cs3">Como se detalló en la Sección 1 (página 1) y se resumió en el Cuadro 1, el motor procesa el</tspan></text>
-        <text x="26.000" y="31.680" xml:space="preserve"><tspan class="cs-cs3">documento en dos pasadas para resolver referencias cruzadas y citas bibliográficas como [1, 2].</tspan></text>
-        <text x="34.000" y="38.180" xml:space="preserve" style="word-spacing:0.034px;"><tspan class="cs-cs3">En modo matemático en línea se componen expresiones como </tspan><tspan class="cs-cs36">E </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">mc</tspan><tspan class="cs-cs30">2</tspan><tspan class="cs-cs3">, desigualdades </tspan><tspan class="cs-cs36">α </tspan><tspan class="cs-cs3">+ </tspan><tspan class="cs-cs36">β </tspan><tspan class="cs-cs3">≥</tspan></text>
-        <text x="26.000" y="43.680" xml:space="preserve"><tspan class="cs-cs36">γ</tspan><tspan class="cs-cs3">, vectores</tspan></text>
-        <text x="45.448" y="43.680" xml:space="preserve"><tspan class="cs-cs36">v</tspan></text>
-        <path d="M 45.448 40.265 L 47.388 40.265 M 46.738 39.915 L 47.388 40.265 L 46.738 40.615" fill="none" stroke="Black" stroke-width="0.28"/>
-        <text x="48.636" y="43.680" xml:space="preserve"><tspan class="cs-cs3">·</tspan></text>
-        <text x="51.901" y="43.680" xml:space="preserve"><tspan class="cs-cs36">w</tspan></text>
-        <line x1="51.901" y1="40.265" x2="55.006" y2="40.265" stroke="Black" stroke-width="0.28"/>
-        <text x="56.253" y="43.680" xml:space="preserve"><tspan class="cs-cs3">= 0 y límites lim</tspan><tspan class="cs-cs37">n </tspan><tspan class="cs-cs38">→ ∞ </tspan><tspan class="cs-cs3">(1 + 1/</tspan><tspan class="cs-cs36">n</tspan><tspan class="cs-cs3">)</tspan><tspan class="cs-cs39">n </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs3">. A continuación se muestra la ecuación</tspan></text>
-        <text x="26.000" y="49.180" xml:space="preserve"><tspan class="cs-cs3">numerada (1) con fracciones, radicales, coeficientes binomiales y operadores:</tspan></text>
-        <text x="54.687" y="58.980" xml:space="preserve"><tspan class="cs-cs3">∫</tspan><tspan class="cs-cs38">-∞</tspan><tspan class="cs-cs30">∞ </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs30">-</tspan><tspan class="cs-cs39">x</tspan><tspan class="cs-cs30">2</tspan></text>
-        <text x="68.533" y="58.980" xml:space="preserve"><tspan class="cs-cs36">dx </tspan><tspan class="cs-cs3">=</tspan></text>
-        <path d="M 76.849 57.622 L 77.249 57.422 L 77.849 59.446 L 78.649 55.410 L 81.267 55.410" fill="none" stroke="Black" stroke-width="0.30" stroke-linejoin="round"/>
-        <text x="78.949" y="58.980" xml:space="preserve"><tspan class="cs-cs36">π</tspan></text>
-        <text x="81.467" y="58.980" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <path d="M 92.509 54.129 Q 91.509 57.816 92.509 61.502 M 96.158 54.129 Q 97.158 57.816 96.158 61.502" fill="none" stroke="Black" stroke-width="0.32"/>
-        <text x="94.334" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n</tspan></text>
-        <text x="94.334" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k</tspan></text>
-        <text x="98.306" y="58.980" xml:space="preserve"><tspan class="cs-cs3">=</tspan></text>
-        <line x1="101.594" y1="57.816" x2="113.149" y2="57.816" stroke="Black" stroke-width="0.30"/>
-        <text x="107.372" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n!</tspan></text>
-        <text x="107.372" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k!(n-k)!</tspan></text>
-        <text x="113.449" y="58.980" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <text x="123.591" y="58.980" xml:space="preserve"><tspan class="cs-cs36">f</tspan></text>
-        <path d="M 123.591 55.865 L 124.291 55.115 L 124.991 55.865" fill="none" stroke="Black" stroke-width="0.28"/>
-        <text x="125.191" y="58.980" xml:space="preserve"><tspan class="cs-cs3">(</tspan><tspan class="cs-cs36">ξ</tspan><tspan class="cs-cs3">) = ∑</tspan><tspan class="cs-cs37">k</tspan><tspan class="cs-cs38">=0</tspan><tspan class="cs-cs39">N</tspan></text>
-        <line x1="142.625" y1="57.816" x2="155.697" y2="57.816" stroke="Black" stroke-width="0.30"/>
-        <text x="149.161" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">√(ak + 1)</tspan></text>
-        <text x="149.161" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">2k</tspan></text>
-        <text x="157.045" y="58.980" xml:space="preserve"><tspan class="cs-cs3">(1)</tspan></text>
-        <text x="20.000" y="72.304" xml:space="preserve"><tspan class="cs-cs12">5.1 Diagrama Vectorial con el Entorno </tspan><tspan class="cs-cs40">picture</tspan></text>
-        <rect x="54.000" y="81.400" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
-        <text x="66.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.tex</tspan></text>
-        <line x1="78.000" y1="86.400" x2="92.000" y2="86.400" stroke="Black" stroke-width="0.140"/>
-        <polygon points="92.000,86.400 90.150,87.120 90.150,85.680" fill="Black"/>
-        <rect x="92.000" y="81.400" width="26.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140" stroke-dasharray="1.50, 1.20"/>
-        <text x="105.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.tks (XML)</tspan></text>
-        <line x1="118.000" y1="86.400" x2="132.000" y2="86.400" stroke="Black" stroke-width="0.140"/>
-        <polygon points="132.000,86.400 130.150,87.120 130.150,85.680" fill="Black"/>
-        <rect x="132.000" y="81.400" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
-        <text x="144.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.svg</tspan></text>
-        <rect x="57.000" y="95.400" width="96.000" height="8.000" rx="2.240" ry="2.240" fill="none" stroke="Black" stroke-width="0.140"/>
-        <text x="105.000" y="100.416" text-anchor="middle"><tspan class="cs-cs4">Pipeline vectorial nativo de Teksto</tspan></text>
-        <circle cx="60.000" cy="99.400" r="1.250" fill="Black" stroke="Black" stroke-width="0.140"/>
-        <circle cx="150.000" cy="99.400" r="1.750" fill="none" stroke="Black" stroke-width="0.140"/>
-        <path d="M 66.000 91.400 Q 105.000 105.400 144.000 91.400" fill="none" stroke="Black" stroke-width="0.140"/>
-        <text x="20.000" y="117.525" xml:space="preserve"><tspan class="cs-cs9">A. Especificación del Fichero Intermedio </tspan><tspan class="cs-cs40">.tks</tspan></text>
-        <text x="26.000" y="126.260" xml:space="preserve" style="word-spacing:0.666px;"><tspan class="cs-cs3">Tras ejecutar </tspan><tspan class="cs-cs7">\appendix</tspan><tspan class="cs-cs3">, las secciones principales se numeran alfabéticamente (A). El fichero</tspan></text>
-        <text x="26.000" y="131.760" xml:space="preserve" style="word-spacing:0.550px;"><tspan class="cs-cs7">input.tks </tspan><tspan class="cs-cs3">contiene la representación XML intermedia con las definiciones de página, familias</tspan></text>
-        <text x="26.000" y="137.260" xml:space="preserve" style="word-spacing:1.216px;"><tspan class="cs-cs3">tipográficas, estilos deduplicados (</tspan><tspan class="cs-cs7">&lt;para-style&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;char-style&gt;</tspan><tspan class="cs-cs3">) y primitivas de flujo (</tspan><tspan class="cs-cs7">&lt;p&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
-        <text x="26.000" y="142.760" xml:space="preserve" style="word-spacing:1.302px;"><tspan class="cs-cs7">&lt;span&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;br/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;hspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;vspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;rule/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mfrac/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;msqrt/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mover/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;table&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
-        <text x="26.000" y="148.260" xml:space="preserve"><tspan class="cs-cs7">&lt;picture&gt;</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="20.000" y="160.005" xml:space="preserve"><tspan class="cs-cs9">Referencias</tspan></text>
-        <text x="31.800" y="169.040" text-anchor="end"><tspan class="cs-cs3">[1]</tspan></text>
-        <text x="34.000" y="169.040" xml:space="preserve"><tspan class="cs-cs3">Donald E. Knuth, </tspan><tspan class="cs-cs36">The TeXbook</tspan><tspan class="cs-cs3">, Addison-Wesley, 1984.</tspan></text>
-        <text x="31.800" y="176.540" text-anchor="end"><tspan class="cs-cs3">[2]</tspan></text>
-        <text x="34.000" y="176.540" xml:space="preserve"><tspan class="cs-cs3">Leslie Lamport, </tspan><tspan class="cs-cs36">LaTeX: A Document Preparation System</tspan><tspan class="cs-cs3">, 2.</tspan><tspan class="cs-cs30">a </tspan><tspan class="cs-cs3">ed., Addison-Wesley, 1994.</tspan></text>
-        <text x="20.000" y="188.985" xml:space="preserve"><tspan class="cs-cs9">Índice alfabético</tspan></text>
-        <text x="26.000" y="197.620" xml:space="preserve"><tspan class="cs-cs10">cajas LR</tspan><tspan class="cs-cs3">, 1</tspan></text>
-        <text x="26.000" y="204.120" xml:space="preserve"><tspan class="cs-cs10">entorno picture</tspan><tspan class="cs-cs3">, 1</tspan></text>
-        <text x="26.000" y="210.620" xml:space="preserve"><tspan class="cs-cs10">lexer TeX</tspan><tspan class="cs-cs3">, 1</tspan></text>
-        <text x="26.000" y="217.120" xml:space="preserve"><tspan class="cs-cs10">modo matematico</tspan><tspan class="cs-cs3">, 1</tspan></text>
-        <text x="26.000" y="223.620" xml:space="preserve"><tspan class="cs-cs10">tablas tabular</tspan><tspan class="cs-cs3">, 1</tspan></text>
-        <text x="26.000" y="230.120" xml:space="preserve"><tspan class="cs-cs10">tipografia digital</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="21.425" width="170.000" height="8.0" opacity="0" id="dest-tab:pipeline"/>
+        <rect class="tks-anchor" x="20.000" y="21.425" width="170.000" height="8.0" opacity="0" id="dest-toc:12"/>
+        <text x="20.000" y="26.925" xml:space="preserve"><tspan class="cs-cs9">5. Modo Matemático, Gráficos Vectoriales y Referencias</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="29.660" width="170.000" height="8.0" opacity="0" id="dest-sec:matematicas"/>
+        <rect class="tks-anchor" x="20.000" y="29.660" width="170.000" height="8.0" opacity="0" id="dest-idx:modo_matematico"/>
+        <rect class="tks-anchor" x="20.000" y="29.660" width="170.000" height="8.0" opacity="0" id="dest-idx:entorno_picture"/>
+        <text x="20.000" y="35.160" xml:space="preserve" style="word-spacing:0.002px;"><tspan class="cs-cs3">Como se detalló en la Sección </tspan><a class="tks-link tks-int" href="#dest-sec:lexico" xlink:href="#dest-sec:lexico"><tspan class="cs-cs3">1 </tspan></a><tspan class="cs-cs3">(página </tspan><a class="tks-link tks-int" href="#pdest-sec:lexico" xlink:href="#pdest-sec:lexico"><tspan class="cs-cs3">1</tspan></a><tspan class="cs-cs3">) y se resumió en el Cuadro </tspan><a class="tks-link tks-int" href="#dest-tab:pipeline" xlink:href="#dest-tab:pipeline"><tspan class="cs-cs3">1</tspan></a><tspan class="cs-cs3">, el motor procesa el documento</tspan></text>
+        <text x="20.000" y="40.660" xml:space="preserve"><tspan class="cs-cs3">en dos pasadas para resolver referencias cruzadas y citas bibliográficas como [</tspan><a class="tks-link tks-int" href="#dest-bib:knuth84" xlink:href="#dest-bib:knuth84"><tspan class="cs-cs3">1</tspan></a><tspan class="cs-cs3">, </tspan><a class="tks-link tks-int" href="#dest-bib:lamport94" xlink:href="#dest-bib:lamport94"><tspan class="cs-cs3">2</tspan></a><tspan class="cs-cs3">].</tspan></text>
+        <text x="28.000" y="48.560" xml:space="preserve" style="word-spacing:0.136px;"><tspan class="cs-cs3">En modo matemático en línea se componen expresiones como </tspan><tspan class="cs-cs36">E </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">mc</tspan><tspan class="cs-cs30">2</tspan><tspan class="cs-cs3">, desigualdades </tspan><tspan class="cs-cs36">α </tspan><tspan class="cs-cs3">+ </tspan><tspan class="cs-cs36">β </tspan><tspan class="cs-cs3">≥ </tspan><tspan class="cs-cs36">γ</tspan><tspan class="cs-cs3">,</tspan></text>
+        <text x="20.000" y="54.060" xml:space="preserve"><tspan class="cs-cs3">vectores</tspan></text>
+        <text x="35.218" y="54.060" xml:space="preserve"><tspan class="cs-cs36">v</tspan></text>
+        <path d="M 35.218 50.645 L 37.158 50.645 M 36.508 50.295 L 37.158 50.645 L 36.508 50.995" fill="none" stroke="Black" stroke-width="0.28"/>
+        <text x="38.406" y="54.060" xml:space="preserve"><tspan class="cs-cs3">·</tspan></text>
+        <text x="41.671" y="54.060" xml:space="preserve"><tspan class="cs-cs36">w</tspan></text>
+        <line x1="41.671" y1="50.645" x2="44.776" y2="50.645" stroke="Black" stroke-width="0.28"/>
+        <text x="46.024" y="54.060" xml:space="preserve"><tspan class="cs-cs3">= 0 y límites lim</tspan><tspan class="cs-cs37">n </tspan><tspan class="cs-cs38">→ ∞ </tspan><tspan class="cs-cs3">(1 + 1/</tspan><tspan class="cs-cs36">n</tspan><tspan class="cs-cs3">)</tspan><tspan class="cs-cs39">n </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs3">. A continuación se muestra la ecuación numerada (</tspan><a class="tks-link tks-int" href="#dest-eq:gauss" xlink:href="#dest-eq:gauss"><tspan class="cs-cs3">1</tspan></a><tspan class="cs-cs3">)</tspan></text>
+        <text x="20.000" y="59.560" xml:space="preserve"><tspan class="cs-cs3">con fracciones, radicales, coeficientes binomiales y operadores:</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="65.760" width="170.000" height="8.0" opacity="0" id="dest-eq:gauss"/>
+        <text x="51.687" y="71.260" xml:space="preserve"><tspan class="cs-cs3">∫</tspan><tspan class="cs-cs38">-∞</tspan><tspan class="cs-cs30">∞ </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs30">-</tspan><tspan class="cs-cs39">x</tspan><tspan class="cs-cs30">2</tspan></text>
+        <text x="65.533" y="71.260" xml:space="preserve"><tspan class="cs-cs36">dx </tspan><tspan class="cs-cs3">=</tspan></text>
+        <path d="M 73.849 69.902 L 74.249 69.702 L 74.849 71.726 L 75.649 67.690 L 78.267 67.690" fill="none" stroke="Black" stroke-width="0.30" stroke-linejoin="round"/>
+        <text x="75.949" y="71.260" xml:space="preserve"><tspan class="cs-cs36">π</tspan></text>
+        <text x="78.467" y="71.260" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <path d="M 89.509 66.409 Q 88.509 70.096 89.509 73.782 M 93.158 66.409 Q 94.158 70.096 93.158 73.782" fill="none" stroke="Black" stroke-width="0.32"/>
+        <text x="91.334" y="69.242" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n</tspan></text>
+        <text x="91.334" y="73.278" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k</tspan></text>
+        <text x="95.306" y="71.260" xml:space="preserve"><tspan class="cs-cs3">=</tspan></text>
+        <line x1="98.594" y1="70.096" x2="110.149" y2="70.096" stroke="Black" stroke-width="0.30"/>
+        <text x="104.372" y="69.242" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n!</tspan></text>
+        <text x="104.372" y="73.278" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k!(n-k)!</tspan></text>
+        <text x="110.449" y="71.260" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <text x="120.591" y="71.260" xml:space="preserve"><tspan class="cs-cs36">f</tspan></text>
+        <path d="M 120.591 68.145 L 121.291 67.395 L 121.991 68.145" fill="none" stroke="Black" stroke-width="0.28"/>
+        <text x="122.191" y="71.260" xml:space="preserve"><tspan class="cs-cs3">(</tspan><tspan class="cs-cs36">ξ</tspan><tspan class="cs-cs3">) = ∑</tspan><tspan class="cs-cs37">k</tspan><tspan class="cs-cs38">=0</tspan><tspan class="cs-cs39">N</tspan></text>
+        <line x1="139.625" y1="70.096" x2="152.697" y2="70.096" stroke="Black" stroke-width="0.30"/>
+        <text x="146.161" y="69.242" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">√(ak + 1)</tspan></text>
+        <text x="146.161" y="73.278" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">2k</tspan></text>
+        <text x="154.045" y="71.260" xml:space="preserve"><tspan class="cs-cs3">(1)</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="79.084" width="170.000" height="8.0" opacity="0" id="dest-toc:13"/>
+        <text x="20.000" y="84.584" xml:space="preserve"><tspan class="cs-cs12">5.1 Diagrama Vectorial con el Entorno </tspan><tspan class="cs-cs40">picture</tspan></text>
+        <rect x="54.000" y="93.680" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="66.000" y="99.922" text-anchor="middle"><tspan class="cs-cs10">.tex</tspan></text>
+        <line x1="78.000" y1="98.680" x2="92.000" y2="98.680" stroke="Black" stroke-width="0.140"/>
+        <polygon points="92.000,98.680 90.150,99.400 90.150,97.960" fill="Black"/>
+        <rect x="92.000" y="93.680" width="26.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140" stroke-dasharray="1.50, 1.20"/>
+        <text x="105.000" y="99.922" text-anchor="middle"><tspan class="cs-cs10">.tks (XML)</tspan></text>
+        <line x1="118.000" y1="98.680" x2="132.000" y2="98.680" stroke="Black" stroke-width="0.140"/>
+        <polygon points="132.000,98.680 130.150,99.400 130.150,97.960" fill="Black"/>
+        <rect x="132.000" y="93.680" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="144.000" y="99.922" text-anchor="middle"><tspan class="cs-cs10">.svg</tspan></text>
+        <rect x="57.000" y="107.680" width="96.000" height="8.000" rx="2.240" ry="2.240" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="105.000" y="112.696" text-anchor="middle"><tspan class="cs-cs4">Pipeline vectorial nativo de Teksto</tspan></text>
+        <circle cx="60.000" cy="111.680" r="1.250" fill="Black" stroke="Black" stroke-width="0.140"/>
+        <circle cx="150.000" cy="111.680" r="1.750" fill="none" stroke="Black" stroke-width="0.140"/>
+        <path d="M 66.000 103.680 Q 105.000 117.680 144.000 103.680" fill="none" stroke="Black" stroke-width="0.140"/>
+        <rect class="tks-anchor" x="20.000" y="124.305" width="170.000" height="8.0" opacity="0" id="dest-toc:14"/>
+        <text x="20.000" y="129.805" xml:space="preserve"><tspan class="cs-cs9">A. Especificación del Fichero Intermedio </tspan><tspan class="cs-cs40">.tks</tspan></text>
+        <text x="20.000" y="138.040" xml:space="preserve" style="word-spacing:1.212px;"><tspan class="cs-cs3">Tras ejecutar </tspan><tspan class="cs-cs7">\appendix</tspan><tspan class="cs-cs3">, las secciones principales se numeran alfabéticamente (A). El fichero</tspan></text>
+        <text x="20.000" y="143.540" xml:space="preserve" style="word-spacing:1.096px;"><tspan class="cs-cs7">input.tks </tspan><tspan class="cs-cs3">contiene la representación XML intermedia con las definiciones de página, familias</tspan></text>
+        <text x="20.000" y="149.040" xml:space="preserve" style="word-spacing:0.267px;"><tspan class="cs-cs3">tipográficas, estilos deduplicados (</tspan><tspan class="cs-cs7">&lt;para-style&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;char-style&gt;</tspan><tspan class="cs-cs3">) y primitivas de flujo (</tspan><tspan class="cs-cs7">&lt;p&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;span&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
+        <text x="20.000" y="154.540" xml:space="preserve"><tspan class="cs-cs7">&lt;br/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;hspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;vspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;rule/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mfrac/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;msqrt/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mover/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;table&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;picture&gt;</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="20.000" y="168.185" xml:space="preserve"><tspan class="cs-cs9">Referencias</tspan></text>
+        <text x="25.800" y="177.220" text-anchor="end"><tspan class="cs-cs3">[1]</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="171.720" width="170.000" height="8.0" opacity="0" id="dest-bib:knuth84"/>
+        <text x="28.000" y="177.220" xml:space="preserve"><tspan class="cs-cs3">Donald E. Knuth, </tspan><tspan class="cs-cs36">The TeXbook</tspan><tspan class="cs-cs3">, Addison-Wesley, 1984.</tspan></text>
+        <text x="25.800" y="184.720" text-anchor="end"><tspan class="cs-cs3">[2]</tspan></text>
+        <rect class="tks-anchor" x="20.000" y="179.220" width="170.000" height="8.0" opacity="0" id="dest-bib:lamport94"/>
+        <text x="28.000" y="184.720" xml:space="preserve"><tspan class="cs-cs3">Leslie Lamport, </tspan><tspan class="cs-cs36">LaTeX: A Document Preparation System</tspan><tspan class="cs-cs3">, 2.</tspan><tspan class="cs-cs30">a </tspan><tspan class="cs-cs3">ed., Addison-Wesley, 1994.</tspan></text>
+        <text x="20.000" y="197.165" xml:space="preserve"><tspan class="cs-cs9">Índice alfabético</tspan></text>
+        <text x="20.000" y="205.800" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:cajas_LR" xlink:href="#dest-idx:cajas_LR"><tspan class="cs-cs10">cajas LR</tspan></a><a class="tks-link tks-int" href="#dest-idx:cajas_LR" xlink:href="#dest-idx:cajas_LR"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:cajas_LR" xlink:href="#pdest-idx:cajas_LR"><tspan class="cs-cs3">3</tspan></a></text>
+        <text x="20.000" y="212.300" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:entorno_picture" xlink:href="#dest-idx:entorno_picture"><tspan class="cs-cs10">entorno picture</tspan></a><a class="tks-link tks-int" href="#dest-idx:entorno_picture" xlink:href="#dest-idx:entorno_picture"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:entorno_picture" xlink:href="#pdest-idx:entorno_picture"><tspan class="cs-cs3">4</tspan></a></text>
+        <text x="20.000" y="218.800" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:lexer_TeX" xlink:href="#dest-idx:lexer_TeX"><tspan class="cs-cs10">lexer TeX</tspan></a><a class="tks-link tks-int" href="#dest-idx:lexer_TeX" xlink:href="#dest-idx:lexer_TeX"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:lexer_TeX" xlink:href="#pdest-idx:lexer_TeX"><tspan class="cs-cs3">1</tspan></a></text>
+        <text x="20.000" y="225.300" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:modo_matematico" xlink:href="#dest-idx:modo_matematico"><tspan class="cs-cs10">modo matematico</tspan></a><a class="tks-link tks-int" href="#dest-idx:modo_matematico" xlink:href="#dest-idx:modo_matematico"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:modo_matematico" xlink:href="#pdest-idx:modo_matematico"><tspan class="cs-cs3">4</tspan></a></text>
+        <text x="20.000" y="231.800" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:tablas_tabular" xlink:href="#dest-idx:tablas_tabular"><tspan class="cs-cs10">tablas tabular</tspan></a><a class="tks-link tks-int" href="#dest-idx:tablas_tabular" xlink:href="#dest-idx:tablas_tabular"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:tablas_tabular" xlink:href="#pdest-idx:tablas_tabular"><tspan class="cs-cs3">3</tspan></a></text>
+        <text x="20.000" y="238.300" xml:space="preserve"><a class="tks-link tks-int" href="#dest-idx:tipografia_digital" xlink:href="#dest-idx:tipografia_digital"><tspan class="cs-cs10">tipografia digital</tspan></a><a class="tks-link tks-int" href="#dest-idx:tipografia_digital" xlink:href="#dest-idx:tipografia_digital"><tspan class="cs-cs3">, </tspan></a><a class="tks-link tks-int" href="#pdest-idx:tipografia_digital" xlink:href="#pdest-idx:tipografia_digital"><tspan class="cs-cs3">1</tspan></a></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Manual de LaTeX2ε en Teksto</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">4</text>
@@ -434,6 +467,7 @@
     let animId      = null;
     let wheelLock   = false;
     let isDragging  = false;
+    let hasDragged  = false;
     let dragStartX  = 0.0;
     let dragStartY  = 0.0;
     let dragPanX0   = 0.0;
@@ -493,7 +527,7 @@
       applyViewport(currentX);
     }
 
-    function goToPage(targetIdx, immediate = false) {
+    function goToPage(targetIdx, immediate = false, updateHash = true) {
       const clamped = Math.max(0, Math.min(TOTAL_PAGES - 1, targetIdx));
       if (clamped !== currentPage) {
         panX = 0.0;
@@ -503,7 +537,9 @@
       const targetX = clamped * STRIDE_X;
       syncHudState();
 
-      try { history.replaceState(null, '', `#page=${clamped + 1}`); } catch (_) {}
+      if (updateHash) {
+        try { history.replaceState(null, '', `#page=${clamped + 1}`); } catch (_) {}
+      }
 
       if (animId !== null) {
         cancelAnimationFrame(animId);
@@ -533,6 +569,105 @@
       animId = requestAnimationFrame(tick);
     }
 
+    function findAnchorElement(rawId) {
+      if (!rawId) return null;
+      let clean = rawId.startsWith('#') ? rawId.substring(1) : rawId;
+      if (!clean) return null;
+      let el = document.getElementById(clean);
+      if (el) return el;
+      el = document.getElementById('dest-' + clean);
+      if (el) return el;
+      if (clean.startsWith('dest-')) {
+        el = document.getElementById(clean.substring(5));
+        if (el) return el;
+      }
+      if (clean.startsWith('pdest-')) {
+        const sub = clean.substring(6);
+        el = document.getElementById('dest-' + sub) || document.getElementById(sub);
+        if (el) return el;
+      }
+      try {
+        const decoded = decodeURIComponent(clean);
+        if (decoded !== clean) {
+          el = document.getElementById(decoded) || document.getElementById('dest-' + decoded);
+          if (el) return el;
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    function showDestinationHighlight(targetEl) {
+      if (!targetEl) return;
+      const pageEl = targetEl.closest('[id^="page-"]');
+      if (!pageEl) return;
+      const old = svg.querySelectorAll('.tks-dest-highlight');
+      old.forEach(el => el.remove());
+      const x = parseFloat(targetEl.getAttribute('x')) || 0;
+      const y = parseFloat(targetEl.getAttribute('y')) || 0;
+      const w = parseFloat(targetEl.getAttribute('width')) || 170;
+      const h = parseFloat(targetEl.getAttribute('height')) || 8;
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'tks-dest-highlight');
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('class', 'tks-highlight-box');
+      rect.setAttribute('x', (x - 2.0).toFixed(3));
+      rect.setAttribute('y', (y - 1.0).toFixed(3));
+      rect.setAttribute('width', (w + 4.0).toFixed(3));
+      rect.setAttribute('height', (h + 2.0).toFixed(3));
+      rect.setAttribute('rx', '1.8');
+      const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bar.setAttribute('class', 'tks-highlight-bar');
+      bar.setAttribute('x', (x - 5.5).toFixed(3));
+      bar.setAttribute('y', (y - 1.0).toFixed(3));
+      bar.setAttribute('width', '2.5');
+      bar.setAttribute('height', (h + 2.0).toFixed(3));
+      bar.setAttribute('rx', '1.2');
+      g.appendChild(rect);
+      g.appendChild(bar);
+      pageEl.appendChild(g);
+      setTimeout(() => {
+        rect.classList.add('tks-fade-out');
+        bar.classList.add('tks-fade-out');
+      }, 700);
+      setTimeout(() => { g.remove(); }, 2300);
+    }
+
+    function navigateToDestination(hash, immediate = false, pushState = true) {
+      if (!hash) return;
+      const clean = hash.startsWith('#') ? hash.substring(1) : hash;
+      const pageMatch = /^page[=-]?(\d+)$/i.exec(clean);
+      if (pageMatch) {
+        const p = parseInt(pageMatch[1], 10) - 1;
+        goToPage(p, immediate, true);
+        return;
+      }
+      const targetEl = findAnchorElement(clean);
+      if (!targetEl) {
+        const numOnly = parseInt(clean, 10);
+        if (!isNaN(numOnly) && numOnly >= 1 && numOnly <= TOTAL_PAGES) {
+          goToPage(numOnly - 1, immediate, true);
+        }
+        return;
+      }
+      const pageEl = targetEl.closest('[id^="page-"]');
+      if (!pageEl) return;
+      const m = /^page-(\d+)$/.exec(pageEl.id);
+      const pIdx = m ? parseInt(m[1], 10) - 1 : 0;
+      goToPage(pIdx, immediate, false);
+      if (pushState) {
+        try { history.pushState(null, '', '#' + clean); } catch (_) {}
+      }
+      if (zoom > 1.0) {
+        const anchorY = parseFloat(targetEl.getAttribute('y')) || 0;
+        const deskPadTop = 14.0000;
+        const anchorDeskY = deskPadTop + anchorY;
+        panY = anchorDeskY - VIEW_H * 0.5;
+        clampPan();
+        applyViewport(currentX);
+      }
+      showDestinationHighlight(targetEl);
+    }
+
     btnPrev.addEventListener('click', () => goToPage(currentPage - 1));
     btnNext.addEventListener('click', () => goToPage(currentPage + 1));
     btnZoomOut.addEventListener('click', () => setZoom(zoom - ZOOM_STEP));
@@ -542,6 +677,7 @@
     svg.addEventListener('mousedown', (ev) => {
       if (zoom <= 1.0 || ev.button !== 0 || hud.contains(ev.target)) return;
       isDragging = true;
+      hasDragged = false;
       dragStartX = ev.clientX;
       dragStartY = ev.clientY;
       dragPanX0  = panX;
@@ -551,13 +687,16 @@
 
     window.addEventListener('mousemove', (ev) => {
       if (!isDragging) return;
+      const dx = ev.clientX - dragStartX;
+      const dy = ev.clientY - dragStartY;
+      if (Math.hypot(dx, dy) > 4) hasDragged = true;
       const rect = svg.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
       const scaleX = (VIEW_W / zoom) / rect.width;
       const scaleY = (VIEW_H / zoom) / rect.height;
       const scale  = Math.max(scaleX, scaleY);
-      panX = dragPanX0 - (ev.clientX - dragStartX) * scale;
-      panY = dragPanY0 - (ev.clientY - dragStartY) * scale;
+      panX = dragPanX0 - dx * scale;
+      panY = dragPanY0 - dy * scale;
       applyViewport(currentX);
     });
 
@@ -565,6 +704,22 @@
       if (isDragging) {
         isDragging = false;
         syncHudState();
+      }
+    });
+
+    svg.addEventListener('click', (ev) => {
+      if (hasDragged) {
+        hasDragged = false;
+        return;
+      }
+      const link = ev.target.closest('a');
+      if (!link) return;
+      const href = link.getAttribute('href') || link.getAttribute('xlink:href') || '';
+      if (!href) return;
+      if (href.startsWith('#')) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        navigateToDestination(href, false, true);
       }
     });
 
@@ -619,9 +774,17 @@
       setTimeout(() => { wheelLock = false; }, 320);
     }, { passive: false });
 
-    const match = /^#page=(\d+)$/.exec(window.location.hash);
-    const initial = match ? parseInt(match[1], 10) - 1 : 0;
-    goToPage(isNaN(initial) ? 0 : initial, true);
+    window.addEventListener('hashchange', () => {
+      if (window.location.hash) {
+        navigateToDestination(window.location.hash, false, false);
+      }
+    });
+
+    if (window.location.hash) {
+      navigateToDestination(window.location.hash, true, false);
+    } else {
+      goToPage(0, true, true);
+    }
   })();
   ]]></script>
 </svg>

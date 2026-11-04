@@ -569,6 +569,42 @@ static void xml_close_active_span(XmlGenerator *gen) {
     if (gen->active_char_style_id >= 0) {
         sb_append_cstr(&gen->story, "</span>");
         gen->active_char_style_id = -1;
+        gen->active_href[0]       = '\0';
+    }
+}
+
+static void xml_flush_pending_anchors(XmlGenerator *gen) {
+    if (gen->pending_anchors[0] == '\0') return;
+    const char *cur = gen->pending_anchors;
+    while (*cur != '\0') {
+        const char *semi = strchr(cur, ';');
+        size_t len = semi ? (size_t)(semi - cur) : strlen(cur);
+        if (len > 0) {
+            sb_append_cstr(&gen->story, "<anchor id=\"");
+            sb_append_escaped_xml(&gen->story, cur, len);
+            sb_append_cstr(&gen->story, "\"/>");
+        }
+        cur = semi ? (semi + 1) : (cur + len);
+    }
+    gen->pending_anchors[0] = '\0';
+}
+
+static void xml_emit_anchor(XmlGenerator *gen, const char *anchor_id) {
+    if (!anchor_id || anchor_id[0] == '\0' || gen->capture_plain_buf || gen->in_picture) return;
+    if (gen->para_open) {
+        xml_close_active_span(gen);
+        sb_append_cstr(&gen->story, "<anchor id=\"");
+        sb_append_escaped_xml(&gen->story, anchor_id, strlen(anchor_id));
+        sb_append_cstr(&gen->story, "\"/>");
+    } else {
+        size_t cur_len = strlen(gen->pending_anchors);
+        size_t id_len  = strlen(anchor_id);
+        if (cur_len == 0 && id_len < sizeof(gen->pending_anchors)) {
+            memcpy(gen->pending_anchors, anchor_id, id_len + 1);
+        } else if (cur_len + 1 + id_len < sizeof(gen->pending_anchors)) {
+            gen->pending_anchors[cur_len] = ';';
+            memcpy(gen->pending_anchors + cur_len + 1, anchor_id, id_len + 1);
+        }
     }
 }
 
@@ -615,6 +651,8 @@ static void xml_ensure_para_open(XmlGenerator *gen) {
             gen->para_open            = true;
             gen->para_has_content     = false;
             gen->active_char_style_id = -1;
+            gen->active_href[0]       = '\0';
+            xml_flush_pending_anchors(gen);
         }
         return;
     }
@@ -641,6 +679,8 @@ static void xml_ensure_para_open(XmlGenerator *gen) {
     gen->para_open            = true;
     gen->para_has_content     = false;
     gen->active_char_style_id = -1;
+    gen->active_href[0]       = '\0';
+    xml_flush_pending_anchors(gen);
 }
 
 static void xml_table_next_cell(XmlGenerator *gen) {
@@ -718,10 +758,17 @@ static void xml_close_para(XmlGenerator *gen) {
 
 static void xml_activate_current_char_style(XmlGenerator *gen) {
     size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
-    if (gen->active_char_style_id != (int)cs_id) {
+    if (gen->active_char_style_id != (int)cs_id || strcmp(gen->active_href, gen->current_href) != 0) {
         xml_close_active_span(gen);
-        sb_appendf(&gen->story, "<span style=\"cs%zu\">", cs_id + 1);
+        if (gen->current_href[0] != '\0') {
+            sb_appendf(&gen->story, "<span style=\"cs%zu\" href=\"", cs_id + 1);
+            sb_append_escaped_xml(&gen->story, gen->current_href, strlen(gen->current_href));
+            sb_append_cstr(&gen->story, "\">");
+        } else {
+            sb_appendf(&gen->story, "<span style=\"cs%zu\">", cs_id + 1);
+        }
         gen->active_char_style_id = (int)cs_id;
+        snprintf(gen->active_href, sizeof(gen->active_href), "%s", gen->current_href);
     }
 }
 
@@ -800,6 +847,30 @@ static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
     }
 
     sb_append_escaped_xml(&gen->story, text.data, text.len);
+    gen->para_has_content = true;
+}
+
+static void xml_emit_page_ref(XmlGenerator *gen, const char *target, const char *href, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) sb_append_cstr(gen->capture_plain_buf, " ");
+        sb_append_cstr(gen->capture_plain_buf, "1");
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
+    const char *eff_href = (href && href[0]) ? href : gen->current_href;
+    if (eff_href && eff_href[0]) {
+        sb_appendf(&gen->story, "<page-ref ref=\"%s\" style=\"cs%zu\" href=\"%s\"/>",
+                   target ? target : "", cs_id + 1, eff_href);
+    } else {
+        sb_appendf(&gen->story, "<page-ref ref=\"%s\" style=\"cs%zu\"/>",
+                   target ? target : "", cs_id + 1);
+    }
     gen->para_has_content = true;
 }
 
@@ -1718,14 +1789,39 @@ static const BibItemDef *bibitem_find(const MacroEnv *env, StrView key) {
     return nullptr;
 }
 
-static void toc_record_entry(MacroEnv *env, const char *kind, const char *level, const char *number, const char *title, int page_num) {
-    if (!env->is_prescan || env->toc_count >= MAX_TOC_ENTRIES) return;
-    TocEntryDef *te = &env->toc_entries[env->toc_count++];
-    snprintf(te->kind,   sizeof(te->kind),   "%.7s",   kind   ? kind   : "toc");
-    snprintf(te->level,  sizeof(te->level),  "%.23s",  level  ? level  : "section");
-    snprintf(te->number, sizeof(te->number), "%.31s",  number ? number : "");
-    snprintf(te->title,  sizeof(te->title),  "%.255s", title  ? title  : "");
-    te->page_num = page_num;
+static void make_anchor_id(const char *prefix, StrView raw_key, char *out, size_t out_sz) {
+    raw_key = sv_trim(raw_key);
+    size_t pos = 0;
+    int n = snprintf(out, out_sz, "%s", prefix);
+    if (n > 0) pos = (size_t)n;
+    for (size_t i = 0; i < raw_key.len && pos + 1 < out_sz; i++) {
+        unsigned char c = (unsigned char)raw_key.data[i];
+        if (isalnum(c) || c == '-' || c == '_' || c == ':') {
+            out[pos++] = (char)c;
+        } else if (c == ' ' || c == '.') {
+            out[pos++] = '_';
+        }
+    }
+    out[pos] = '\0';
+}
+
+static void toc_record_entry(MacroEnv *env, const char *kind, const char *level, const char *number, const char *title, int page_num, char *out_anchor, size_t out_sz) {
+    if (out_anchor && out_sz > 0) out_anchor[0] = '\0';
+    if (env->is_prescan) {
+        if (env->toc_count >= MAX_TOC_ENTRIES) return;
+        size_t idx = env->toc_count++;
+        TocEntryDef *te = &env->toc_entries[idx];
+        snprintf(te->kind,      sizeof(te->kind),      "%.7s",   kind   ? kind   : "toc");
+        snprintf(te->level,     sizeof(te->level),     "%.23s",  level  ? level  : "section");
+        snprintf(te->number,    sizeof(te->number),    "%.31s",  number ? number : "");
+        snprintf(te->title,     sizeof(te->title),     "%.255s", title  ? title  : "");
+        snprintf(te->anchor_id, sizeof(te->anchor_id), "toc:%zu", idx);
+        te->page_num = page_num;
+        if (out_anchor && out_sz > 0) snprintf(out_anchor, out_sz, "dest-toc:%zu", idx);
+    } else {
+        size_t idx = env->toc_pass2_cursor++;
+        if (out_anchor && out_sz > 0) snprintf(out_anchor, out_sz, "dest-toc:%zu", idx);
+    }
 }
 
 static void index_record_entry(MacroEnv *env, StrView entry, int page_num) {
@@ -3059,7 +3155,10 @@ static void emit_section_heading(Parser *p, int level, const char *counter_name,
 
         CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
         int pnum = pc ? pc->value : (int)p->gen->page_count;
-        toc_record_entry(p->env, "toc", lvl_name, p->env->current_ref, plain_title, pnum);
+        char toc_anchor[64];
+        toc_record_entry(p->env, "toc", lvl_name, p->env->current_ref, plain_title, pnum, toc_anchor, sizeof(toc_anchor));
+        xml_close_para(p->gen);
+        xml_emit_anchor(p->gen, toc_anchor);
     }
 
     StrBuf hbuf;
@@ -3995,7 +4094,9 @@ static void builtin_caption(Parser *p, bool starred, [[maybe_unused]] StrView op
         eval_tex_to_plain(p, args[0], plain_cap, sizeof(plain_cap));
         CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
         int pnum = pc ? pc->value : (int)p->gen->page_count;
-        toc_record_entry(p->env, is_tbl ? "lot" : "lof", cname, p->env->current_ref, plain_cap, pnum);
+        char toc_anchor[64];
+        toc_record_entry(p->env, is_tbl ? "lot" : "lof", cname, p->env->current_ref, plain_cap, pnum, toc_anchor, sizeof(toc_anchor));
+        xml_emit_anchor(p->gen, toc_anchor);
 
         sb_appendf(&cbuf, "\\par{\\centering\\small\\textbf{%s~\\the%s:} %.*s\\par}",
                    mname, cname, (int)args[0].len, args[0].data);
@@ -4379,28 +4480,140 @@ static void builtin_unboldmath(Parser *p, [[maybe_unused]] bool s, [[maybe_unuse
     p->gen->char_state.weight = WEIGHT_NORMAL;
 }
 
-// --- Referencias Cruzadas (\label, \ref, \pageref) ---
+// --- Hiperenlaces (\href, \url, \nolinkurl, \hyperref, \hypertarget, \hyperlink) y Referencias Cruzadas ---
+
+static void clean_url_str(StrView raw_url, char *out, size_t out_sz) {
+    raw_url = sv_trim(raw_url);
+    size_t pos = 0;
+    for (size_t i = 0; i < raw_url.len && pos + 1 < out_sz; i++) {
+        if (raw_url.data[i] == '\\' && i + 1 < raw_url.len) {
+            char nx = raw_url.data[i + 1];
+            if (nx == '%' || nx == '#' || nx == '_' || nx == '&' || nx == '~') {
+                out[pos++] = nx;
+                i++;
+                continue;
+            }
+        }
+        out[pos++] = raw_url.data[i];
+    }
+    out[pos] = '\0';
+}
+
+static void parse_inline_with_href(Parser *p, const char *href, StrView fragment, CharState modified_state) {
+    char saved_href[256];
+    snprintf(saved_href, sizeof(saved_href), "%s", p->gen->current_href);
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", href ? href : "");
+    parse_inline_scoped(p, fragment, modified_state);
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", saved_href);
+}
+
+static void builtin_href(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char raw_u[256], final_href[256];
+    clean_url_str(args[0], raw_u, sizeof(raw_u));
+    if (raw_u[0] == '#' && strncmp(raw_u, "#page=", 6) != 0 && strncmp(raw_u, "#dest-", 6) != 0) {
+        make_anchor_id("#dest-", (StrView){ raw_u + 1, strlen(raw_u + 1) }, final_href, sizeof(final_href));
+    } else {
+        snprintf(final_href, sizeof(final_href), "%s", raw_u);
+    }
+
+    CharState next = p->gen->char_state;
+    if (strcmp(next.color, "Black") == 0) {
+        snprintf(next.color, sizeof(next.color), "RoyalBlue");
+    }
+    parse_inline_with_href(p, final_href, args[1], next);
+}
+
+static void builtin_url(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char url_buf[256];
+    clean_url_str(args[0], url_buf, sizeof(url_buf));
+
+    char saved_href[256];
+    snprintf(saved_href, sizeof(saved_href), "%s", p->gen->current_href);
+    CharState saved_cs = p->gen->char_state;
+
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", url_buf);
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+    p->gen->char_state.slant = SLANT_NORMAL;
+    if (strcmp(p->gen->char_state.color, "Black") == 0) {
+        snprintf(p->gen->char_state.color, sizeof(p->gen->char_state.color), "RoyalBlue");
+    }
+
+    xml_emit_text(p->gen, (StrView){ url_buf, strlen(url_buf) }, p->cmd_space_before);
+
+    p->gen->char_state = saved_cs;
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", saved_href);
+    p->cmd_space_before = false;
+}
+
+static void builtin_nolinkurl(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char url_buf[256];
+    clean_url_str(args[0], url_buf, sizeof(url_buf));
+    CharState saved_cs = p->gen->char_state;
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+    p->gen->char_state.slant = SLANT_NORMAL;
+    xml_emit_text(p->gen, (StrView){ url_buf, strlen(url_buf) }, p->cmd_space_before);
+    p->gen->char_state = saved_cs;
+    p->cmd_space_before = false;
+}
+
+static void builtin_hyperref(Parser *p, [[maybe_unused]] bool s, StrView opt[], size_t opt_c, StrView args[]) {
+    char href[256] = {0};
+    if (opt_c > 0 && opt[0].len > 0) {
+        make_anchor_id("#dest-", opt[0], href, sizeof(href));
+    }
+    CharState next = p->gen->char_state;
+    if (strcmp(next.color, "Black") == 0) {
+        snprintf(next.color, sizeof(next.color), "RoyalBlue");
+    }
+    parse_inline_with_href(p, href, args[0], next);
+}
+
+static void builtin_hypertarget(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char aid[128];
+    make_anchor_id("dest-", args[0], aid, sizeof(aid));
+    xml_emit_anchor(p->gen, aid);
+    parse_inline_scoped(p, args[1], p->gen->char_state);
+}
+
+static void builtin_hyperlink(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char href[256];
+    StrView t = sv_trim(args[0]);
+    if (t.len >= 6 && strncmp(t.data, "pdest-", 6) == 0) {
+        make_anchor_id("#", t, href, sizeof(href));
+    } else {
+        make_anchor_id("#dest-", t, href, sizeof(href));
+    }
+    CharState next = p->gen->char_state;
+    parse_inline_with_href(p, href, args[1], next);
+}
 
 static void builtin_label(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
     CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
     int pnum = pc ? pc->value : (int)p->gen->page_count;
     label_register(p->env, args[0], p->env->current_ref, pnum);
+    char aid[128];
+    make_anchor_id("dest-", args[0], aid, sizeof(aid));
+    xml_emit_anchor(p->gen, aid);
     p->cmd_space_before = false;
 }
 
 static void builtin_ref(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
     const LabelDef *ld = label_find(p->env, args[0]);
     const char *val = (ld && ld->ref_str[0] != '\0') ? ld->ref_str : "??";
+    char href[128], saved_href[256];
+    make_anchor_id("#dest-", args[0], href, sizeof(href));
+    snprintf(saved_href, sizeof(saved_href), "%s", p->gen->current_href);
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", href);
     xml_emit_text(p->gen, (StrView){ val, strlen(val) }, p->cmd_space_before);
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", saved_href);
     p->cmd_space_before = false;
 }
 
 static void builtin_pageref(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
-    const LabelDef *ld = label_find(p->env, args[0]);
-    char pbuf[32];
-    if (ld) snprintf(pbuf, sizeof(pbuf), "%d", ld->page_num);
-    else snprintf(pbuf, sizeof(pbuf), "??");
-    xml_emit_text(p->gen, (StrView){ pbuf, strlen(pbuf) }, p->cmd_space_before);
+    char target[128], href[128];
+    make_anchor_id("dest-", args[0], target, sizeof(target));
+    make_anchor_id("#pdest-", args[0], href, sizeof(href));
+    xml_emit_page_ref(p->gen, target, href, p->cmd_space_before);
     p->cmd_space_before = false;
 }
 
@@ -4447,13 +4660,14 @@ static void emit_contents_list(Parser *p, const char *kind, const char *heading_
         if (strcmp(kind, "toc") == 0 && entry_depth > max_depth) continue;
 
         StrBuf lbuf;
-        if (sb_init(&lbuf, 384)) {
+        if (sb_init(&lbuf, 512)) {
             sb_appendf(&lbuf, "\\par{\\parmargins{%.1fmm}{0mm}\\parspacing{0.5mm}{0.5mm}\\noindent ", indent_mm);
             if (is_bold) sb_append_cstr(&lbuf, "\\bfseries ");
             if (te->number[0] != '\0') {
-                sb_appendf(&lbuf, "%s\\hspace{2.5mm}", te->number);
+                sb_appendf(&lbuf, "\\hyperlink{%s}{%s}\\hspace{2.5mm}", te->anchor_id, te->number);
             }
-            sb_appendf(&lbuf, "%s\\dotfill %d\\par}", te->title, te->page_num);
+            sb_appendf(&lbuf, "\\hyperlink{%s}{%s}\\dotfill \\pageref{%s}\\par}",
+                       te->anchor_id, te->title, te->anchor_id);
             execute_tex_fragment(p, (StrView){ lbuf.data, lbuf.len }, false);
             sb_free(&lbuf);
         }
@@ -4475,7 +4689,7 @@ static void builtin_listoftables(Parser *p, [[maybe_unused]] bool s, [[maybe_unu
 }
 
 static void builtin_addcontentsline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
-    char kbuf[16], lbuf[32], tbuf[256];
+    char kbuf[16], lbuf[32], tbuf[256], toc_anchor[64];
     StrView k = sv_trim(args[0]);
     StrView l = sv_trim(args[1]);
     snprintf(kbuf, sizeof(kbuf), "%.*s", (int)k.len, k.data);
@@ -4484,7 +4698,8 @@ static void builtin_addcontentsline(Parser *p, [[maybe_unused]] bool s, [[maybe_
 
     CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
     int pnum = pc ? pc->value : (int)p->gen->page_count;
-    toc_record_entry(p->env, kbuf, lbuf, "", tbuf, pnum);
+    toc_record_entry(p->env, kbuf, lbuf, "", tbuf, pnum, toc_anchor, sizeof(toc_anchor));
+    xml_emit_anchor(p->gen, toc_anchor);
     p->cmd_space_before = false;
 }
 
@@ -4504,15 +4719,19 @@ static void builtin_bibitem(Parser *p, [[maybe_unused]] bool s, StrView opt[], s
     }
 
     bibitem_register(p->env, args[0], lbl_raw);
+    char aid[128];
+    make_anchor_id("dest-bib:", args[0], aid, sizeof(aid));
+    xml_emit_anchor(p->gen, aid);
     snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", lbl_raw);
     snprintf(p->gen->pending_item_label, sizeof(p->gen->pending_item_label), "[%s]", lbl_raw);
     p->gen->has_pending_item_label = true;
 }
 
 static void builtin_cite(Parser *p, [[maybe_unused]] bool s, StrView opt[], size_t opt_c, StrView args[]) {
-    StrBuf cbuf;
-    if (!sb_init(&cbuf, 64)) return;
-    sb_append_cstr(&cbuf, "[");
+    xml_emit_text(p->gen, (StrView){"[", 1}, p->cmd_space_before);
+
+    char saved_href[256];
+    snprintf(saved_href, sizeof(saved_href), "%s", p->gen->current_href);
 
     const char *cur = args[0].data;
     const char *end = args[0].data + args[0].len;
@@ -4522,23 +4741,30 @@ static void builtin_cite(Parser *p, [[maybe_unused]] bool s, StrView opt[], size
         size_t len = comma ? (size_t)(comma - cur) : (size_t)(end - cur);
         StrView key = sv_trim((StrView){ cur, len });
         if (key.len > 0) {
-            if (!first) sb_append_cstr(&cbuf, ", ");
+            if (!first) {
+                snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", saved_href);
+                xml_emit_text(p->gen, (StrView){", ", 2}, false);
+            }
             const BibItemDef *bd = bibitem_find(p->env, key);
-            sb_append_cstr(&cbuf, (bd && bd->label[0] != '\0') ? bd->label : "?");
+            const char *lbl = (bd && bd->label[0] != '\0') ? bd->label : "?";
+            char href[128];
+            make_anchor_id("#dest-bib:", key, href, sizeof(href));
+            snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", href);
+            xml_emit_text(p->gen, (StrView){ lbl, strlen(lbl) }, false);
             first = false;
         }
         cur = comma ? (comma + 1) : end;
     }
 
-    if (opt_c > 0 && opt[0].len > 0) {
-        char note_plain[128];
-        eval_tex_to_plain(p, opt[0], note_plain, sizeof(note_plain));
-        sb_appendf(&cbuf, ", %s", note_plain);
-    }
-    sb_append_cstr(&cbuf, "]");
+    snprintf(p->gen->current_href, sizeof(p->gen->current_href), "%s", saved_href);
 
-    xml_emit_text(p->gen, (StrView){ cbuf.data, cbuf.len }, p->cmd_space_before);
-    sb_free(&cbuf);
+    if (opt_c > 0 && opt[0].len > 0) {
+        char note_plain[128], nbuf[144];
+        eval_tex_to_plain(p, opt[0], note_plain, sizeof(note_plain));
+        snprintf(nbuf, sizeof(nbuf), ", %s", note_plain);
+        xml_emit_text(p->gen, (StrView){ nbuf, strlen(nbuf) }, false);
+    }
+    xml_emit_text(p->gen, (StrView){"]", 1}, false);
     p->cmd_space_before = false;
 }
 
@@ -4546,6 +4772,9 @@ static void builtin_index(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] S
     CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
     int pnum = pc ? pc->value : (int)p->gen->page_count;
     index_record_entry(p->env, args[0], pnum);
+    char aid[128];
+    make_anchor_id("dest-idx:", args[0], aid, sizeof(aid));
+    xml_emit_anchor(p->gen, aid);
     p->cmd_space_before = false;
 }
 
@@ -4569,14 +4798,16 @@ static void builtin_printindex(Parser *p, [[maybe_unused]] bool s, [[maybe_unuse
     size_t i = 0;
     while (i < p->env->idx_count) {
         const char *raw_e = p->env->idx_entries[i].entry;
+        char target_name[128];
+        make_anchor_id("idx:", (StrView){ raw_e, strlen(raw_e) }, target_name, sizeof(target_name));
         const char *bang  = strchr(raw_e, '!');
         if (bang) {
             size_t main_len = (size_t)(bang - raw_e);
-            sb_appendf(&ibuf, "\\par\\noindent\\textbf{%.*s} — %s, %d",
-                       (int)main_len, raw_e, bang + 1, p->env->idx_entries[i].page_num);
+            sb_appendf(&ibuf, "\\par\\noindent\\hyperlink{%s}{\\textbf{%.*s} — %s, \\pageref{%s}}",
+                       target_name, (int)main_len, raw_e, bang + 1, target_name);
         } else {
-            sb_appendf(&ibuf, "\\par\\noindent\\textbf{%s}, %d",
-                       raw_e, p->env->idx_entries[i].page_num);
+            sb_appendf(&ibuf, "\\par\\noindent\\hyperlink{%s}{\\textbf{%s}, \\pageref{%s}}",
+                       target_name, raw_e, target_name);
         }
         size_t j = i + 1;
         while (j < p->env->idx_count && strcmp(p->env->idx_entries[j].entry, raw_e) == 0) {
@@ -4943,6 +5174,12 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "makeindex",        0, 0, false, builtin_noop },
     { "index",            0, 1, false, builtin_index },
     { "printindex",       0, 0, false, builtin_printindex },
+    { "href",             0, 2, false, builtin_href },
+    { "url",              0, 1, false, builtin_url },
+    { "nolinkurl",        0, 1, false, builtin_nolinkurl },
+    { "hyperref",         1, 1, false, builtin_hyperref },
+    { "hypertarget",      0, 2, false, builtin_hypertarget },
+    { "hyperlink",        0, 2, false, builtin_hyperlink },
     { "put",              0, 0, false, builtin_put },
     { "multiput",         0, 0, false, builtin_multiput },
     { "line",             0, 0, false, builtin_line },

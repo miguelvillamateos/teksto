@@ -243,6 +243,7 @@ typedef struct {
   char level[24];  // "part", "chapter", "section", "subsection", "subsubsection", "figure", "table"
   char number[32];
   char title[256];
+  char anchor_id[64];
   int page_num;
 } TocEntryDef;
 
@@ -275,6 +276,7 @@ typedef struct {
 
   TocEntryDef toc_entries[MAX_TOC_ENTRIES];
   size_t toc_count;
+  size_t toc_pass2_cursor;
 
   IndexEntryDef idx_entries[MAX_INDEX_ENTRIES];
   size_t idx_count;
@@ -432,6 +434,9 @@ typedef struct {
   bool para_open;
   bool para_has_content;
   int active_char_style_id; // -1 si no hay <span> abierto
+  char current_href[256];
+  char active_href[256];
+  char pending_anchors[256];
   size_t inline_depth;
 } XmlGenerator;
 
