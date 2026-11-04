@@ -33,7 +33,13 @@
       <para-style id="ps10" align="left" line-spacing="5mm" space-before="0.5mm" space-after="1mm" indent-first="0mm" indent-left="6mm" indent-right="0mm"/>
       <para-style id="ps11" align="left" line-spacing="4.95mm" space-before="2.5mm" space-after="1.2mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
       <para-style id="ps12" align="left" line-spacing="5.5mm" space-before="2mm" space-after="2mm" indent-first="0mm" indent-left="8mm" indent-right="8mm"/>
-      <para-style id="ps13" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="6.05mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps13" align="justify" line-spacing="5.5mm" space-before="0.8mm" space-after="1.2mm" indent-first="0mm" indent-left="8mm" indent-right="0mm"/>
+      <para-style id="ps14" align="justify" line-spacing="5.5mm" space-before="0.8mm" space-after="1.2mm" indent-first="0mm" indent-left="14.5mm" indent-right="0mm"/>
+      <para-style id="ps15" align="justify" line-spacing="5.5mm" space-before="0.8mm" space-after="1.2mm" indent-first="0mm" indent-left="22.5mm" indent-right="0mm"/>
+      <para-style id="ps16" align="justify" line-spacing="5.5mm" space-before="1mm" space-after="1.4mm" indent-first="-4mm" indent-left="8mm" indent-right="0mm"/>
+      <para-style id="ps17" align="left" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="0mm" indent-left="4mm" indent-right="0mm"/>
+      <para-style id="ps18" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="8mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps19" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="6.05mm" indent-left="0mm" indent-right="0mm"/>
       <char-style id="cs1" font-ref="f1-bold" size="17.28pt" color="Black" underline="false"/>
       <char-style id="cs2" font-ref="f1-regular" size="12pt" color="Black" underline="false"/>
       <char-style id="cs3" font-ref="f1-regular" size="11pt" color="Black" underline="false"/>
@@ -60,6 +66,8 @@
       <char-style id="cs24" font-ref="f3-bold" size="10pt" color="DarkSlateGray" underline="false"/>
       <char-style id="cs25" font-ref="f3-italic" size="10pt" color="DarkSlateGray" underline="false"/>
       <char-style id="cs26" font-ref="f2-italic" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs27" font-ref="f1-bold" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs28" font-ref="f2-regular" size="11pt" color="Black" underline="false"/>
     </styles>
   </definitions>
   <layout total-pages="2">
@@ -68,20 +76,20 @@
   </layout>
   <body>
     <story id="main">
-      <p style="ps1"><span style="cs1">Adaptación de LaTeX2ε en Teksto: Fases 1 y 2</span></p>
+      <p style="ps1"><span style="cs1">Adaptación de LaTeX2ε en Teksto: Fases 1, 2 y 3</span></p>
       <p style="ps2"><span style="cs2">Equipo de Desarrollo de Teksto</span></p>
       <p style="ps3"><span style="cs3">4 de noviembre de 2026</span></p>
       <p style="ps4"><span style="cs4">∗ Documento compilado nativamente mediante el pipeline tks2xml + xml2svg.</span></p>
       <p style="ps5"><span style="cs5">Resumen</span></p>
-      <p style="ps6"><span style="cs6">Este documento verifica la implementación de las Fases 1 y 2 del manual de referencia de LaTeX2ε: procesamiento léxico al estilo TeX, agrupamiento con pila de estados, contadores, longitudes, selección de fuentes NFSS, versalitas (</span><span style="cs7">Small Caps</span><span style="cs6">), superíndices, subíndices, escala estándar de tamaños (</span><span style="cs8">\tiny</span><span style="cs6"> a </span><span style="cs8">\Huge</span><span style="cs6">), portada automática con </span><span style="cs8">\maketitle</span><span style="cs6"> y seccionado jerárquico nativo.</span></p>
-      <p style="ps7"><span style="cs9">1. Arquitectura de la Boca y el Esófago de TeX</span></p>
+      <p style="ps6"><span style="cs6">Este documento verifica la implementación de las Fases 1, 2 y 3 del manual de referencia de LaTeX2ε: procesamiento léxico al estilo TeX, agrupamiento con pila de estados, contadores, longitudes, selección de fuentes NFSS, versalitas (</span><span style="cs7">Small Caps</span><span style="cs6">), superíndices, subíndices, escala estándar de tamaños (</span><span style="cs8">\tiny</span><span style="cs6"> a </span><span style="cs8">\Huge</span><span style="cs6">), portada automática con </span><span style="cs8">\maketitle</span><span style="cs6">, seccionado jerárquico, entornos de listas anidadas, texto literal (</span><span style="cs8">verbatim</span><span style="cs6">) y control de espaciado horizontal y vertical.</span></p>
+      <p style="ps7"><span style="cs9">1. El Ecosistema de TeX</span></p>
       <p style="ps8"><span style="cs3">Este módulo externo se incorpora mediante </span><span style="cs8">\input{capitulo1}</span><span style="cs3">. En LaTeX2ε, un salto de línea simple en el fichero fuente equivale a un espacio ordinario, mientras que una línea en blanco emite el token </span><span style="cs8">\par</span><span style="cs3"> cerrando el párrafo. Además, los comentarios con </span><span style="cs8">%</span><span style="cs3"> absorben el salto de línea y los espacios iniciales de la línea siguiente—exactamente como hace el motor de Knuth—evitando huecos indeseados.</span></p>
-      <p style="ps9"><span style="cs10">1.1 Símbolos Especiales, Acentos y Ligaduras (Cap. 23)</span></p>
+      <p style="ps9"><span style="cs10">1.1 Símbolos Especiales, Acentos y Ligaduras</span></p>
       <p style="ps8"><span style="cs3">El analizador soporta acentos componibles con o sin llaves (á, é, í, ó, ú, ñ, ü, ç, š, ő, å), ligaduras tipográficas automáticas como “comillas dobles inglesas”, guiones cortos (págs. 10–25), rayas de inciso—sin espacios—y signos de apertura ¿Cómo funciona! ¡Así de limpio!</span></p>
       <p style="ps10"><span style="cs11">Caracteres escapados:</span><span style="cs12"> # $ % &amp; _ { } ~ ^ \</span></p>
       <p style="ps10"><span style="cs11">Símbolos y divisas:</span><span style="cs12"> © ® ™ † ‡ § ¶ £ € … •</span></p>
       <p style="ps10"><span style="cs11">Logos y fecha:</span><span style="cs12"> TeX, LaTeX, LaTeX2ε — Generado el 4 de noviembre de 2026</span></p>
-      <p style="ps9"><span style="cs10">1.2 Fuentes NFSS, Versalitas, Superíndices y Tamaños (Caps. 4 y 22)</span></p>
+      <p style="ps9"><span style="cs10">1.2 Fuentes NFSS, Versalitas, Superíndices y Tamaños</span></p>
       <p style="ps10"><span style="cs11">Familias y formas:</span><span style="cs12"> Serif Roman, </span><span style="cs13">Sans Serif</span><span style="cs12">, </span><span style="cs14">Monospace Typewriter</span><span style="cs12">, </span><span style="cs15">Versalitas Small Caps</span><span style="cs12">, </span><span style="cs15">declaración scshape</span></p>
       <p style="ps10"><span style="cs11">Super y subíndices:</span><span style="cs12"> Agua H</span><span style="cs16">2</span><span style="cs12">O, relatividad E=mc</span><span style="cs17">2</span><span style="cs12">, edición 1.</span><span style="cs17">a</span></p>
       <p style="ps10"><span style="cs11">Escala de tamaños:</span><span style="cs12"> </span><span style="cs18">tiny</span><span style="cs12"> </span><span style="cs19">scriptsize</span><span style="cs12"> </span><span style="cs4">footnotesize</span><span style="cs12"> </span><span style="cs6">small</span><span style="cs12"> </span><span style="cs3">normalsize</span><span style="cs12"> </span><span style="cs2">large</span><span style="cs12"> </span><span style="cs20">Large</span><span style="cs12"> </span><span style="cs21">LARGE</span></p>
@@ -90,17 +98,38 @@
       <p style="ps8"><span style="cs23">Párrafo titulado (\paragraph)</span><span style="cs3"> En LaTeX2ε, el comando </span><span style="cs8">\paragraph</span><span style="cs3"> compone el encabezamiento en línea seguido inmediatamente del cuerpo del párrafo sin salto de bloque.</span></p>
       <p style="ps12"><span style="cs24">Verificación de Entorno —</span><span style="cs25"> Este bloque utiliza un entorno definido con </span><span style="cs26">\newenvironment{nota}[1][Nota Técnica]</span><span style="cs25"> que restaura el estado al cerrarse con </span><span style="cs26">\end{nota}</span><span style="cs25">.</span></p>
       <break type="page"/>
-      <p style="ps7"><span style="cs9">2. Maquetación Multipágina y Agrupamiento TeX</span></p>
-      <p style="ps8"><span style="cs3">Tras ejecutar el salto de página (</span><span style="cs8">\newpage</span><span style="cs3">, página actual: 2) y activar el flujo a dos columnas mediante </span><span style="cs8">\twocolumn</span><span style="cs3">, el comando nativo </span><span style="cs8">\section</span><span style="cs3"> incrementa el contador principal y reinicia automáticamente sus subcontadores dependientes (</span><span style="cs8">subsection</span><span style="cs3"> = 2.0).</span></p>
-      <p style="ps9"><span style="cs10">2.1 Prueba de Longitudes Dinámicas</span></p>
+      <p style="ps7"><span style="cs9">2. Listas, Verbatim y Espaciado</span></p>
+      <p style="ps8"><span style="cs3">En esta sección se comprueban los entornos de listas (</span><span style="cs8">itemize</span><span style="cs3">, </span><span style="cs8">enumerate</span><span style="cs3">, </span><span style="cs8">description</span><span style="cs3">), el texto literal y los comandos de salto y relleno elástico.</span></p>
+      <p style="ps9"><span style="cs10">2.1 Listas Anidadas</span></p>
+      <p style="ps13" label="1." label-style="cs3"><span style="cs3">Primer elemento numerado de nivel 1.</span></p>
+      <p style="ps13" label="2." label-style="cs3"><span style="cs3">Segundo elemento con sublista anidada:</span></p>
+      <p style="ps14" label="(a)" label-style="cs3"><span style="cs3">Sub-elemento alfabético (</span><span style="cs8">enumii</span><span style="cs3">).</span></p>
+      <p style="ps14" label="(b)" label-style="cs3"><span style="cs3">Otro sub-elemento con viñetas:</span></p>
+      <p style="ps15" label="•" label-style="cs3"><span style="cs3">Viñeta interna con </span><span style="cs8">itemize</span><span style="cs3">.</span></p>
+      <p style="ps15" label="†" label-style="cs3"><span style="cs3">Viñeta con etiqueta opcional </span><span style="cs8">\item[\dag]</span><span style="cs3">.</span></p>
+      <p style="ps13" label="3." label-style="cs3"><span style="cs3">Tercer elemento del nivel principal.</span></p>
+      <p style="ps16"><span style="cs27">Lexer:</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Tokenizador de barras invertidas, grupos y comentarios.</span></p>
+      <p style="ps16"><span style="cs27">Stomach:</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Generador de representación intermedia XML.</span></p>
+      <p style="ps16"><span style="cs27">Renderer:</span><hspace width="2.2mm" style="cs3"/><span style="cs3"> Motor tipográfico de conversión a SVG.</span></p>
+      <p style="ps9"><span style="cs10">2.2 Texto Literal y Saltos de Línea</span></p>
+      <p style="ps8"><span style="cs3">El comando en línea </span><span style="cs28">\newcommand{\foo}[1]{#1}</span><span style="cs3"> preserva caracteres especiales sin expandirlos, y su variante con estrella </span><span style="cs28">\verb*␣con␣espacios</span><span style="cs3"> hace visibles los espacios.</span></p>
+      <p style="ps17"><span style="cs28">% Bloque verbatim literal:</span><br/><span style="cs28">\def\saludo#1{Hola, #1!}</span><br/><span style="cs28">  Espacios   preservados   exactamente.</span></p>
+      <p style="ps9"><span style="cs10">2.3 Rellenos Elásticos, Reglas y Saltos</span></p>
+      <p style="ps8"><span style="cs3">Línea quebrada manualmente con </span><span style="cs8">\\</span><span style="cs3">:</span><br/><span style="cs3"> Segunda línea sin justificación forzada.</span><br extra="3mm"/><span style="cs3"> Tercera línea tras un espacio extra de </span><span style="cs8">3mm</span><span style="cs3">.</span></p>
+      <vspace height="6pt"/>
+      <p style="ps18"><span style="cs3">Demostración de rellenos elásticos en línea:</span><br/><span style="cs3"> Izquierda</span><hspace fill="space" style="cs3"/><span style="cs3">Derecha</span><br/><span style="cs3"> Capítulo 1</span><hspace fill="dots" style="cs3"/><span style="cs3">Pág. 1</span><br/><span style="cs3"> Firma:</span><hspace fill="rule" style="cs3"/><span style="cs3"> </span><rule width="12mm" height="2mm" raise="0mm" style="cs3"/></p>
+      <vspace height="12pt"/>
+      <p style="ps7"><span style="cs9">3. Maquetación Multipágina y Agrupamiento TeX</span></p>
+      <p style="ps8"><span style="cs3">Tras activar el flujo a dos columnas mediante </span><span style="cs8">\twocolumn</span><span style="cs3">, el comando nativo </span><span style="cs8">\section</span><span style="cs3"> incrementa el contador principal y reinicia automáticamente sus subcontadores dependientes (</span><span style="cs8">subsection</span><span style="cs3"> = 3.0).</span></p>
+      <p style="ps9"><span style="cs10">3.1 Prueba de Longitudes Dinámicas</span></p>
       <p style="ps8"><span style="cs3">Modificando temporalmente </span><span style="cs8">\parindent</span><span style="cs3"> dentro de un grupo léxico:</span></p>
-      <p style="ps13"><span style="cs3">Este párrafo aplica la longitud calculada en el registro </span><span style="cs8">\sangriaextra</span><span style="cs3"> (combinando unidades relativas </span><span style="cs8">em</span><span style="cs3"> y puntos </span><span style="cs8">pt</span><span style="cs3">). Al cerrarse el grupo de llaves, el valor estándar de </span><span style="cs8">\parindent</span><span style="cs3"> se restaura de forma transparente.</span></p>
+      <p style="ps19"><span style="cs3">Este párrafo aplica la longitud calculada en el registro </span><span style="cs8">\sangriaextra</span><span style="cs3"> (combinando unidades relativas </span><span style="cs8">em</span><span style="cs3"> y puntos </span><span style="cs8">pt</span><span style="cs3">). Al cerrarse el grupo de llaves, el valor estándar de </span><span style="cs8">\parindent</span><span style="cs3"> se restaura de forma transparente.</span></p>
       <p style="ps7"><span style="cs9">Sección sin Numerar (\section*)</span></p>
       <p style="ps8"><span style="cs3">La variante con estrella </span><span style="cs8">\section*</span><span style="cs3"> emite el encabezamiento con el mismo formato tipográfico pero sin incrementar ni mostrar el contador de sección.</span></p>
       <p style="ps7"><span style="cs9">A. Anexo de Especificación XML Intermedio</span></p>
       <p style="ps8"><span style="cs3">Al invocar </span><span style="cs8">\appendix</span><span style="cs3">, la numeración de las secciones principales conmuta automáticamente al formato alfabético (A) tal como especifica el manual de LaTeX2ε.</span></p>
-      <p style="ps9"><span style="cs10">A.1 Atributos de Estilo de Carácter</span></p>
-      <p style="ps8"><span style="cs3">Los estilos </span><span style="cs8">&lt;char-style&gt;</span><span style="cs3"> incorporan ahora los atributos </span><span style="cs8">small-caps=&quot;true&quot;</span><span style="cs3"> y </span><span style="cs8">shift=&quot;super|sub&quot;</span><span style="cs3">, traducidos por </span><span style="cs8">xml2svg</span><span style="cs3"> a reglas CSS y métricas proporcionales.</span></p>
+      <p style="ps9"><span style="cs10">A.1 Primitivas de Fase 3 en XML</span></p>
+      <p style="ps8"><span style="cs3">El XML intermedio incorpora ahora los nodos </span><span style="cs8">&lt;br/&gt;</span><span style="cs3">, </span><span style="cs8">&lt;hspace/&gt;</span><span style="cs3">, </span><span style="cs8">&lt;vspace/&gt;</span><span style="cs3"> y </span><span style="cs8">&lt;rule/&gt;</span><span style="cs3">, además de los atributos </span><span style="cs8">label</span><span style="cs3"> y </span><span style="cs8">label-style</span><span style="cs3"> en </span><span style="cs8">&lt;p&gt;</span><span style="cs3">.</span></p>
     </story>
   </body>
 </document>

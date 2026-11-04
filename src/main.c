@@ -218,17 +218,18 @@ static bool measure_equals(Measure a, Measure b) {
 static void measure_format(Measure m, char *buf, size_t buf_size) {
     const char *suffix = "mm";
     int decimals = 2;
+    double v = m.value;
 
     switch (m.unit) {
-        case UNIT_MM: suffix = "mm"; decimals = 2; break;
-        case UNIT_CM: suffix = "cm"; decimals = 3; break;
-        case UNIT_M:  suffix = "m";  decimals = 4; break;
-        case UNIT_PT: suffix = "pt"; decimals = 2; break;
-        default:      suffix = "mm"; decimals = 2; break;
+        case UNIT_MM: suffix = "mm"; decimals = 2; v = m.value; break;
+        case UNIT_CM: suffix = "cm"; decimals = 3; v = m.value; break;
+        case UNIT_M:  suffix = "m";  decimals = 4; v = m.value; break;
+        case UNIT_PT: suffix = "pt"; decimals = 2; v = m.value; break;
+        default:      suffix = "mm"; decimals = 2; v = m.mm;    break;
     }
 
     char num[48];
-    snprintf(num, sizeof(num), "%.*f", decimals, m.value);
+    snprintf(num, sizeof(num), "%.*f", decimals, v);
 
     char *dot = strchr(num, '.');
     if (dot) {
@@ -564,13 +565,22 @@ static void xml_ensure_para_open(XmlGenerator *gen) {
     if (gen->para_open) return;
 
     ParaState effective = gen->para_state;
-    if (gen->next_para_noindent) {
+    if (gen->next_para_noindent || gen->has_pending_item_label) {
         effective.indent_first = measure_make(0.0, UNIT_MM, 1.0);
         gen->next_para_noindent = false;
     }
 
     size_t ps_id = xml_intern_para_style(gen, &effective);
-    sb_appendf(&gen->story, "      <p style=\"ps%zu\">", ps_id + 1);
+    if (gen->has_pending_item_label) {
+        size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
+        sb_appendf(&gen->story, "      <p style=\"ps%zu\" label=\"", ps_id + 1);
+        sb_append_escaped_xml(&gen->story, gen->pending_item_label, strlen(gen->pending_item_label));
+        sb_appendf(&gen->story, "\" label-style=\"cs%zu\">", cs_id + 1);
+        gen->has_pending_item_label = false;
+        gen->pending_item_label[0] = '\0';
+    } else {
+        sb_appendf(&gen->story, "      <p style=\"ps%zu\">", ps_id + 1);
+    }
     gen->para_open            = true;
     gen->para_has_content     = false;
     gen->active_char_style_id = -1;
@@ -597,6 +607,14 @@ static void xml_activate_current_char_style(XmlGenerator *gen) {
 static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
     if (text.len == 0) return;
 
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) {
+            sb_append_cstr(gen->capture_plain_buf, " ");
+        }
+        sb_append_mem(gen->capture_plain_buf, text.data, text.len);
+        return;
+    }
+
     xml_ensure_para_open(gen);
     xml_activate_current_char_style(gen);
 
@@ -608,7 +626,83 @@ static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
     gen->para_has_content = true;
 }
 
+static void xml_emit_line_break(XmlGenerator *gen, Measure extra_v) {
+    if (gen->capture_plain_buf) {
+        sb_append_cstr(gen->capture_plain_buf, " ");
+        return;
+    }
+    xml_ensure_para_open(gen);
+    xml_close_active_span(gen);
+    if (fabs(extra_v.mm) > 0.001) {
+        char b[32];
+        measure_format(extra_v, b, sizeof(b));
+        sb_appendf(&gen->story, "<br extra=\"%s\"/>", b);
+    } else {
+        sb_append_cstr(&gen->story, "<br/>");
+    }
+    gen->para_has_content = true;
+}
+
+static void xml_emit_hspace(XmlGenerator *gen, Measure width, const char *fill_mode, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if ((fill_mode != nullptr || width.mm > 0.1) && gen->capture_plain_buf->len > 0) {
+            sb_append_cstr(gen->capture_plain_buf, " ");
+        }
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
+    if (fill_mode && fill_mode[0] != '\0') {
+        sb_appendf(&gen->story, "<hspace fill=\"%s\" style=\"cs%zu\"/>", fill_mode, cs_id + 1);
+    } else {
+        char b[32];
+        measure_format(width, b, sizeof(b));
+        sb_appendf(&gen->story, "<hspace width=\"%s\" style=\"cs%zu\"/>", b, cs_id + 1);
+    }
+    gen->para_has_content = true;
+}
+
+static void xml_emit_rule(XmlGenerator *gen, Measure width, Measure height, Measure raise, bool space_before) {
+    if (gen->capture_plain_buf) return;
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
+    char bw[32], bh[32], br[32];
+    measure_format(width,  bw, sizeof(bw));
+    measure_format(height, bh, sizeof(bh));
+    measure_format(raise,  br, sizeof(br));
+    sb_appendf(&gen->story, "<rule width=\"%s\" height=\"%s\" raise=\"%s\" style=\"cs%zu\"/>",
+               bw, bh, br, cs_id + 1);
+    gen->para_has_content = true;
+}
+
+static void xml_emit_vspace(XmlGenerator *gen, Measure height, bool starred, bool fill) {
+    if (gen->capture_plain_buf) return;
+    xml_close_para(gen);
+    if (fill) {
+        sb_append_cstr(&gen->story, "      <vspace fill=\"true\"/>\n");
+    } else {
+        char b[32];
+        measure_format(height, b, sizeof(b));
+        if (starred) {
+            sb_appendf(&gen->story, "      <vspace height=\"%s\" starred=\"true\"/>\n", b);
+        } else {
+            sb_appendf(&gen->story, "      <vspace height=\"%s\"/>\n", b);
+        }
+    }
+}
+
 static void xml_emit_page_break(XmlGenerator *gen) {
+    if (gen->capture_plain_buf) return;
     xml_close_para(gen);
     sb_append_cstr(&gen->story, "      <break type=\"page\"/>\n");
 }
@@ -926,12 +1020,18 @@ static void sync_standard_length_to_generator(XmlGenerator *gen, StrView name, M
     } else if (sv_equals(name, "baselineskip")) {
         prepare_para_state_mutation(gen);
         gen->para_state.line_spacing = val;
-    } else if (sv_equals(name, "leftskip")) {
+    } else if (sv_equals(name, "leftskip") || sv_equals(name, "leftmargin")) {
         prepare_para_state_mutation(gen);
         gen->para_state.indent_left = val;
-    } else if (sv_equals(name, "rightskip")) {
+    } else if (sv_equals(name, "rightskip") || sv_equals(name, "rightmargin")) {
         prepare_para_state_mutation(gen);
         gen->para_state.indent_right = val;
+    } else if (sv_equals(name, "itemsep") || sv_equals(name, "parsep")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.space_after = val;
+    } else if (sv_equals(name, "topsep")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.space_before = val;
     } else if (sv_equals(name, "paperwidth")) {
         gen->page_width = val;
     } else if (sv_equals(name, "paperheight")) {
@@ -954,6 +1054,8 @@ static void sync_standard_length_to_generator(XmlGenerator *gen, StrView name, M
         }
     }
 }
+
+static bool macro_env_define(MacroEnv *env, StrView name, size_t params, bool has_opt, StrView opt_def, StrView body, bool overwrite);
 
 static void macro_env_init(MacroEnv *env) {
     memset(env, 0, sizeof(*env));
@@ -1005,6 +1107,27 @@ static void macro_env_init(MacroEnv *env) {
     length_register(env, (StrView){"tabcolsep", 9},       measure_make(6.0,   UNIT_PT, em));
     length_register(env, (StrView){"arrayrulewidth", 14}, measure_make(0.4,   UNIT_PT, em));
     length_register(env, (StrView){"unitlength", 10},     measure_make(1.0,   UNIT_PT, em));
+    length_register(env, (StrView){"itemsep", 7},         measure_make(1.2,   UNIT_MM, em));
+    length_register(env, (StrView){"parsep", 6},          measure_make(1.0,   UNIT_MM, em));
+    length_register(env, (StrView){"topsep", 6},          measure_make(2.0,   UNIT_MM, em));
+    length_register(env, (StrView){"partopsep", 9},       measure_make(1.0,   UNIT_MM, em));
+    length_register(env, (StrView){"labelsep", 8},        measure_make(2.2,   UNIT_MM, em));
+    length_register(env, (StrView){"labelwidth", 10},     measure_make(6.0,   UNIT_MM, em));
+    length_register(env, (StrView){"leftmargin", 10},     measure_make(8.0,   UNIT_MM, em));
+    length_register(env, (StrView){"rightmargin", 11},    measure_make(0.0,   UNIT_MM, em));
+    length_register(env, (StrView){"listparindent", 13},  measure_make(0.0,   UNIT_MM, em));
+    length_register(env, (StrView){"itemindent", 10},     measure_make(0.0,   UNIT_MM, em));
+
+    // Macros estándar para viñetas y etiquetas de listas anidadas (itemize / enumerate)
+    macro_env_define(env, (StrView){"labelitemi", 10},   0, false, (StrView){0}, (StrView){"\\textbullet", 11}, true);
+    macro_env_define(env, (StrView){"labelitemii", 11},  0, false, (StrView){0}, (StrView){"\\textendash", 11}, true);
+    macro_env_define(env, (StrView){"labelitemiii", 12}, 0, false, (StrView){0}, (StrView){"\\textasteriskcentered", 21}, true);
+    macro_env_define(env, (StrView){"labelitemiv", 11},  0, false, (StrView){0}, (StrView){"\\textperiodcentered", 19}, true);
+
+    macro_env_define(env, (StrView){"labelenumi", 10},   0, false, (StrView){0}, (StrView){"\\arabic{enumi}.", 15}, true);
+    macro_env_define(env, (StrView){"labelenumii", 11},  0, false, (StrView){0}, (StrView){"(\\alph{enumii})", 15}, true);
+    macro_env_define(env, (StrView){"labelenumiii", 12}, 0, false, (StrView){0}, (StrView){"\\roman{enumiii}.", 16}, true);
+    macro_env_define(env, (StrView){"labelenumiv", 11},  0, false, (StrView){0}, (StrView){"\\Alph{enumiv}.", 14}, true);
 }
 
 static void macro_env_free(MacroEnv *env) {
@@ -1133,6 +1256,30 @@ static void execute_tex_fragment(Parser *p, StrView fragment, bool preserve_spac
         sub.current.space_before = true;
     }
     parse_and_execute(&sub);
+}
+
+static void eval_tex_to_plain(Parser *p, StrView expr, char *out, size_t out_sz) {
+    if (out_sz == 0) return;
+    out[0] = '\0';
+
+    StrBuf plain_sb;
+    if (!sb_init(&plain_sb, 128)) return;
+
+    StrBuf *prev_capture    = p->gen->capture_plain_buf;
+    size_t prev_inline      = p->gen->inline_depth;
+    CharState saved_cs      = p->gen->char_state;
+    ParaState saved_ps      = p->gen->para_state;
+
+    p->gen->capture_plain_buf = &plain_sb;
+    p->gen->inline_depth++;
+    execute_tex_fragment(p, expr, false);
+    p->gen->inline_depth      = prev_inline;
+    p->gen->capture_plain_buf = prev_capture;
+    p->gen->char_state        = saved_cs;
+    p->gen->para_state        = saved_ps;
+
+    snprintf(out, out_sz, "%s", plain_sb.data);
+    sb_free(&plain_sb);
 }
 
 static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]) {
@@ -1400,7 +1547,9 @@ static void builtin_settowidth(Parser *p, [[maybe_unused]] bool starred, [[maybe
     if (!parse_cmd_or_arg(p, &name)) return;
     if (!parse_arg(p, &text)) return;
 
-    double w_mm = (double)text.len * p->gen->char_state.size.mm * 0.50;
+    char plain[256];
+    eval_tex_to_plain(p, text, plain, sizeof(plain));
+    double w_mm = (double)strlen(plain) * p->gen->char_state.size.mm * 0.50;
     Measure m = measure_make(w_mm, UNIT_MM, 1.0);
     LengthDef *ld = length_find_mut(p->env, name);
     if (!ld) length_register(p->env, name, m);
@@ -1449,18 +1598,12 @@ static void builtin_today(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
     p->cmd_space_before = false;
 }
 
-static void builtin_rule(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
-    Measure w = measure_parse(p, args[0], UNIT_MM);
-    size_t blocks = (size_t)fmax(1.0, round(w.mm / (p->gen->char_state.size.mm * 0.5)));
-    if (blocks > 40) blocks = 40;
-    StrBuf bar;
-    if (!sb_init(&bar, blocks * 4 + 4)) return;
-    for (size_t i = 0; i < blocks; i++) {
-        sb_append_cstr(&bar, "―");
-    }
-    xml_emit_text(p->gen, (StrView){ bar.data, bar.len }, p->cmd_space_before);
+static void builtin_rule(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    Measure raise = (opt_c > 0) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+    Measure w     = measure_parse(p, args[0], UNIT_MM);
+    Measure h     = measure_parse(p, args[1], UNIT_MM);
+    xml_emit_rule(p->gen, w, h, raise, p->cmd_space_before);
     p->cmd_space_before = false;
-    sb_free(&bar);
 }
 
 // --- Escala de Tamaños de Fuente de LaTeX2e ---
@@ -1618,6 +1761,146 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
                     sb_free(&rec);
                 }
             }
+        } else if (sv_equals(env_name, "itemize")) {
+            xml_close_para(p->gen);
+            p->gen->itemize_depth++;
+            size_t lvl = (p->gen->itemize_depth <= 4) ? p->gen->itemize_depth : 4;
+            if (p->gen->list_depth < 8) {
+                ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth++];
+                memset(ls, 0, sizeof(*ls));
+                ls->kind  = LIST_ITEMIZE;
+                ls->level = lvl;
+            }
+            double step_mm = (lvl == 1) ? 8.0 : 6.5;
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + step_mm, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(0.8, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(1.2, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "enumerate")) {
+            xml_close_para(p->gen);
+            p->gen->enumerate_depth++;
+            size_t lvl = (p->gen->enumerate_depth <= 4) ? p->gen->enumerate_depth : 4;
+            static const char *const enum_ctrs[4] = { "enumi", "enumii", "enumiii", "enumiv" };
+            const char *cname = enum_ctrs[lvl - 1];
+            CounterDef *c = counter_find_mut(p->env, (StrView){ cname, strlen(cname) });
+            if (c) c->value = 0;
+
+            if (p->gen->list_depth < 8) {
+                ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth++];
+                memset(ls, 0, sizeof(*ls));
+                ls->kind  = LIST_ENUMERATE;
+                ls->level = lvl;
+                snprintf(ls->counter_name, sizeof(ls->counter_name), "%s", cname);
+            }
+            double step_mm = (lvl == 1) ? 8.0 : 6.5;
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + step_mm, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(0.8, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(1.2, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "description")) {
+            xml_close_para(p->gen);
+            if (p->gen->list_depth < 8) {
+                ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth++];
+                memset(ls, 0, sizeof(*ls));
+                ls->kind  = LIST_DESCRIPTION;
+                ls->level = 1;
+            }
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 8.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(1.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(1.4, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "list")) {
+            xml_close_para(p->gen);
+            StrView def_lbl = {0}, decls = {0};
+            parse_arg(p, &def_lbl);
+            parse_arg(p, &decls);
+            if (p->gen->list_depth < 8) {
+                ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth++];
+                memset(ls, 0, sizeof(*ls));
+                ls->kind  = LIST_CUSTOM;
+                ls->level = 1;
+                snprintf(ls->default_label, sizeof(ls->default_label), "%.*s", (int)def_lbl.len, def_lbl.data);
+            }
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 8.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(0.8, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(1.2, UNIT_MM, 1.0);
+            if (decls.len > 0) {
+                execute_tex_fragment(p, decls, false);
+            }
+        } else if (sv_equals(env_name, "verbatim") || sv_equals(env_name, "verbatim*")) {
+            bool v_star = sv_equals(env_name, "verbatim*");
+            const char *end_tag = v_star ? "\\end{verbatim*}" : "\\end{verbatim}";
+            size_t end_tag_len = strlen(end_tag);
+
+            xml_close_para(p->gen);
+            const char *src_end = p->lexer.src + p->lexer.len;
+            const char *raw_cur = args[0].data + args[0].len + 1;
+            if (raw_cur > src_end) raw_cur = src_end;
+
+            const char *found_end = nullptr;
+            for (const char *scan = raw_cur; scan + end_tag_len <= src_end; scan++) {
+                if (memcmp(scan, end_tag, end_tag_len) == 0) {
+                    found_end = scan;
+                    break;
+                }
+            }
+            const char *body_end = found_end ? found_end : src_end;
+
+            if (raw_cur < body_end && *raw_cur == '\r') raw_cur++;
+            if (raw_cur < body_end && *raw_cur == '\n') raw_cur++;
+            if (body_end > raw_cur && *(body_end - 1) == '\n') {
+                body_end--;
+                if (body_end > raw_cur && *(body_end - 1) == '\r') body_end--;
+            }
+
+            p->gen->para_state.align        = ALIGN_LEFT;
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 4.0, UNIT_MM, 1.0);
+            snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+            p->gen->char_state.weight       = WEIGHT_NORMAL;
+            p->gen->char_state.slant        = SLANT_NORMAL;
+            p->gen->char_state.small_caps   = false;
+
+            StrBuf line_buf;
+            if (sb_init(&line_buf, 256)) {
+                for (const char *c = raw_cur; c < body_end; c++) {
+                    if (*c == '\r') continue;
+                    if (*c == '\n') {
+                        if (line_buf.len == 0) {
+                            sb_append_cstr(&line_buf, "\xC2\xA0");
+                        }
+                        xml_emit_text(p->gen, (StrView){ line_buf.data, line_buf.len }, false);
+                        line_buf.len = 0;
+                        line_buf.data[0] = '\0';
+                        xml_emit_line_break(p->gen, measure_make(0.0, UNIT_MM, 1.0));
+                    } else if (*c == ' ') {
+                        sb_append_cstr(&line_buf, v_star ? "␣" : "\xC2\xA0");
+                    } else if (*c == '\t') {
+                        sb_append_cstr(&line_buf, v_star ? "␣␣␣␣" : "\xC2\xA0\xC2\xA0\xC2\xA0\xC2\xA0");
+                    } else {
+                        sb_append_mem(&line_buf, c, 1);
+                    }
+                }
+                if (line_buf.len > 0) {
+                    xml_emit_text(p->gen, (StrView){ line_buf.data, line_buf.len }, false);
+                }
+                sb_free(&line_buf);
+            }
+
+            xml_close_para(p->gen);
+            ActiveEnvFrame popped = p->gen->env_stack[--p->gen->env_depth];
+            p->gen->para_state = popped.saved_state.para_state;
+            p->gen->char_state = popped.saved_state.char_state;
+
+            const char *resume_ptr = found_end ? (found_end + end_tag_len) : src_end;
+            p->lexer.cursor = (size_t)((args[0].data + args[0].len + 1) - p->lexer.src);
+            size_t target_cur = (size_t)(resume_ptr - p->lexer.src);
+            while (p->lexer.cursor < target_cur) {
+                lexer_advance(&p->lexer);
+            }
+            parser_advance(p);
+            return;
         }
     }
 }
@@ -1638,14 +1921,105 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
         if (sv_equals(env_name, "center") || sv_equals(env_name, "flushleft") ||
             sv_equals(env_name, "flushright") || sv_equals(env_name, "quote") ||
             sv_equals(env_name, "quotation") || sv_equals(env_name, "verse") ||
-            sv_equals(env_name, "abstract") || sv_equals(env_name, "letter")) {
+            sv_equals(env_name, "abstract") || sv_equals(env_name, "letter") ||
+            sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
+            sv_equals(env_name, "description") || sv_equals(env_name, "list")) {
             xml_close_para(p->gen);
         } else if (sv_equals(env_name, "titlepage")) {
             xml_close_para(p->gen);
             builtin_newpage(p, false, nullptr, 0, nullptr);
         }
+
+        if (sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
+            sv_equals(env_name, "description") || sv_equals(env_name, "list")) {
+            p->gen->has_pending_item_label = false;
+            if (p->gen->list_depth > 0) {
+                ListLevelState ls = p->gen->list_stack[--p->gen->list_depth];
+                if (ls.kind == LIST_ITEMIZE && p->gen->itemize_depth > 0) {
+                    p->gen->itemize_depth--;
+                } else if (ls.kind == LIST_ENUMERATE && p->gen->enumerate_depth > 0) {
+                    p->gen->enumerate_depth--;
+                }
+            }
+        }
+
         p->gen->para_state = ef.saved_state.para_state;
         p->gen->char_state = ef.saved_state.char_state;
+    }
+}
+
+static void builtin_usecounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView cname = sv_trim(args[0]);
+    CounterDef *c = counter_find_mut(p->env, cname);
+    if (!c) c = counter_register(p->env, cname, (StrView){0});
+    if (c) c->value = 0;
+
+    if (p->gen->list_depth > 0) {
+        ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth - 1];
+        snprintf(ls->counter_name, sizeof(ls->counter_name), "%.*s", (int)cname.len, cname.data);
+    }
+}
+
+static void builtin_item(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
+    xml_close_para(p->gen);
+    p->cmd_space_before = false;
+
+    if (p->gen->list_depth == 0) {
+        if (opt_c > 0) {
+            eval_tex_to_plain(p, opt[0], p->gen->pending_item_label, sizeof(p->gen->pending_item_label));
+            p->gen->has_pending_item_label = true;
+        }
+        return;
+    }
+
+    ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth - 1];
+
+    if (ls->kind == LIST_DESCRIPTION) {
+        if (opt_c > 0) {
+            p->gen->para_state.indent_first = measure_make(-4.0, UNIT_MM, 1.0);
+            StrBuf dbuf;
+            if (sb_init(&dbuf, opt[0].len + 48)) {
+                sb_appendf(&dbuf, "{\\bfseries %.*s}\\hspace{2.2mm}", (int)opt[0].len, opt[0].data);
+                execute_tex_fragment(p, (StrView){ dbuf.data, dbuf.len }, false);
+                sb_free(&dbuf);
+            }
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        }
+        return;
+    }
+
+    if (opt_c > 0) {
+        eval_tex_to_plain(p, opt[0], p->gen->pending_item_label, sizeof(p->gen->pending_item_label));
+        p->gen->has_pending_item_label = true;
+        return;
+    }
+
+    if (ls->counter_name[0] != '\0') {
+        StrView cname = { ls->counter_name, strlen(ls->counter_name) };
+        counter_step(p->env, cname);
+        format_the_counter(p->env, p->gen, cname, p->env->current_ref, sizeof(p->env->current_ref));
+    }
+
+    if (ls->kind == LIST_ITEMIZE) {
+        static const char *const item_macros[4] = {
+            "\\labelitemi", "\\labelitemii", "\\labelitemiii", "\\labelitemiv"
+        };
+        const char *mexpr = item_macros[(ls->level >= 1 && ls->level <= 4) ? (ls->level - 1) : 0];
+        eval_tex_to_plain(p, (StrView){ mexpr, strlen(mexpr) },
+                          p->gen->pending_item_label, sizeof(p->gen->pending_item_label));
+        p->gen->has_pending_item_label = true;
+    } else if (ls->kind == LIST_ENUMERATE) {
+        static const char *const enum_macros[4] = {
+            "\\labelenumi", "\\labelenumii", "\\labelenumiii", "\\labelenumiv"
+        };
+        const char *mexpr = enum_macros[(ls->level >= 1 && ls->level <= 4) ? (ls->level - 1) : 0];
+        eval_tex_to_plain(p, (StrView){ mexpr, strlen(mexpr) },
+                          p->gen->pending_item_label, sizeof(p->gen->pending_item_label));
+        p->gen->has_pending_item_label = true;
+    } else if (ls->kind == LIST_CUSTOM) {
+        eval_tex_to_plain(p, (StrView){ ls->default_label, strlen(ls->default_label) },
+                          p->gen->pending_item_label, sizeof(p->gen->pending_item_label));
+        p->gen->has_pending_item_label = true;
     }
 }
 
@@ -2112,6 +2486,133 @@ static void builtin_par(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
     xml_close_para(p->gen);
 }
 
+static bool sv_contains_cstr(StrView sv, const char *needle) {
+    size_t nlen = strlen(needle);
+    if (nlen == 0 || sv.len < nlen) return false;
+    for (size_t i = 0; i + nlen <= sv.len; i++) {
+        if (memcmp(sv.data + i, needle, nlen) == 0) return true;
+    }
+    return false;
+}
+
+static void builtin_linebreak_cmd(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
+    Measure extra = (opt_c > 0) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+    xml_emit_line_break(p->gen, extra);
+    p->cmd_space_before = false;
+}
+
+static void builtin_linebreak_opt(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
+    long priority = (opt_c > 0) ? sv_to_long(p, opt[0]) : 4;
+    if (priority >= 3) {
+        xml_emit_line_break(p->gen, measure_make(0.0, UNIT_MM, 1.0));
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_pagebreak_opt(Parser *p, bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    long priority = (opt_c > 0) ? sv_to_long(p, opt[0]) : 4;
+    if (priority >= 3) {
+        builtin_newpage(p, starred, opt, opt_c, args);
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_enlargethispage(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    Measure delta = measure_parse(p, args[0], UNIT_MM);
+    double next_bot = fmax(5.0, p->gen->margin_bottom.mm - delta.mm);
+    p->gen->margin_bottom = measure_make(next_bot, UNIT_MM, 1.0);
+}
+
+static void builtin_hspace(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    if (sv_contains_cstr(args[0], "\\fill") || sv_contains_cstr(args[0], "\\stretch")) {
+        xml_emit_hspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), "space", p->cmd_space_before);
+    } else {
+        Measure w = measure_parse(p, args[0], UNIT_MM);
+        xml_emit_hspace(p->gen, w, nullptr, p->cmd_space_before);
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_hfill(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), "space", p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_dotfill(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), "dots", p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_hrulefill(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), "rule", p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_quad(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(1.0, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_qquad(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(2.0, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_enspace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.5, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_thinspace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.16667, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_medspace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.22222, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_thickspace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(0.27778, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_negthinspace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_emit_hspace(p->gen, measure_make(-0.16667, UNIT_EM, p->gen->char_state.size.mm), nullptr, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_vspace(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    p->cmd_space_before = false;
+    if (sv_contains_cstr(args[0], "\\fill") || sv_contains_cstr(args[0], "\\stretch")) {
+        xml_emit_vspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), starred, true);
+    } else {
+        Measure h = measure_parse(p, args[0], UNIT_MM);
+        xml_emit_vspace(p->gen, h, starred, false);
+    }
+}
+
+static void builtin_vfill(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->cmd_space_before = false;
+    xml_emit_vspace(p->gen, measure_make(0.0, UNIT_MM, 1.0), false, true);
+}
+
+static void builtin_smallskip(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->cmd_space_before = false;
+    xml_emit_vspace(p->gen, measure_make(3.0, UNIT_PT, 1.0), false, false);
+}
+
+static void builtin_medskip(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->cmd_space_before = false;
+    xml_emit_vspace(p->gen, measure_make(6.0, UNIT_PT, 1.0), false, false);
+}
+
+static void builtin_bigskip(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->cmd_space_before = false;
+    xml_emit_vspace(p->gen, measure_make(12.0, UNIT_PT, 1.0), false, false);
+}
+
 // --- Fuentes y Estilos Tipográficos ---
 
 static void apply_nfss_family(XmlGenerator *gen, StrView fam) {
@@ -2470,14 +2971,49 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "encl",             0, 1, false, builtin_encl },
     { "ps",               0, 0, false, builtin_par },
 
-    // Geometría, página y párrafo
+    // Geometría, página, saltos, espaciado, listas y párrafo
     { "pagesize",         0, 2, false, builtin_pagesize },
     { "orientation",      0, 1, false, builtin_orientation },
     { "margins",          0, 4, false, builtin_margins },
+    { "\\",               1, 0, true,  builtin_linebreak_cmd },
+    { "newline",          0, 0, false, builtin_linebreak_cmd },
+    { "linebreak",        1, 0, false, builtin_linebreak_opt },
+    { "nolinebreak",      1, 0, false, builtin_noop },
+    { "sloppy",           0, 0, false, builtin_noop },
+    { "fussy",            0, 0, false, builtin_noop },
+    { "hyphenation",      0, 1, false, builtin_noop },
     { "newpage",          0, 0, false, builtin_newpage },
     { "clearpage",        0, 0, false, builtin_newpage },
     { "cleardoublepage",  0, 0, false, builtin_newpage },
-    { "pagebreak",        1, 0, false, builtin_newpage },
+    { "pagebreak",        1, 0, false, builtin_pagebreak_opt },
+    { "nopagebreak",      1, 0, false, builtin_noop },
+    { "enlargethispage",  0, 1, true,  builtin_enlargethispage },
+    { "hspace",           0, 1, true,  builtin_hspace },
+    { "hfill",            0, 0, false, builtin_hfill },
+    { "hss",              0, 0, false, builtin_hfill },
+    { "dotfill",          0, 0, false, builtin_dotfill },
+    { "hrulefill",        0, 0, false, builtin_hrulefill },
+    { "quad",             0, 0, false, builtin_quad },
+    { "qquad",            0, 0, false, builtin_qquad },
+    { "enspace",          0, 0, false, builtin_enspace },
+    { "thinspace",        0, 0, false, builtin_thinspace },
+    { "medspace",         0, 0, false, builtin_medspace },
+    { "thickspace",       0, 0, false, builtin_thickspace },
+    { "negthinspace",     0, 0, false, builtin_negthinspace },
+    { ",",                0, 0, false, builtin_thinspace },
+    { ":",                0, 0, false, builtin_medspace },
+    { ";",                0, 0, false, builtin_thickspace },
+    { "!",                0, 0, false, builtin_negthinspace },
+    { "frenchspacing",    0, 0, false, builtin_noop },
+    { "nonfrenchspacing", 0, 0, false, builtin_noop },
+    { "vspace",           0, 1, true,  builtin_vspace },
+    { "addvspace",        0, 1, false, builtin_vspace },
+    { "vfill",            0, 0, false, builtin_vfill },
+    { "smallskip",        0, 0, false, builtin_smallskip },
+    { "medskip",          0, 0, false, builtin_medskip },
+    { "bigskip",          0, 0, false, builtin_bigskip },
+    { "item",             1, 0, false, builtin_item },
+    { "usecounter",       0, 1, false, builtin_usecounter },
     { "newframe",         0, 4, false, builtin_newframe },
     { "twocolumn",        1, 0, false, builtin_twocolumn },
     { "onecolumn",        0, 0, false, builtin_onecolumn },
@@ -2726,6 +3262,54 @@ static void parse_and_execute(Parser *p) {
         if (p->current.type == TOKEN_COMMAND) {
             StrView cmd     = p->current.text;
             bool space_pend = p->current.space_before;
+
+            // Caso especial léxico: \verb|...| y \verb*|...|
+            if (sv_equals(cmd, "verb")) {
+                bool v_star = false;
+                if (lexer_peek(&p->lexer) == '*') {
+                    lexer_advance(&p->lexer);
+                    v_star = true;
+                }
+                while (p->lexer.cursor < p->lexer.len &&
+                       (lexer_peek(&p->lexer) == ' ' || lexer_peek(&p->lexer) == '\t')) {
+                    lexer_advance(&p->lexer);
+                }
+                char delim = lexer_advance(&p->lexer);
+                if (delim != '\0' && delim != '\n') {
+                    StrBuf vbuf;
+                    if (sb_init(&vbuf, 64)) {
+                        while (p->lexer.cursor < p->lexer.len &&
+                               lexer_peek(&p->lexer) != delim &&
+                               lexer_peek(&p->lexer) != '\n') {
+                            char vc = lexer_advance(&p->lexer);
+                            if (vc == ' ') {
+                                sb_append_cstr(&vbuf, v_star ? "␣" : "\xC2\xA0");
+                            } else {
+                                sb_append_mem(&vbuf, &vc, 1);
+                            }
+                        }
+                        if (p->lexer.cursor < p->lexer.len && lexer_peek(&p->lexer) == delim) {
+                            lexer_advance(&p->lexer);
+                        }
+                        if (space_pend && p->gen->para_has_content) {
+                            xml_ensure_para_open(p->gen);
+                            xml_activate_current_char_style(p->gen);
+                            sb_append_cstr(&p->gen->story, " ");
+                        }
+                        CharState saved_cs = p->gen->char_state;
+                        snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+                        p->gen->char_state.weight     = WEIGHT_NORMAL;
+                        p->gen->char_state.slant      = SLANT_NORMAL;
+                        p->gen->char_state.small_caps = false;
+                        xml_emit_text(p->gen, (StrView){ vbuf.data, vbuf.len }, false);
+                        p->gen->char_state = saved_cs;
+                        sb_free(&vbuf);
+                    }
+                }
+                parser_advance(p);
+                continue;
+            }
+
             parser_advance(p);
 
             // 1. ¿Es un comando de acento componible (\', \`, \^, \", \~...)?

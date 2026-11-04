@@ -227,6 +227,16 @@ static inline Token lexer_next_token(Lexer *l) {
         StrView cmd_name = {start + 1,
                             (size_t)(&l->src[l->cursor] - (start + 1))};
 
+        // Para \verb o \verb*, no absorber espacios ni el delimitador literal
+        if (cmd_name.len == 4 && strncmp(cmd_name.data, "verb", 4) == 0) {
+          return (Token){.type = TOKEN_COMMAND,
+                         .text = cmd_name,
+                         .line = line,
+                         .col = col,
+                         .space_before = skipped_space,
+                         .is_control_symbol = false};
+        }
+
         // En TeX, las palabras de control absorben los espacios horizontales
         // posteriores (o un único salto de línea si no inicia línea en blanco
         // \par)

@@ -68,19 +68,44 @@ typedef struct {
     double x_mm, y_mm, w_mm, h_mm;
 } XmlFrameDef;
 
+typedef enum : unsigned char {
+    RUN_TEXT = 0,
+    RUN_LINE_BREAK,
+    RUN_HSPACE,
+    RUN_RULE
+} RunKind;
+
+typedef enum : unsigned char {
+    FILL_NONE = 0,
+    FILL_SPACE,
+    FILL_DOTS,
+    FILL_RULE
+} HFillKind;
+
 typedef struct {
+    RunKind kind;
     size_t style_idx;
     char *text;
+    double w_mm;
+    double h_mm;
+    double raise_mm;
+    HFillKind fill;
 } SpanRun;
 
 typedef enum : unsigned char {
     ITEM_PARA = 0,
-    ITEM_PAGE_BREAK
+    ITEM_PAGE_BREAK,
+    ITEM_VSPACE
 } StoryItemType;
 
 typedef struct {
     StoryItemType type;
     size_t para_style_idx;
+    char label[128];
+    size_t label_style_idx;
+    double vspace_mm;
+    bool vspace_starred;
+    bool vspace_fill;
     SpanRun *runs;
     size_t run_count;
     size_t run_cap;
@@ -129,10 +154,14 @@ typedef struct {
 } FlowFrame;
 
 typedef struct {
+    RunKind kind;
     size_t char_style_idx;
     char *word;
     double word_w_mm;
     double space_w_mm;
+    double h_mm;
+    double raise_mm;
+    HFillKind fill;
     bool space_after;
 } WordToken;
 
@@ -324,16 +353,21 @@ static void doc_push_item(IrDocument *doc, StoryItem item) {
     doc->items[doc->item_count++] = item;
 }
 
-static void para_push_run(StoryItem *para, size_t style_idx, const char *text) {
-    if (!text || text[0] == '\0') return;
+static void para_push_special_run(StoryItem *para, SpanRun run) {
     if (para->run_count >= para->run_cap) {
         para->run_cap = (para->run_cap == 0) ? 8 : para->run_cap * 2;
         para->runs = realloc(para->runs, para->run_cap * sizeof(SpanRun));
     }
-    para->runs[para->run_count++] = (SpanRun){
+    para->runs[para->run_count++] = run;
+}
+
+static void para_push_run(StoryItem *para, size_t style_idx, const char *text) {
+    if (!text || text[0] == '\0') return;
+    para_push_special_run(para, (SpanRun){
+        .kind      = RUN_TEXT,
         .style_idx = style_idx,
         .text      = dup_cstr(text)
-    };
+    });
 }
 
 static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
@@ -556,10 +590,16 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             fr->w_mm     = parse_mm(get_attr(attrs, attr_count, "width"));
             fr->h_mm     = parse_mm(get_attr(attrs, attr_count, "height"));
         } else if (strcmp(tag, "p") == 0 && !self_closing) {
-            const char *st = get_attr(attrs, attr_count, "style");
+            const char *st  = get_attr(attrs, attr_count, "style");
+            const char *lbl = get_attr(attrs, attr_count, "label");
+            const char *lst = get_attr(attrs, attr_count, "label-style");
             memset(&current_para, 0, sizeof(current_para));
-            current_para.type           = ITEM_PARA;
-            current_para.para_style_idx = st ? find_para_style_idx(doc, st) : 0;
+            current_para.type            = ITEM_PARA;
+            current_para.para_style_idx  = st ? find_para_style_idx(doc, st) : 0;
+            current_para.label_style_idx = lst ? find_char_style_idx(doc, lst) : 0;
+            if (lbl) {
+                snprintf(current_para.label, sizeof(current_para.label), "%s", lbl);
+            }
             in_para = true;
         } else if (strcmp(tag, "span") == 0 && in_para && !self_closing) {
             const char *st = get_attr(attrs, attr_count, "style");
@@ -567,6 +607,66 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             span_buf.len     = 0;
             span_buf.data[0] = '\0';
             in_span          = true;
+        } else if (strcmp(tag, "br") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *ex = get_attr(attrs, attr_count, "extra");
+            para_push_special_run(&current_para, (SpanRun){
+                .kind = RUN_LINE_BREAK,
+                .h_mm = ex ? parse_mm(ex) : 0.0
+            });
+        } else if (strcmp(tag, "hspace") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *w  = get_attr(attrs, attr_count, "width");
+            const char *fl = get_attr(attrs, attr_count, "fill");
+            const char *st = get_attr(attrs, attr_count, "style");
+            HFillKind fk   = FILL_NONE;
+            if (fl) {
+                if (strcmp(fl, "space") == 0)     fk = FILL_SPACE;
+                else if (strcmp(fl, "dots") == 0) fk = FILL_DOTS;
+                else if (strcmp(fl, "rule") == 0) fk = FILL_RULE;
+            }
+            para_push_special_run(&current_para, (SpanRun){
+                .kind      = RUN_HSPACE,
+                .style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx,
+                .w_mm      = w ? parse_mm(w) : 0.0,
+                .fill      = fk
+            });
+        } else if (strcmp(tag, "rule") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *w  = get_attr(attrs, attr_count, "width");
+            const char *h  = get_attr(attrs, attr_count, "height");
+            const char *rs = get_attr(attrs, attr_count, "raise");
+            const char *st = get_attr(attrs, attr_count, "style");
+            para_push_special_run(&current_para, (SpanRun){
+                .kind      = RUN_RULE,
+                .style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx,
+                .w_mm      = w ? parse_mm(w) : 0.0,
+                .h_mm      = h ? parse_mm(h) : 0.0,
+                .raise_mm  = rs ? parse_mm(rs) : 0.0
+            });
+        } else if (strcmp(tag, "vspace") == 0) {
+            const char *h  = get_attr(attrs, attr_count, "height");
+            const char *st = get_attr(attrs, attr_count, "starred");
+            const char *fl = get_attr(attrs, attr_count, "fill");
+            StoryItem vs = {
+                .type           = ITEM_VSPACE,
+                .vspace_mm      = h ? parse_mm(h) : 0.0,
+                .vspace_starred = (st && strcmp(st, "true") == 0),
+                .vspace_fill    = (fl && strcmp(fl, "true") == 0)
+            };
+            doc_push_item(doc, vs);
         } else if (strcmp(tag, "break") == 0) {
             const char *tp = get_attr(attrs, attr_count, "type");
             if (!tp || strcmp(tp, "page") == 0) {
@@ -608,6 +708,8 @@ static double estimate_word_width_mm(const char *word, const CharStyle *cs, cons
 
         if (is_mono) {
             total_em += 0.60;
+        } else if (step == 2 && c == 0xC2 && (unsigned char)word[i + 1] == 0xA0) {
+            total_em += 0.27;
         } else if (step == 1) {
             if (strchr("ilIjtfr.,:;!|'()[]", (int)c))      total_em += 0.30;
             else if (strchr("mwMW@%", (int)c))             total_em += 0.80;
@@ -713,6 +815,8 @@ static void emit_svg_line(
     FlowFrame *frame,
     const IrDocument *doc,
     const ParaStyle *ps,
+    const char *label,
+    size_t label_cs_idx,
     const WordToken *words,
     size_t start_idx,
     size_t end_idx,
@@ -721,82 +825,223 @@ static void emit_svg_line(
     double baseline_y_mm,
     bool is_last_line
 ) {
+    // 1. Si es la primera línea de un elemento de lista con etiqueta (label="..."), trazarla en el margen izquierdo
+    if (label && label[0] != '\0') {
+        double lbl_x = frame->x_mm + ps->indent_left_mm - 2.2;
+        const char *cs_id = (label_cs_idx < doc->char_style_count) ? doc->char_styles[label_cs_idx].id : "cs1";
+        char lhdr[256];
+        snprintf(lhdr, sizeof(lhdr),
+                 "        <text x=\"%.3f\" y=\"%.3f\" text-anchor=\"end\"><tspan class=\"cs-%s\">",
+                 lbl_x, frame->y_mm + baseline_y_mm, cs_id);
+        sb_append_cstr(&frame->svg_content, lhdr);
+        sb_append_escaped_xml(&frame->svg_content, label);
+        sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+    }
+
+    if (start_idx >= end_idx) return;
+
     double avail_w = frame->w_mm - ps->indent_left_mm - ps->indent_right_mm - line_indent_mm;
     if (avail_w < 5.0) avail_w = frame->w_mm;
 
+    bool has_special_inline = false;
+    size_t fill_count = 0;
+    for (size_t i = start_idx; i < end_idx; i++) {
+        if (words[i].kind != RUN_TEXT) {
+            has_special_inline = true;
+            if (words[i].kind == RUN_HSPACE && words[i].fill != FILL_NONE) {
+                fill_count++;
+            }
+        }
+    }
+
     double x_pos = frame->x_mm + ps->indent_left_mm + line_indent_mm;
-    if (ps->align == ALIGN_CENTER) {
-        x_pos += fmax(0.0, (avail_w - natural_w_mm) * 0.5);
-    } else if (ps->align == ALIGN_RIGHT) {
-        x_pos += fmax(0.0, avail_w - natural_w_mm);
+    if (fill_count == 0) {
+        if (ps->align == ALIGN_CENTER) {
+            x_pos += fmax(0.0, (avail_w - natural_w_mm) * 0.5);
+        } else if (ps->align == ALIGN_RIGHT) {
+            x_pos += fmax(0.0, avail_w - natural_w_mm);
+        }
     }
 
-    size_t gaps = 0;
-    for (size_t i = start_idx; i + 1 < end_idx; i++) {
-        if (words[i].space_after) gaps++;
+    if (!has_special_inline) {
+        size_t gaps = 0;
+        for (size_t i = start_idx; i + 1 < end_idx; i++) {
+            if (words[i].space_after) gaps++;
+        }
+
+        bool do_justify = (ps->align == ALIGN_JUSTIFY && !is_last_line && gaps > 0 && natural_w_mm > avail_w * 0.55);
+        double extra_word_spacing = 0.0;
+        if (do_justify && avail_w > natural_w_mm) {
+            extra_word_spacing = (avail_w - natural_w_mm) / (double)gaps;
+        }
+
+        char hdr[256];
+        if (do_justify && extra_word_spacing > 0.001) {
+            snprintf(hdr, sizeof(hdr),
+                     "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\" style=\"word-spacing:%.3fpx;\">",
+                     x_pos, frame->y_mm + baseline_y_mm, extra_word_spacing);
+        } else {
+            snprintf(hdr, sizeof(hdr),
+                     "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\">",
+                     x_pos, frame->y_mm + baseline_y_mm);
+        }
+        sb_append_cstr(&frame->svg_content, hdr);
+
+        size_t i = start_idx;
+        while (i < end_idx) {
+            size_t cs_idx = words[i].char_style_idx;
+            char tspan_open[96];
+            snprintf(tspan_open, sizeof(tspan_open), "<tspan class=\"cs-%s\">", doc->char_styles[cs_idx].id);
+            sb_append_cstr(&frame->svg_content, tspan_open);
+
+            while (i < end_idx && words[i].char_style_idx == cs_idx) {
+                sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                if (i + 1 < end_idx && words[i].space_after) {
+                    sb_append_cstr(&frame->svg_content, " ");
+                }
+                i++;
+            }
+            sb_append_cstr(&frame->svg_content, "</tspan>");
+        }
+
+        sb_append_cstr(&frame->svg_content, "</text>\n");
+        return;
     }
 
-    bool do_justify = (ps->align == ALIGN_JUSTIFY && !is_last_line && gaps > 0 && natural_w_mm > avail_w * 0.55);
-    double extra_word_spacing = 0.0;
-    if (do_justify && avail_w > natural_w_mm) {
-        extra_word_spacing = (avail_w - natural_w_mm) / (double)gaps;
-    }
+    // 2. Línea con elementos inline especiales (<hspace>, \hfill, \dotfill, \hrulefill, <rule>)
+    double each_fill_w = (fill_count > 0 && avail_w > natural_w_mm)
+                         ? ((avail_w - natural_w_mm) / (double)fill_count)
+                         : 0.0;
+    double cur_x = x_pos;
+    double abs_y = frame->y_mm + baseline_y_mm;
 
-    char hdr[256];
-    if (do_justify && extra_word_spacing > 0.001) {
-        snprintf(hdr, sizeof(hdr),
-                 "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\" style=\"word-spacing:%.3fpx;\">",
-                 x_pos, frame->y_mm + baseline_y_mm, extra_word_spacing);
-    } else {
-        snprintf(hdr, sizeof(hdr),
-                 "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\">",
-                 x_pos, frame->y_mm + baseline_y_mm);
-    }
-    sb_append_cstr(&frame->svg_content, hdr);
-
-    // Agrupar palabras adyacentes con idéntico estilo de carácter en un único <tspan>
     size_t i = start_idx;
     while (i < end_idx) {
-        size_t cs_idx = words[i].char_style_idx;
-        char tspan_open[96];
-        snprintf(tspan_open, sizeof(tspan_open), "<tspan class=\"cs-%s\">", doc->char_styles[cs_idx].id);
-        sb_append_cstr(&frame->svg_content, tspan_open);
+        if (words[i].kind == RUN_TEXT) {
+            char hdr[256];
+            snprintf(hdr, sizeof(hdr),
+                     "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\">",
+                     cur_x, abs_y);
+            sb_append_cstr(&frame->svg_content, hdr);
 
-        while (i < end_idx && words[i].char_style_idx == cs_idx) {
-            sb_append_escaped_xml(&frame->svg_content, words[i].word);
-            if (i + 1 < end_idx && words[i].space_after) {
-                sb_append_cstr(&frame->svg_content, " ");
+            while (i < end_idx && words[i].kind == RUN_TEXT) {
+                size_t cs_idx = words[i].char_style_idx;
+                char tspan_open[96];
+                snprintf(tspan_open, sizeof(tspan_open), "<tspan class=\"cs-%s\">", doc->char_styles[cs_idx].id);
+                sb_append_cstr(&frame->svg_content, tspan_open);
+
+                while (i < end_idx && words[i].kind == RUN_TEXT && words[i].char_style_idx == cs_idx) {
+                    sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                    cur_x += words[i].word_w_mm;
+                    if (i + 1 < end_idx && words[i].space_after) {
+                        if (words[i + 1].kind == RUN_TEXT) {
+                            sb_append_cstr(&frame->svg_content, " ");
+                        }
+                        cur_x += words[i].space_w_mm;
+                    }
+                    i++;
+                }
+                sb_append_cstr(&frame->svg_content, "</tspan>");
+            }
+            sb_append_cstr(&frame->svg_content, "</text>\n");
+        } else if (words[i].kind == RUN_HSPACE) {
+            const CharStyle *cs = (words[i].char_style_idx < doc->char_style_count)
+                                  ? &doc->char_styles[words[i].char_style_idx]
+                                  : &(CharStyle){ .color = "Black" };
+            if (words[i].fill == FILL_NONE) {
+                cur_x += words[i].word_w_mm;
+            } else if (words[i].fill == FILL_SPACE) {
+                cur_x += each_fill_w;
+            } else if (words[i].fill == FILL_DOTS) {
+                if (each_fill_w > 2.0) {
+                    char line_svg[256];
+                    snprintf(line_svg, sizeof(line_svg),
+                             "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" "
+                             "stroke=\"%s\" stroke-width=\"0.45\" stroke-dasharray=\"0.5, 1.8\" stroke-linecap=\"round\"/>\n",
+                             cur_x + 0.8, abs_y - 0.35, cur_x + each_fill_w - 0.8, abs_y - 0.35, cs->color);
+                    sb_append_cstr(&frame->svg_content, line_svg);
+                }
+                cur_x += each_fill_w;
+            } else if (words[i].fill == FILL_RULE) {
+                if (each_fill_w > 1.0) {
+                    char line_svg[256];
+                    snprintf(line_svg, sizeof(line_svg),
+                             "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" "
+                             "stroke=\"%s\" stroke-width=\"0.35\"/>\n",
+                             cur_x + 0.4, abs_y - 0.35, cur_x + each_fill_w - 0.4, abs_y - 0.35, cs->color);
+                    sb_append_cstr(&frame->svg_content, line_svg);
+                }
+                cur_x += each_fill_w;
             }
             i++;
+        } else if (words[i].kind == RUN_RULE) {
+            const CharStyle *cs = (words[i].char_style_idx < doc->char_style_count)
+                                  ? &doc->char_styles[words[i].char_style_idx]
+                                  : &(CharStyle){ .color = "Black" };
+            double rw = words[i].word_w_mm;
+            double rh = words[i].h_mm;
+            double rr = words[i].raise_mm;
+            if (rw > 0.01 && rh > 0.01) {
+                char rect_svg[256];
+                snprintf(rect_svg, sizeof(rect_svg),
+                         "        <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" fill=\"%s\"/>\n",
+                         cur_x, abs_y - rr - rh, rw, rh, cs->color);
+                sb_append_cstr(&frame->svg_content, rect_svg);
+            }
+            cur_x += rw;
+            if (i + 1 < end_idx && words[i].space_after) {
+                cur_x += words[i].space_w_mm;
+            }
+            i++;
+        } else {
+            i++;
         }
-        sb_append_cstr(&frame->svg_content, "</tspan>");
     }
-
-    sb_append_cstr(&frame->svg_content, "</text>\n");
 }
 
 static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const StoryItem *item) {
-    if (item->run_count == 0) return;
+    if (item->run_count == 0 && item->label[0] == '\0') return;
 
     const ParaStyle *ps = (item->para_style_idx < doc->para_style_count)
                           ? &doc->para_styles[item->para_style_idx]
                           : &(ParaStyle){ .align = ALIGN_LEFT, .line_spacing_mm = 5.2 };
 
-    // 1. Tokenizar todos los tramos del párrafo en palabras con su estilo
+    // 1. Tokenizar todos los tramos del párrafo en palabras y elementos inline con su estilo
     size_t cap = 64, count = 0;
     WordToken *words = malloc(cap * sizeof(WordToken));
     if (!words) return;
 
     for (size_t r = 0; r < item->run_count; r++) {
-        size_t cs_idx = item->runs[r].style_idx;
+        const SpanRun *run = &item->runs[r];
+        size_t cs_idx = (run->style_idx < doc->char_style_count) ? run->style_idx : 0;
         const CharStyle *cs = &doc->char_styles[cs_idx];
         const FontVariant *fv = &doc->variants[cs->font_variant_idx];
-        const char *s = item->runs[r].text;
+
+        if (run->kind != RUN_TEXT) {
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            words[count++] = (WordToken){
+                .kind           = run->kind,
+                .char_style_idx = cs_idx,
+                .word           = nullptr,
+                .word_w_mm      = (run->kind == RUN_HSPACE && run->fill != FILL_NONE) ? 0.0 : run->w_mm,
+                .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = run->h_mm,
+                .raise_mm       = run->raise_mm,
+                .fill           = run->fill,
+                .space_after    = false
+            };
+            continue;
+        }
+
+        const char *s = run->text;
         size_t pos = 0;
 
         while (s[pos] != '\0') {
             if (isspace((unsigned char)s[pos])) {
-                if (count > 0 && !words[count - 1].space_after) {
+                if (count > 0 && words[count - 1].kind != RUN_LINE_BREAK && !words[count - 1].space_after) {
                     words[count - 1].space_after = true;
                 }
                 while (s[pos] != '\0' && isspace((unsigned char)s[pos])) pos++;
@@ -822,10 +1067,14 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
                 words = realloc(words, cap * sizeof(WordToken));
             }
             words[count++] = (WordToken){
+                .kind           = RUN_TEXT,
                 .char_style_idx = cs_idx,
                 .word           = w_str,
                 .word_w_mm      = estimate_word_width_mm(w_str, cs, fv),
                 .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = 0.0,
+                .raise_mm       = 0.0,
+                .fill           = FILL_NONE,
                 .space_after    = trailing_space
             };
         }
@@ -840,7 +1089,7 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
         ts->cursor_y_mm += ps->space_before_mm;
     }
 
-    // 2. Composición voraz línea a línea respetando márgenes, sangría y desbordamiento de caja
+    // 2. Composición voraz línea a línea respetando márgenes, sangría, <br/> y desbordamiento de caja
     size_t idx = 0;
     bool first_line = true;
 
@@ -857,10 +1106,17 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
         double max_w  = fr->w_mm - ps->indent_left_mm - ps->indent_right_mm - indent;
         if (max_w < 10.0) max_w = fr->w_mm;
 
-        size_t line_end = idx;
-        double acc_w    = 0.0;
+        size_t line_end      = idx;
+        double acc_w         = 0.0;
+        bool forced_break    = false;
+        double brk_extra_mm  = 0.0;
 
         while (line_end < count) {
+            if (words[line_end].kind == RUN_LINE_BREAK) {
+                forced_break = true;
+                brk_extra_mm = words[line_end].h_mm;
+                break;
+            }
             double space_before_word = (line_end > idx && words[line_end - 1].space_after)
                                        ? words[line_end - 1].space_w_mm
                                        : 0.0;
@@ -872,21 +1128,29 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
             line_end++;
         }
 
-        bool is_last = (line_end >= count);
+        size_t next_idx = forced_break ? (line_end + 1) : line_end;
+        bool is_last    = (next_idx >= count) || forced_break;
+
         double max_font_mm = 0.0;
         for (size_t k = idx; k < line_end; k++) {
             double sz = doc->char_styles[words[k].char_style_idx].size_mm;
             if (sz > max_font_mm) max_font_mm = sz;
         }
+        if (max_font_mm <= 0.1 && doc->char_style_count > 0) {
+            max_font_mm = doc->char_styles[0].size_mm;
+        }
         double baseline_offset = fmax(max_font_mm * 0.82, line_h * 0.76);
 
-        emit_svg_line(fr, doc, ps, words, idx, line_end, acc_w, indent,
+        emit_svg_line(fr, doc, ps,
+                      first_line ? item->label : nullptr,
+                      item->label_style_idx,
+                      words, idx, line_end, acc_w, indent,
                       ts->cursor_y_mm + baseline_offset, is_last);
 
-        ts->cursor_y_mm += line_h;
+        ts->cursor_y_mm += line_h + brk_extra_mm;
         ts->at_frame_top = false;
         first_line       = false;
-        idx              = line_end;
+        idx              = next_idx;
     }
 
     ts->cursor_y_mm += ps->space_after_mm;
@@ -1151,6 +1415,31 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < doc.item_count; i++) {
         if (doc.items[i].type == ITEM_PAGE_BREAK) {
             typesetter_page_break(&ts, &doc);
+        } else if (doc.items[i].type == ITEM_VSPACE) {
+            FlowFrame *fr = &ts.frames[ts.cur_frame];
+            if (doc.items[i].vspace_fill) {
+                // Estimar la altura de los elementos que restan antes del siguiente salto de página
+                double upcoming_h = 0.0;
+                for (size_t k = i + 1; k < doc.item_count; k++) {
+                    if (doc.items[k].type == ITEM_PAGE_BREAK) break;
+                    if (doc.items[k].type == ITEM_VSPACE) {
+                        upcoming_h += doc.items[k].vspace_mm;
+                    } else if (doc.items[k].type == ITEM_PARA && doc.items[k].para_style_idx < doc.para_style_count) {
+                        const ParaStyle *ps = &doc.para_styles[doc.items[k].para_style_idx];
+                        upcoming_h += ps->space_before_mm + ps->line_spacing_mm * 1.5 + ps->space_after_mm;
+                    }
+                }
+                double target_y = fr->h_mm - upcoming_h;
+                if (target_y > ts.cursor_y_mm) {
+                    ts.cursor_y_mm = target_y;
+                    ts.at_frame_top = false;
+                }
+            } else if (!ts.at_frame_top || doc.items[i].vspace_starred) {
+                ts.cursor_y_mm = fmax(0.0, ts.cursor_y_mm + doc.items[i].vspace_mm);
+                if (doc.items[i].vspace_starred) {
+                    ts.at_frame_top = false;
+                }
+            }
         } else {
             typeset_paragraph(&ts, &doc, &doc.items[i]);
         }

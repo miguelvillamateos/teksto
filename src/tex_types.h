@@ -92,12 +92,6 @@ typedef enum : unsigned char {
   SHIFT_SUB = 2
 } BaselineShift;
 
-typedef enum : unsigned char {
-    SHIFT_NORMAL = 0,
-    SHIFT_SUPER  = 1,
-    SHIFT_SUB    = 2
-} BaselineShift;
-
 typedef struct {
   char family[64];
   unsigned char used_variants_mask;
@@ -128,8 +122,6 @@ typedef struct {
   bool underline;
   bool small_caps;
   BaselineShift shift;
-    bool small_caps;
-    BaselineShift shift;
 } CharState;
 
 typedef struct {
@@ -139,8 +131,6 @@ typedef struct {
   bool underline;
   bool small_caps;
   BaselineShift shift;
-    bool small_caps;
-    BaselineShift shift;
 } CharStyleDef;
 
 // ============================================================================
@@ -248,6 +238,21 @@ typedef struct {
   char *end_expansion;
 } ActiveEnvFrame;
 
+typedef enum : unsigned char {
+  LIST_NONE = 0,
+  LIST_ITEMIZE,
+  LIST_ENUMERATE,
+  LIST_DESCRIPTION,
+  LIST_CUSTOM
+} ListEnvKind;
+
+typedef struct {
+  ListEnvKind kind;
+  size_t level; // 1..4
+  char default_label[128];
+  char counter_name[48];
+} ListLevelState;
+
 typedef struct {
   FILE *file;
 
@@ -298,6 +303,14 @@ typedef struct {
   ActiveEnvFrame env_stack[MAX_ENV_DEPTH];
   size_t env_depth;
 
+  // Estado de listas anidadas (itemize, enumerate, description, list)
+  ListLevelState list_stack[8];
+  size_t list_depth;
+  size_t itemize_depth;
+  size_t enumerate_depth;
+  char pending_item_label[128];
+  bool has_pending_item_label;
+
   // Registros deduplicados para el bloque <definitions>
   FontFamilyDef fonts[MAX_FONT_FAMS];
   size_t font_count;
@@ -310,6 +323,7 @@ typedef struct {
 
   // Control de emisión del flujo <body>
   StrBuf story;
+  StrBuf *capture_plain_buf;
   bool para_open;
   bool para_has_content;
   int active_char_style_id; // -1 si no hay <span> abierto

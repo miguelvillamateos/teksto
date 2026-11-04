@@ -24,10 +24,6 @@ static const SymbolEntry LATEX_TEXT_SYMBOLS[] = {
     {" ", " "},
     {"\t", " "},
     {"\n", " "},
-    {",", "\xE2\x80\x89"}, // thin space U+2009
-    {":", "\xE2\x81\x9F"}, // medium space U+205F
-    {";", "\xE2\x80\x84"}, // thick space U+2004
-    {"!", ""},             // negative thin space
     {"/", ""},             // italic correction
     {"-", ""},             // discretionary hyphen
 
@@ -116,11 +112,6 @@ static const SymbolEntry LATEX_TEXT_SYMBOLS[] = {
     {"texttimes", "×"},
     {"textdiv", "÷"},
     {"textpm", "±"},
-    {"quad", "\xE2\x80\x83"}, // em-quad U+2003
-    {"qquad", "\xE2\x80\x83\xE2\x80\x83"},
-    {"enspace", "\xE2\x80\x82"},   // en-space U+2002
-    {"thinspace", "\xE2\x80\x89"}, // thin space U+2009
-    {"negthinspace", ""},
     {"space", " "},
 
     // Logos

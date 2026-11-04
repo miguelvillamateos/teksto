@@ -1,5 +1,5 @@
 % ==========================================
-% Fichero principal: input.tks (Sintaxis LaTeX2e - Fases 1 y 2)
+% Fichero principal: input.tks (Sintaxis LaTeX2e - Fases 1, 2 y 3)
 % ==========================================
 
 \documentclass[11pt,a4paper]{article}
@@ -8,7 +8,7 @@
 % Incluir definiciones y entornos auxiliares LaTeX2e
 \input{comandos_auxiliares}
 
-\title{Adaptaci\'on de \LaTeXe{} en Teksto: Fases 1 y 2}
+\title{Adaptaci\'on de \LaTeXe{} en Teksto: Fases 1, 2 y 3}
 \author{Equipo de Desarrollo de Teksto}
 \date{\today}
 \thanks{Documento compilado nativamente mediante el pipeline tks2xml + xml2svg.}
@@ -19,11 +19,11 @@
 \maketitle
 
 \begin{abstract}
-Este documento verifica la implementaci\'on de las Fases 1 y 2 del manual de referencia de \LaTeXe{}:
+Este documento verifica la implementaci\'on de las Fases 1, 2 y 3 del manual de referencia de \LaTeXe{}:
 procesamiento l\'exico al estilo \TeX{}, agrupamiento con pila de estados, contadores, longitudes,
 selecci\'on de fuentes NFSS, versalitas (\textsc{Small Caps}), super\'{\i}ndices, sub\'{\i}ndices,
-escala est\'andar de tama\~nos (\codigo{\textbackslash tiny} a \codigo{\textbackslash Huge}), portada autom\'atica con \codigo{\textbackslash maketitle}
-y seccionado jer\'arquico nativo.
+escala est\'andar de tama\~nos (\codigo{\textbackslash tiny} a \codigo{\textbackslash Huge}), portada autom\'atica con \codigo{\textbackslash maketitle},
+seccionado jer\'arquico, entornos de listas anidadas, texto literal (\codigo{verbatim}) y control de espaciado horizontal y vertical.
 \end{abstract}
 
 % Inclusión de módulo externo
@@ -33,9 +33,58 @@ y seccionado jer\'arquico nativo.
 \newpage
 \twocolumn
 
+\section{Listas, Verbatim y Espaciado}
+
+En esta secci\'on se comprueban los entornos de listas (\codigo{itemize}, \codigo{enumerate}, \codigo{description}), el texto literal y los comandos de salto y relleno el\'astico.
+
+\subsection{Listas Anidadas}
+
+\begin{enumerate}
+  \item Primer elemento numerado de nivel 1.
+  \item Segundo elemento con sublista anidada:
+  \begin{enumerate}
+    \item Sub-elemento alfab\'etico (\codigo{enumii}).
+    \item Otro sub-elemento con vi\~netas:
+    \begin{itemize}
+      \item Vi\~neta interna con \codigo{itemize}.
+      \item[\dag] Vi\~neta con etiqueta opcional \codigo{\textbackslash item[\textbackslash dag]}.
+    \end{itemize}
+  \end{enumerate}
+  \item Tercer elemento del nivel principal.
+\end{enumerate}
+
+\begin{description}
+  \item[Lexer:] Tokenizador de barras invertidas, grupos y comentarios.
+  \item[Stomach:] Generador de representaci\'on intermedia XML.
+  \item[Renderer:] Motor tipogr\'afico de conversi\'on a SVG.
+\end{description}
+
+\subsection{Texto Literal y Saltos de L\'{\i}nea}
+
+El comando en l\'{\i}nea \verb|\newcommand{\foo}[1]{#1}| preserva caracteres especiales sin expandirlos, y su variante con estrella \verb*|\verb* con espacios| hace visibles los espacios.
+
+\begin{verbatim}
+% Bloque verbatim literal:
+\def\saludo#1{Hola, #1!}
+  Espacios   preservados   exactamente.
+\end{verbatim}
+
+\subsection{Rellenos El\'asticos, Reglas y Saltos}
+
+L\'{\i}nea quebrada manualmente con \codigo{\textbackslash\textbackslash}:\\
+Segunda l\'{\i}nea sin justificaci\'on forzada.\\[3mm]
+Tercera l\'{\i}nea tras un espacio extra de \codigo{3mm}.
+
+\medskip
+Demostraci\'on de rellenos el\'asticos en l\'{\i}nea:\\
+Izquierda\hfill Derecha\\
+Cap\'{\i}tulo 1\dotfill P\'ag. 1\\
+Firma:\hrulefill\ \rule{12mm}{2mm}
+
+\bigskip
 \section{Maquetaci\'on Multip\'agina y Agrupamiento \TeX}
 
-Tras ejecutar el salto de p\'agina (\codigo{\textbackslash newpage}, p\'agina actual: \thepage) y activar el flujo a dos columnas mediante \codigo{\textbackslash twocolumn}, el comando nativo \codigo{\textbackslash section} incrementa el contador principal y reinicia autom\'aticamente sus subcontadores dependientes (\codigo{subsection} = \thesubsection).
+Tras activar el flujo a dos columnas mediante \codigo{\textbackslash twocolumn}, el comando nativo \codigo{\textbackslash section} incrementa el contador principal y reinicia autom\'aticamente sus subcontadores dependientes (\codigo{subsection} = \thesubsection).
 
 \subsection{Prueba de Longitudes Din\'amicas}
 
@@ -57,8 +106,8 @@ La variante con estrella \codigo{\textbackslash section*} emite el encabezamient
 
 Al invocar \codigo{\textbackslash appendix}, la numeraci\'on de las secciones principales conmuta autom\'aticamente al formato alfab\'etico (\thesection) tal como especifica el manual de \LaTeXe{}.
 
-\subsection{Atributos de Estilo de Car\'acter}
+\subsection{Primitivas de Fase 3 en XML}
 
-Los estilos \codigo{<char-style>} incorporan ahora los atributos \codigo{small-caps="true"} y \codigo{shift="super|sub"}, traducidos por \codigo{xml2svg} a reglas CSS y m\'etricas proporcionales.
+El XML intermedio incorpora ahora los nodos \codigo{<br/>}, \codigo{<hspace/>}, \codigo{<vspace/>} y \codigo{<rule/>}, adem\'as de los atributos \codigo{label} y \codigo{label-style} en \codigo{<p>}.
 
 \end{document}
