@@ -59,6 +59,8 @@ typedef struct {
     double size_mm;
     char color[32];
     bool underline;
+    bool small_caps;
+    int shift; // 0=normal, 1=super, 2=sub
 } CharStyle;
 
 typedef struct {
@@ -885,18 +887,6 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
 // ============================================================================
 // 7. Emisión del Fichero Autocontenido SVG + JS ("ViewBox Sliding" Effect)
 // ============================================================================
-
-static void fprint_xml_attr_escaped(FILE *f, const char *s) {
-    for (const char *p = s; *p != '\0'; p++) {
-        switch (*p) {
-            case '&':  fputs("&amp;", f);  break;
-            case '<':  fputs("&lt;", f);   break;
-            case '>':  fputs("&gt;", f);   break;
-            case '\"': fputs("&quot;", f); break;
-            default:   fputc(*p, f);       break;
-        }
-    }
-}
 
 static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, const Typesetter *ts) {
     FILE *out = fopen(svg_path, "w");

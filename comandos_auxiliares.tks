@@ -1,6 +1,15 @@
-\newcommand{cuerpobase}{0}{\align{justify}\linespacing{5.5mm}\parindent{8mm}\parmargins{0mm}{0mm}\parspacing{0mm}{2.5mm}\font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}\fontweight{normal}\fontslant{normal}}
-\newcommand{titulo}{1}{\parbreak\align{center}\linespacing{9mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{4mm}{6mm}\font{DejaVu Sans}\fontsize{20pt}\fontcolor{Navy}\textbf{#1}\parbreak\cuerpobase}
-\newcommand{alerta}{1}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{1.2cm}{1.2cm}\parspacing{3mm}{3mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{DarkRed}\textbf{[AVISO:} \textit{#1}\textbf{]}\parbreak\cuerpobase}
-\newcommand{seccion}{1}{\parbreak\align{left}\linespacing{7mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{5mm}{2.5mm}\font{DejaVu Sans}\fontsize{14pt}\fontcolor{DarkSlateGray}\textbf{#1}\parbreak\cuerpobase}
-\newcommand{clavevalor}{2}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \font{Liberation Serif}\fontsize{10.5pt}\fontcolor{Black}#2\parbreak\cuerpobase}
-\newcommand{codigo}{1}{\font{Liberation Mono}\fontsize{9.5pt}\fontcolor{Teal} #1 \font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}}
+% ==========================================
+% Preludio de macros en sintaxis LaTeX2e (Cap. 12-14)
+% ==========================================
+
+\newcommand{\textobase}{\rmfamily\mdseries\upshape\fontsize{11pt}\fontcolor{Black}}
+\newcommand{\cuerpobase}{\align{justify}\setlength{\baselineskip}{5.5mm}\setlength{\parindent}{8mm}\parmargins{0mm}{0mm}\parspacing{0mm}{2.5mm}\textobase}
+\newcommand{\titulo}[1]{\par{\centering\linespacing{9mm}\parmargins{0cm}{0cm}\parspacing{4mm}{6mm}\sffamily\fontsize{20pt}\fontcolor{Navy}\textbf{#1}\par}}
+\newcommand{\alerta}[2][AVISO]{\par{\raggedright\linespacing{5mm}\parmargins{1.2cm}{1.2cm}\parspacing{3mm}{3mm}\sffamily\fontsize{10pt}\fontcolor{DarkRed}\textbf{[#1:} \textit{#2}\textbf{]}\par}}
+\newcommand{\seccion}[1]{\stepcounter{section}\par{\raggedright\linespacing{7mm}\parmargins{0mm}{0mm}\parspacing{5mm}{2.5mm}\sffamily\fontsize{14pt}\fontcolor{DarkSlateGray}\textbf{\thesection. #1}\par}}
+\newcommand{\subseccion}[1]{\stepcounter{subsection}\par{\raggedright\linespacing{6mm}\parmargins{0mm}{0mm}\parspacing{3.5mm}{1.8mm}\sffamily\fontsize{12pt}\fontcolor{DarkSlateGray}\textbf{\thesubsection\ #1}\par}}
+\newcommand{\clavevalor}[2]{\par{\raggedright\linespacing{5mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\sffamily\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \rmfamily\fontsize{10.5pt}\fontcolor{Black}#2\par}}
+\newcommand{\codigo}[1]{{\ttfamily\fontsize{9.5pt}\fontcolor{Teal}#1}}
+
+% Entorno personalizado con argumento opcional por defecto (Cap. 12.8 \newenvironment)
+\newenvironment{nota}[1][Nota Técnica]{\par\raggedright\parmargins{8mm}{8mm}\parspacing{2mm}{2mm}\sffamily\fontsize{10pt}\fontcolor{DarkSlateGray}\textbf{#1 --- }\itshape}{\par}

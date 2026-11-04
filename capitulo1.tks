@@ -1,23 +1,33 @@
 % ==========================================
-% Fichero secundario: capitulo1.tks
+% Fichero secundario: capitulo1.tks (Sintaxis LaTeX2e Fase 1)
 % ==========================================
 
-% Macro de 1 parametro para encabezados de seccion
-\newcommand{seccion}{1}{\parbreak\align{left}\linespacing{7mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{5mm}{2.5mm}\font{DejaVu Sans}\fontsize{14pt}\fontcolor{DarkSlateGray}\textbf{#1}\parbreak\cuerpobase}
+\seccion{Arquitectura de la Boca y el Es\'ofago de \TeX}
 
-% Macro de 2 parametros para fichas tecnicas con sangria francesa/lateral
-\newcommand{clavevalor}{2}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \font{Liberation Serif}\fontsize{10.5pt}\fontcolor{Black}#2\parbreak\cuerpobase}
+Este m\'odulo externo se incorpora mediante \codigo{\textbackslash input\{capitulo1\}}.
+En \LaTeXe{}, un salto de l\'{\i}nea simple en el fichero fuente equivale a un espacio ordinario,
+mientras que una l\'{\i}nea en blanco emite el token \codigo{\textbackslash par} cerrando el p\'arrafo.
+Adem\'as, los comentarios con \codigo{\%} absorben el salto de l\'{\i}nea y los espacios iniciales de la l\'{\i}nea siguiente%
+---exactamente como hace el motor de Knuth---evitando huecos indeseados.
 
-% Macro de 1 parametro para fragmentos monoespaciados en linea
-\newcommand{codigo}{1}{\font{Liberation Mono}\fontsize{9.5pt}\fontcolor{Teal} #1 \font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}}
+\subseccion{S\'{\i}mbolos Especiales, Acentos y Ligaduras (Cap.~23)}
 
-\seccion{Capitulo 1: Arquitectura del Motor de Estados}
+El analizador soporta acentos componibles con o sin llaves (\'a, \'e, \'{\i}, \'o, \'u, \~n, \"u, \c{c}, \v{s}, \H{o}, \r{a}),
+ligaduras tipogr\'aficas autom\'aticas como ``comillas dobles inglesas'', guiones cortos (p\'ags.~10--25),
+rayas de inciso---sin espacios---y signos de apertura ?`C\'omo funciona! !`As\'{\i} de limpio!
 
-Este bloque procede de un fichero externo incorporado mediante el comando \codigo{-include-}. Al combinar \codigo{Liberation Mono} con modificadores como \codigo{\textbf{variant="bold"}} o \codigo{\textit{slant="italic"}}, el registro inicial incorpora unicamente las variantes realmente utilizadas por cada familia.
+\clavevalor{Caracteres escapados}{\# \$ \% \& \_ \{ \} \~{} \^{} \textbackslash}
+\clavevalor{S\'{\i}mbolos y divisas}{\copyright\ \textregistered\ \texttrademark\ \dag\ \ddag\ \S\ \P\ \pounds\ \euro\ \dots\ \textbullet}
+\clavevalor{Logos y fecha}{\TeX, \LaTeX, \LaTeXe{} --- Generado el \today}
 
-\clavevalor{Formato de salida}{XML intermedio v0.2 con bloque declarativo definitions}
-\clavevalor{Unidades soportadas}{Milimetros (mm), centimetros (cm), metros (m) y puntos (pt)}
-\clavevalor{Gestion de estilos}{Internado automatico de para-style y char-style sin duplicados}
-\clavevalor{Persistencia}{Volcado secuencial de macros en comandos_auxiliares.tks}
+\subseccion{Contadores y Longitudes de \LaTeXe{} (Caps.~13 y 14)}
 
-Al concluir la lectura de este modulo, el analizador retoma el cursor del documento principal conservando intactos el entorno de macros y el estado tipografico activo.
+\newcounter{req}[section]
+\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Pila de agrupamiento l\'exico \{ \dots\ \} con restauraci\'on autom\'atica de estado.}
+\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Argumentos opcionales con valor por defecto en \codigo{\textbackslash newcommand} y \codigo{\textbackslash newenvironment}.}
+\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Registros de longitud con unidades \codigo{pt}, \codigo{bp}, \codigo{mm}, \codigo{cm}, \codigo{in}, \codigo{pc}, \codigo{dd}, \codigo{cc}, \codigo{sp}, \codigo{em} y \codigo{ex}.}
+
+\begin{nota}[Verificaci\'on de Entorno]
+Este bloque utiliza un entorno definido con \codigo{\textbackslash newenvironment\{nota\}[1][Nota T\'ecnica]} que restaura el estado al cerrarse con \codigo{\textbackslash end\{nota\}}.
+\end{nota}
+

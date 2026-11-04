@@ -1,41 +1,61 @@
 % ==========================================
-% Fichero principal: documento.tks
+% Fichero principal: input.tks (Sintaxis LaTeX2e - Fase 1)
 % ==========================================
 
-% 1. Estado de pagina por defecto combinando unidades metricas (m, cm, mm) y orientacion
-\pagesize{0.21m}{29.7cm}
-\orientation{portrait}
+\documentclass[11pt,a4paper]{article}
 \margins{2.5cm}{2.5cm}{20mm}{20mm}
 
-% 2. Macro de estado base (0 parametros) para restaurar parrafo y fuente principal
-\newcommand{cuerpobase}{0}{\align{justify}\linespacing{5.5mm}\parindent{8mm}\parmargins{0mm}{0mm}\parspacing{0mm}{2.5mm}\font{Liberation Serif}\fontsize{11pt}\fontcolor{Black}\fontweight{normal}\fontslant{normal}}
+% Incluir definiciones y entornos LaTeX2e
+\input{comandos_auxiliares}
 
-% 3. Macros de bloques semanticos en el documento raiz
-\newcommand{titulo}{1}{\parbreak\align{center}\linespacing{9mm}\parindent{0mm}\parmargins{0mm}{0mm}\parspacing{4mm}{6mm}\font{DejaVu Sans}\fontsize{20pt}\fontcolor{Navy}\textbf{#1}\parbreak\cuerpobase}
-\newcommand{alerta}{1}{\parbreak\align{left}\linespacing{5mm}\parindent{0mm}\parmargins{1.2cm}{1.2cm}\parspacing{3mm}{3mm}\font{DejaVu Sans}\fontsize{10pt}\fontcolor{DarkRed}\textbf{[AVISO:} \textit{#1}\textbf{]}\parbreak\cuerpobase}
+\begin{document}
 
-% Inicializamos el estado tipografico por defecto
 \cuerpobase
 
-% 4. Contenido de la primera pagina
-\titulo{Especificacion del Formato Intermedio XML}
+\titulo{Adaptaci\'on de \LaTeXe{} en Teksto: Fase 1}
 
-Este primer parrafo demuestra l control de estado tipografico continuo con alineacion justificada, sangria de primera linea en milimetros e interlineado metrico. El generador registra automaticamente cada familia tipografica y deduplica las combinaciones de estilo empleadas, permitiendo anidar \textbf{negrita con \textit{cursiva combinada y \underline{subrayado simultaneo}}} o destacar terminos con \underline{subrayado simple} manteniendo referencias limpias hacia el bloque inicial de definiciones.
+Este primer p\'arrafo demuestra el procesamiento al estilo \TeX{} donde los saltos
+de l\'{\i}nea simples se funden en el mismo p\'arrafo justificado y las l\'{\i}neas en
+blanco generan \codigo{\textbackslash par}. Asimismo, los grupos l\'exicos permiten acotar
+declaraciones conmutadoras como {\bfseries negrita en grupo con {\itshape cursiva anidada}
+que se restaura al cerrar la llave} o emplear comandos con argumento como
+\textbf{negrita con \textit{cursiva y \underline{subrayado simult\'aneo}}}.
 
-\alerta{Todas las dimensiones equivalentes como 20mm, 2cm o 0.02m se normalizan internamente para evitar duplicar estilos en el catalogo XML.}
+% Uso de \alerta con argumento opcional por defecto y con argumento opcional explícito
+\alerta{Todas las unidades de \TeX{} (\codigo{pt}, \codigo{bp}, \codigo{in}, \codigo{pc}, \codigo{em}, \codigo{ex}, \codigo{mm}, \codigo{cm}) se normalizan al emitir el cat\'alogo XML.}
+\alerta[FASE 1 COMPLETADA]{Soporte de \codigo{\textbackslash newcommand[*][\textbackslash cmd][n][def]\{...\}}, contadores jer\'arquicos, registros de longitud y acentos componibles.}
 
-% 5. Inclusion de modulo externo (resuelve automaticamente la extension .tks)
-\include{capitulo1}
+% Inclusión de módulo externo
+\input{capitulo1}
 
-% 6. Salto a segunda pagina y definicion explicita de dos marcos en columnas metricas
+% Salto a segunda página con dos columnas
 \newpage
-\newframe{20mm}{25mm}{82mm}{24.7cm}
-\newframe{10.8cm}{25mm}{82mm}{24.7cm}
+\twocolumn
 
-\titulo{Maquetacion Multipagina y Persistencia de Estado}
+\titulo{Maquetaci\'on Multip\'agina y Agrupamiento \TeX}
 
-Tras ejecutar el salto de pagina e instanciar dos marcos simetricos en milimetros y centimetros, las macros registradas dentro del fichero incluido siguen activas en el entorno global:
+\seccion{Persistencia y \'Ambitos L\'exicos}
 
-\seccion{Mutacion Directa del Estado de Fuente}
+Tras ejecutar el salto de p\'agina (\codigo{\textbackslash newpage}, p\'agina actual: \thepage) y activar el flujo a dos columnas mediante \codigo{\textbackslash twocolumn}, el contador de secciones se reinicia autom\'aticamente en sus subcontadores dependientes (\codigo{subsection} = \thesubsection).
 
-Ademas de los modificadores acotados entre llaves, el procesador permite conmutar directamente los registros de estado como \font{DejaVu Sans}\fontsize{10.5pt}\fontcolor{DarkSlateGray}\fontweight{bold}\fontslant{italic}peso negrita e inclinacion cursiva persistentes sobre otra familia tipografica\cuerpobase y retomar de inmediato el estilo del cuerpo principal en el mismo flujo documental.
+\subseccion{Prueba de Longitudes Din\'amicas}
+
+\newlength{\sangriaextra}
+\setlength{\sangriaextra}{1.2em}
+\addtolength{\sangriaextra}{4pt}
+
+Modificando temporalmente \codigo{\textbackslash parindent} dentro de un grupo l\'exico:
+
+{\setlength{\parindent}{\sangriaextra}
+Este p\'arrafo aplica la longitud calculada en el registro \codigo{\textbackslash sangriaextra} (combinando unidades relativas \codigo{em} y puntos \codigo{pt}). Al cerrarse el grupo de llaves, el valor est\'andar de \codigo{\textbackslash parindent} se restaura de forma transparente.\par}
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+
+\end{document}
+

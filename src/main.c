@@ -1,231 +1,22 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <math.h>
-
-// ============================================================================
-// 1. Constantes y Límites del Sistema (C23)
-// ============================================================================
-
-constexpr size_t MAX_MACROS       = 256;
-constexpr size_t MAX_PARAMS       = 8;
-constexpr size_t MAX_PAGES        = 500;
-constexpr size_t MAX_FRAMES       = 500;
-constexpr size_t MAX_MACRO_DEPTH  = 32;
-
-constexpr size_t MAX_FONT_FAMS    = 64;
-constexpr size_t MAX_PARA_STYLES  = 256;
-constexpr size_t MAX_CHAR_STYLES  = 512;
-
-constexpr double MM_PER_CM        = 10.0;
-constexpr double MM_PER_M         = 1000.0;
-constexpr double MM_PER_PT        = 25.4 / 72.0;
-constexpr double MEASURE_EPSILON  = 1e-4;
-
-static const char *const DEFAULT_FONT_FAMILY = "DejaVu Sans";
-static const char *const DEFAULT_COLOR       = "Black";
-
-// ============================================================================
-// 2. Unidades Métricas, Orientación y Estado Tipográfico
-// ============================================================================
-
-typedef enum : unsigned char {
-    UNIT_MM = 0,
-    UNIT_CM,
-    UNIT_M,
-    UNIT_PT
-} Unit;
-
-typedef struct {
-    double value;   // Valor en la unidad original elegida
-    double mm;      // Valor normalizado en milímetros para comparación exacta
-    Unit unit;
-} Measure;
-
-typedef enum : unsigned char {
-    ORIENT_PORTRAIT = 0,
-    ORIENT_LANDSCAPE
-} PageOrientation;
-
-typedef enum : unsigned char {
-    ALIGN_LEFT = 0,
-    ALIGN_CENTER,
-    ALIGN_RIGHT,
-    ALIGN_JUSTIFY
-} ParaAlign;
-
-typedef enum : unsigned char {
-    WEIGHT_NORMAL = 0,
-    WEIGHT_BOLD   = 1
-} FontWeight;
-
-typedef enum : unsigned char {
-    SLANT_NORMAL = 0,
-    SLANT_ITALIC = 1
-} FontSlant;
-
-// Máscara de variantes usadas por familia: bit 0=(N,N), 1=(B,N), 2=(N,I), 3=(B,I)
-typedef struct {
-    char family[64];
-    unsigned char used_variants_mask;
-} FontFamilyDef;
-
-typedef struct {
-    size_t family_idx;
-    FontWeight weight;
-    FontSlant slant;
-} FontVariantRef;
-
-typedef struct {
-    ParaAlign align;
-    Measure line_spacing;
-    Measure space_before;
-    Measure space_after;
-    Measure indent_first;
-    Measure indent_left;
-    Measure indent_right;
-} ParaState;
-
-typedef struct {
-    char font_family[64];
-    FontWeight weight;
-    FontSlant slant;
-    Measure size;
-    char color[32];
-    bool underline;
-} CharState;
-
-typedef struct {
-    FontVariantRef variant;
-    Measure size;
-    char color[32];
-    bool underline;
-} CharStyleDef;
-
-// ============================================================================
-// 3. Estructuras del Lexer, Macros y Contexto del Generador XML
-// ============================================================================
-
-typedef struct {
-    const char *data;
-    size_t len;
-} StrView;
-
-typedef struct {
-    char *data;
-    size_t len;
-    size_t cap;
-} StrBuf;
-
-typedef enum {
-    TOKEN_EOF = 0,
-    TOKEN_COMMAND,
-    TOKEN_LBRACE,
-    TOKEN_RBRACE,
-    TOKEN_TEXT,
-    TOKEN_NEWLINE
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    StrView text;
-    size_t line;
-    size_t col;
-    bool space_before;
-} Token;
-
-typedef struct {
-    const char *src;
-    size_t cursor;
-    size_t len;
-    size_t line;
-    size_t col;
-} Lexer;
-
-typedef struct {
-    char name[48];
-    size_t param_count;
-    char *template_body;
-} UserMacro;
-
-typedef struct {
-    UserMacro items[MAX_MACROS];
-    size_t count;
-    FILE *aux_file;
-} MacroEnv;
-
-typedef struct {
-    size_t page_num;
-    Measure x, y, width, height;
-} LayoutFrame;
-
-typedef struct {
-    FILE *file;
-
-    // Estado de página y maquetación por defecto
-    Measure page_width;
-    Measure page_height;
-    PageOrientation orientation;
-    Measure margin_top, margin_bottom, margin_left, margin_right;
-    size_t page_count;
-
-    LayoutFrame frames[MAX_FRAMES];
-    size_t frame_count;
-
-    // Estado actual de párrafo y carácter en curso
-    ParaState para_state;
-    CharState char_state;
-
-    // Registros deduplicados para el bloque <definitions>
-    FontFamilyDef fonts[MAX_FONT_FAMS];
-    size_t font_count;
-
-    ParaState para_styles[MAX_PARA_STYLES];
-    size_t para_style_count;
-
-    CharStyleDef char_styles[MAX_CHAR_STYLES];
-    size_t char_style_count;
-
-    // Control de emisión del flujo <body>
-    StrBuf story;
-    bool para_open;
-    bool para_has_content;
-    int active_char_style_id; // -1 si no hay <span> abierto
-    size_t inline_depth;
-} XmlGenerator;
-
-typedef struct Parser Parser;
-typedef void (*BuiltinFn)(Parser *p, StrView args[]);
-
-typedef struct {
-    const char *name;
-    size_t arity;
-    BuiltinFn handler;
-} BuiltinCommand;
-
-struct Parser {
-    Lexer lexer;
-    Token current;
-    MacroEnv *env;
-    XmlGenerator *gen;
-    bool cmd_space_before;
-    size_t macro_depth;
-};
+#include "tex_types.h"
+#include "tex_symbols.h"
+#include "tex_lexer.h"
 
 // ============================================================================
 // 4. Prototipos de Funciones
 // ============================================================================
 
 static bool sv_equals(StrView sv, const char *literal);
-static size_t sv_to_size(StrView sv);
+static StrView sv_trim(StrView sv);
+static StrView sv_strip_leading_backslash(StrView sv);
+static long sv_to_long(const Parser *p, StrView sv);
 static bool has_tks_extension(const char *path);
 static void replace_extension(const char *path, const char *new_ext, char *out_buf, size_t buf_size);
 static char *read_entire_file(const char *path, size_t *out_len);
+static char *dup_sv(StrView sv);
 
-static Measure measure_make(double value, Unit unit);
-static Measure measure_parse(StrView sv, Unit default_unit);
+static Measure measure_make(double value, Unit unit, double ref_em_mm);
+static Measure measure_parse(const Parser *p, StrView sv, Unit default_unit);
 static bool measure_equals(Measure a, Measure b);
 static void measure_format(Measure m, char *buf, size_t buf_size);
 
@@ -238,102 +29,139 @@ static void sb_append_escaped_xml(StrBuf *sb, const char *str, size_t len);
 static void fprint_escaped_xml(FILE *f, const char *str);
 
 static bool xml_gen_init(XmlGenerator *gen, const char *xml_path);
-static FontVariantRef xml_register_font_variant(XmlGenerator *gen, const char *family, FontWeight weight, FontSlant slant);
-static size_t xml_intern_para_style(XmlGenerator *gen, const ParaState *state);
-static size_t xml_intern_char_style(XmlGenerator *gen, const CharState *state);
-static void xml_close_active_span(XmlGenerator *gen);
-static void xml_ensure_para_open(XmlGenerator *gen);
+static void xml_push_group(XmlGenerator *gen);
+static void xml_pop_group(XmlGenerator *gen);
 static void xml_close_para(XmlGenerator *gen);
 static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before);
 static void xml_emit_page_break(XmlGenerator *gen);
 static void xml_gen_finalize(XmlGenerator *gen);
 
-static Lexer lexer_init(const char *source, size_t len);
-static char lexer_peek(const Lexer *l);
-static char lexer_advance(Lexer *l);
-static Token lexer_next_token(Lexer *l);
-
-static void macro_env_init(MacroEnv *env, FILE *aux_file);
+static void macro_env_init(MacroEnv *env);
 static void macro_env_free(MacroEnv *env);
-static bool macro_env_register(MacroEnv *env, StrView name, size_t params, StrView body);
+static UserMacro *macro_env_find_mut(MacroEnv *env, StrView name);
 static const UserMacro *macro_env_find(const MacroEnv *env, StrView name);
-static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]);
+static bool macro_env_define(MacroEnv *env, StrView name, size_t params, bool has_opt, StrView opt_def, StrView body, bool overwrite);
+static UserEnv *user_env_find_mut(MacroEnv *env, StrView name);
+static bool user_env_define(MacroEnv *env, StrView name, size_t params, bool has_opt, StrView opt_def, StrView begin_body, StrView end_body, bool overwrite);
 
-static void builtin_newcommand(Parser *p, StrView args[]);
-static void builtin_include(Parser *p, StrView args[]);
-static void builtin_pagesize(Parser *p, StrView args[]);
-static void builtin_orientation(Parser *p, StrView args[]);
-static void builtin_margins(Parser *p, StrView args[]);
-static void builtin_newpage(Parser *p, StrView args[]);
-static void builtin_newframe(Parser *p, StrView args[]);
-static void builtin_align(Parser *p, StrView args[]);
-static void builtin_linespacing(Parser *p, StrView args[]);
-static void builtin_parindent(Parser *p, StrView args[]);
-static void builtin_parmargins(Parser *p, StrView args[]);
-static void builtin_parspacing(Parser *p, StrView args[]);
-static void builtin_parbreak(Parser *p, StrView args[]);
-static void builtin_font(Parser *p, StrView args[]);
-static void builtin_fontsize(Parser *p, StrView args[]);
-static void builtin_fontcolor(Parser *p, StrView args[]);
-static void builtin_fontweight(Parser *p, StrView args[]);
-static void builtin_fontslant(Parser *p, StrView args[]);
-static void builtin_textbf(Parser *p, StrView args[]);
-static void builtin_textit(Parser *p, StrView args[]);
-static void builtin_underline(Parser *p, StrView args[]);
-static const BuiltinCommand *find_builtin(StrView name);
+static CounterDef *counter_find_mut(MacroEnv *env, StrView name);
+static CounterDef *counter_register(MacroEnv *env, StrView name, StrView parent);
+static void counter_step(MacroEnv *env, StrView name);
+static void format_counter_value(const MacroEnv *env, StrView name, char style, char *out_buf, size_t buf_size);
+
+static LengthDef *length_find_mut(MacroEnv *env, StrView name);
+static LengthDef *length_register(MacroEnv *env, StrView name, Measure initial);
+static void sync_standard_length_to_generator(XmlGenerator *gen, StrView name, Measure val);
 
 static void parser_advance(Parser *p);
+static bool parser_consume_star(Parser *p);
+static bool parse_opt_arg(Parser *p, StrView *out_opt);
 static bool parse_arg(Parser *p, StrView *out_arg);
+static bool parse_cmd_or_arg(Parser *p, StrView *out_arg);
 static void parse_and_execute(Parser *p);
+static void execute_tex_fragment(Parser *p, StrView fragment, bool preserve_space);
 static void parse_inline_scoped(Parser *p, StrView fragment, CharState modified_state);
 static bool process_file(const char *path, MacroEnv *env, XmlGenerator *gen, size_t macro_depth);
 
 // ============================================================================
-// 5. Tabla de Comandos Nativos (Builtins)
+// 5. Utilidades de Cadena y Gestión de Unidades Métricas TeX
 // ============================================================================
 
-static const BuiltinCommand BUILTIN_LIST[] = {
-    { "newcommand",   3, builtin_newcommand },
-    { "include",      1, builtin_include },
-    { "pagesize",     2, builtin_pagesize },
-    { "orientation",  1, builtin_orientation },
-    { "margins",      4, builtin_margins },
-    { "newpage",      0, builtin_newpage },
-    { "newframe",     4, builtin_newframe },
-    { "align",        1, builtin_align },
-    { "linespacing",  1, builtin_linespacing },
-    { "parindent",    1, builtin_parindent },
-    { "parmargins",   2, builtin_parmargins },
-    { "parspacing",   2, builtin_parspacing },
-    { "parbreak",     0, builtin_parbreak },
-    { "font",         1, builtin_font },
-    { "fontsize",     1, builtin_fontsize },
-    { "fontcolor",    1, builtin_fontcolor },
-    { "fontweight",   1, builtin_fontweight },
-    { "fontslant",    1, builtin_fontslant },
-    { "textbf",       1, builtin_textbf },
-    { "textit",       1, builtin_textit },
-    { "underline",    1, builtin_underline },
-};
-constexpr size_t BUILTIN_COUNT = sizeof(BUILTIN_LIST) / sizeof(BUILTIN_LIST[0]);
-
-// ============================================================================
-// 6. Gestión de Unidades Métricas y Utilidades
-// ============================================================================
-
-static Measure measure_make(double value, Unit unit) {
-    double mm = value;
-    switch (unit) {
-        case UNIT_MM: mm = value;            break;
-        case UNIT_CM: mm = value * MM_PER_CM; break;
-        case UNIT_M:  mm = value * MM_PER_M;  break;
-        case UNIT_PT: mm = value * MM_PER_PT; break;
-    }
-    return (Measure){ .value = value, .mm = mm, .unit = unit };
+static bool sv_equals(StrView sv, const char *literal) {
+    size_t lit_len = strlen(literal);
+    return (sv.len == lit_len) && (strncmp(sv.data, literal, lit_len) == 0);
 }
 
-static Measure measure_parse(StrView sv, Unit default_unit) {
+static StrView sv_trim(StrView sv) {
+    while (sv.len > 0 && isspace((unsigned char)sv.data[0])) {
+        sv.data++;
+        sv.len--;
+    }
+    while (sv.len > 0 && isspace((unsigned char)sv.data[sv.len - 1])) {
+        sv.len--;
+    }
+    return sv;
+}
+
+static StrView sv_strip_leading_backslash(StrView sv) {
+    sv = sv_trim(sv);
+    if (sv.len > 0 && sv.data[0] == '\\') {
+        sv.data++;
+        sv.len--;
+    }
+    return sv_trim(sv);
+}
+
+static char *dup_sv(StrView sv) {
+    char *copy = malloc(sv.len + 1);
+    if (!copy) return nullptr;
+    if (sv.len > 0) memcpy(copy, sv.data, sv.len);
+    copy[sv.len] = '\0';
+    return copy;
+}
+
+static long sv_to_long(const Parser *p, StrView sv) {
+    sv = sv_trim(sv);
+    // Soportar \value{counter}
+    if (sv.len > 7 && strncmp(sv.data, "\\value", 6) == 0) {
+        StrView rest = { sv.data + 6, sv.len - 6 };
+        rest = sv_trim(rest);
+        if (rest.len >= 2 && rest.data[0] == '{' && rest.data[rest.len - 1] == '}') {
+            StrView cname = { rest.data + 1, rest.len - 2 };
+            CounterDef *c = (p && p->env) ? counter_find_mut(p->env, sv_trim(cname)) : nullptr;
+            return c ? c->value : 0;
+        }
+    }
     char buf[64];
+    size_t n = (sv.len < sizeof(buf) - 1) ? sv.len : (sizeof(buf) - 1);
+    memcpy(buf, sv.data, n);
+    buf[n] = '\0';
+    return strtol(buf, nullptr, 10);
+}
+
+static Measure measure_make(double value, Unit unit, double ref_em_mm) {
+    if (ref_em_mm <= 0.0) ref_em_mm = 11.0 * MM_PER_PT;
+    double mm = value;
+    switch (unit) {
+        case UNIT_MM: mm = value;                      break;
+        case UNIT_CM: mm = value * MM_PER_CM;          break;
+        case UNIT_M:  mm = value * MM_PER_M;           break;
+        case UNIT_PT: mm = value * MM_PER_PT;          break;
+        case UNIT_BP: mm = value * MM_PER_BP;          break;
+        case UNIT_IN: mm = value * MM_PER_IN;          break;
+        case UNIT_PC: mm = value * MM_PER_PC;          break;
+        case UNIT_DD: mm = value * MM_PER_DD;          break;
+        case UNIT_CC: mm = value * MM_PER_CC;          break;
+        case UNIT_SP: mm = value * MM_PER_SP;          break;
+        case UNIT_EM: mm = value * ref_em_mm;          break;
+        case UNIT_EX: mm = value * (ref_em_mm * 0.45); break;
+    }
+    // Normalizamos unidades relativas o exóticas a mm o pt para el XML intermedio
+    if (unit == UNIT_MM || unit == UNIT_CM || unit == UNIT_M || unit == UNIT_PT) {
+        return (Measure){ .value = value, .mm = mm, .unit = unit };
+    }
+    return (Measure){ .value = mm, .mm = mm, .unit = UNIT_MM };
+}
+
+static Measure measure_parse(const Parser *p, StrView sv, Unit default_unit) {
+    sv = sv_trim(sv);
+    double ref_em = (p && p->gen) ? p->gen->char_state.size.mm : (11.0 * MM_PER_PT);
+
+    if (sv.len == 0) {
+        return measure_make(0.0, default_unit, ref_em);
+    }
+
+    // Si es directamente un registro de longitud como \parindent
+    if (sv.data[0] == '\\' && p && p->env) {
+        StrView reg_name = sv_strip_leading_backslash(sv);
+        if (sv_equals(reg_name, "fill")) {
+            return measure_make(0.0, UNIT_MM, ref_em);
+        }
+        LengthDef *ld = length_find_mut(p->env, reg_name);
+        if (ld) return ld->value;
+    }
+
+    char buf[128];
     size_t n = (sv.len < sizeof(buf) - 1) ? sv.len : (sizeof(buf) - 1);
     memcpy(buf, sv.data, n);
     buf[n] = '\0';
@@ -341,25 +169,46 @@ static Measure measure_parse(StrView sv, Unit default_unit) {
     char *endptr = nullptr;
     double val = strtod(buf, &endptr);
     if (endptr == buf) {
-        return measure_make(0.0, default_unit);
+        return measure_make(0.0, default_unit, ref_em);
     }
 
     while (*endptr != '\0' && isspace((unsigned char)*endptr)) {
         endptr++;
     }
 
-    Unit unit = default_unit;
-    if (strcmp(endptr, "mm") == 0) {
-        unit = UNIT_MM;
-    } else if (strcmp(endptr, "cm") == 0) {
-        unit = UNIT_CM;
-    } else if (strcmp(endptr, "m") == 0) {
-        unit = UNIT_M;
-    } else if (strcmp(endptr, "pt") == 0) {
-        unit = UNIT_PT;
+    // Factor multiplicador sobre un registro: p. ej. 0.5\textwidth o 2\parindent
+    if (*endptr == '\\' && p && p->env) {
+        StrView reg_name = sv_trim((StrView){ endptr + 1, strlen(endptr + 1) });
+        LengthDef *ld = length_find_mut(p->env, reg_name);
+        if (ld) {
+            return measure_make(val * ld->value.mm, UNIT_MM, ref_em);
+        }
     }
 
-    return measure_make(val, unit);
+    // Recortar posible 'plus ... minus ...' de longitudes elásticas de TeX
+    char unit_tok[16] = {0};
+    size_t u = 0;
+    while (endptr[u] != '\0' && !isspace((unsigned char)endptr[u]) && u < sizeof(unit_tok) - 1) {
+        unit_tok[u] = endptr[u];
+        u++;
+    }
+    unit_tok[u] = '\0';
+
+    Unit unit = default_unit;
+    if (strcmp(unit_tok, "mm") == 0)      unit = UNIT_MM;
+    else if (strcmp(unit_tok, "cm") == 0) unit = UNIT_CM;
+    else if (strcmp(unit_tok, "m") == 0)  unit = UNIT_M;
+    else if (strcmp(unit_tok, "pt") == 0) unit = UNIT_PT;
+    else if (strcmp(unit_tok, "bp") == 0) unit = UNIT_BP;
+    else if (strcmp(unit_tok, "in") == 0) unit = UNIT_IN;
+    else if (strcmp(unit_tok, "pc") == 0) unit = UNIT_PC;
+    else if (strcmp(unit_tok, "dd") == 0) unit = UNIT_DD;
+    else if (strcmp(unit_tok, "cc") == 0) unit = UNIT_CC;
+    else if (strcmp(unit_tok, "sp") == 0) unit = UNIT_SP;
+    else if (strcmp(unit_tok, "em") == 0) unit = UNIT_EM;
+    else if (strcmp(unit_tok, "ex") == 0) unit = UNIT_EX;
+
+    return measure_make(val, unit, ref_em);
 }
 
 static bool measure_equals(Measure a, Measure b) {
@@ -375,6 +224,7 @@ static void measure_format(Measure m, char *buf, size_t buf_size) {
         case UNIT_CM: suffix = "cm"; decimals = 3; break;
         case UNIT_M:  suffix = "m";  decimals = 4; break;
         case UNIT_PT: suffix = "pt"; decimals = 2; break;
+        default:      suffix = "mm"; decimals = 2; break;
     }
 
     char num[48];
@@ -392,19 +242,6 @@ static void measure_format(Measure m, char *buf, size_t buf_size) {
     }
 
     snprintf(buf, buf_size, "%s%s", num, suffix);
-}
-
-static bool sv_equals(StrView sv, const char *literal) {
-    size_t lit_len = strlen(literal);
-    return (sv.len == lit_len) && (strncmp(sv.data, literal, lit_len) == 0);
-}
-
-static size_t sv_to_size(StrView sv) {
-    char buf[64];
-    size_t n = (sv.len < sizeof(buf) - 1) ? sv.len : (sizeof(buf) - 1);
-    memcpy(buf, sv.data, n);
-    buf[n] = '\0';
-    return (size_t)strtoul(buf, nullptr, 10);
 }
 
 static bool has_tks_extension(const char *path) {
@@ -453,7 +290,7 @@ static char *read_entire_file(const char *path, size_t *out_len) {
 }
 
 // ============================================================================
-// 7. Buffer Dinámico de Cadenas y Escape XML
+// 6. Buffer Dinámico de Cadenas y Escape XML
 // ============================================================================
 
 static bool sb_init(StrBuf *sb, size_t initial_cap) {
@@ -547,7 +384,7 @@ static void fprint_escaped_xml(FILE *f, const char *str) {
 }
 
 // ============================================================================
-// 8. Control de Estado, Registro de Fuentes, Estilos y Generador XML
+// 7. Control de Estado, Pila de Grupos TeX y Generador XML
 // ============================================================================
 
 static unsigned char variant_bit(FontWeight weight, FontSlant slant) {
@@ -598,34 +435,52 @@ static bool xml_gen_init(XmlGenerator *gen, const char *xml_path) {
         return false;
     }
 
-    gen->page_width    = measure_make(210.0, UNIT_MM);
-    gen->page_height   = measure_make(297.0, UNIT_MM);
+    double default_em = 11.0 * MM_PER_PT;
+    gen->page_width    = measure_make(210.0, UNIT_MM, default_em);
+    gen->page_height   = measure_make(297.0, UNIT_MM, default_em);
     gen->orientation   = ORIENT_PORTRAIT;
-    gen->margin_top    = measure_make(20.0, UNIT_MM);
-    gen->margin_bottom = measure_make(20.0, UNIT_MM);
-    gen->margin_left   = measure_make(20.0, UNIT_MM);
-    gen->margin_right  = measure_make(20.0, UNIT_MM);
+    gen->margin_top    = measure_make(25.0, UNIT_MM, default_em);
+    gen->margin_bottom = measure_make(25.0, UNIT_MM, default_em);
+    gen->margin_left   = measure_make(20.0, UNIT_MM, default_em);
+    gen->margin_right  = measure_make(20.0, UNIT_MM, default_em);
     gen->page_count    = 1;
 
     gen->para_state = (ParaState){
-        .align        = ALIGN_LEFT,
-        .line_spacing = measure_make(5.3, UNIT_MM),
-        .space_before = measure_make(0.0, UNIT_MM),
-        .space_after  = measure_make(2.0, UNIT_MM),
-        .indent_first = measure_make(0.0, UNIT_MM),
-        .indent_left  = measure_make(0.0, UNIT_MM),
-        .indent_right = measure_make(0.0, UNIT_MM)
+        .align        = ALIGN_JUSTIFY,
+        .line_spacing = measure_make(5.5, UNIT_MM, default_em),
+        .space_before = measure_make(0.0, UNIT_MM, default_em),
+        .space_after  = measure_make(2.5, UNIT_MM, default_em),
+        .indent_first = measure_make(8.0, UNIT_MM, default_em),
+        .indent_left  = measure_make(0.0, UNIT_MM, default_em),
+        .indent_right = measure_make(0.0, UNIT_MM, default_em)
     };
 
     snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
     gen->char_state.weight    = WEIGHT_NORMAL;
     gen->char_state.slant     = SLANT_NORMAL;
-    gen->char_state.size      = measure_make(11.0, UNIT_PT);
+    gen->char_state.size      = measure_make(11.0, UNIT_PT, default_em);
     snprintf(gen->char_state.color, sizeof(gen->char_state.color), "%s", DEFAULT_COLOR);
     gen->char_state.underline = false;
 
     gen->active_char_style_id = -1;
     return true;
+}
+
+static void xml_push_group(XmlGenerator *gen) {
+    if (gen->group_depth < MAX_GROUP_DEPTH) {
+        gen->group_stack[gen->group_depth++] = (GroupFrame){
+            .para_state = gen->para_state,
+            .char_state = gen->char_state
+        };
+    }
+}
+
+static void xml_pop_group(XmlGenerator *gen) {
+    if (gen->group_depth > 0) {
+        GroupFrame restored = gen->group_stack[--gen->group_depth];
+        gen->char_state = restored.char_state;
+        gen->para_state = restored.para_state;
+    }
 }
 
 static FontVariantRef xml_register_font_variant(XmlGenerator *gen, const char *family, FontWeight weight, FontSlant slant) {
@@ -698,7 +553,13 @@ static void xml_close_active_span(XmlGenerator *gen) {
 static void xml_ensure_para_open(XmlGenerator *gen) {
     if (gen->para_open) return;
 
-    size_t ps_id = xml_intern_para_style(gen, &gen->para_state);
+    ParaState effective = gen->para_state;
+    if (gen->next_para_noindent) {
+        effective.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        gen->next_para_noindent = false;
+    }
+
+    size_t ps_id = xml_intern_para_style(gen, &effective);
     sb_appendf(&gen->story, "      <p style=\"ps%zu\">", ps_id + 1);
     gen->para_open            = true;
     gen->para_has_content     = false;
@@ -850,149 +711,397 @@ static void xml_gen_finalize(XmlGenerator *gen) {
 }
 
 // ============================================================================
-// 9. Implementación del Lexer
+// 8. Entorno de Macros, Entornos de Usuario, Contadores y Longitudes (Cap. 12-14)
 // ============================================================================
 
-static Lexer lexer_init(const char *source, size_t len) {
-    return (Lexer){ .src = source, .cursor = 0, .len = len, .line = 1, .col = 1 };
+static CounterDef *counter_find_mut(MacroEnv *env, StrView name) {
+    name = sv_trim(name);
+    for (size_t i = 0; i < env->counter_count; i++) {
+        if (sv_equals(name, env->counters[i].name)) return &env->counters[i];
+    }
+    return nullptr;
 }
 
-static char lexer_peek(const Lexer *l) {
-    return (l->cursor >= l->len) ? '\0' : l->src[l->cursor];
-}
+static CounterDef *counter_register(MacroEnv *env, StrView name, StrView parent) {
+    name   = sv_trim(name);
+    parent = sv_trim(parent);
+    CounterDef *existing = counter_find_mut(env, name);
+    if (existing) return existing;
+    if (env->counter_count >= MAX_COUNTERS || name.len == 0 || name.len >= sizeof(env->counters[0].name)) {
+        return nullptr;
+    }
 
-static char lexer_advance(Lexer *l) {
-    if (l->cursor >= l->len) return '\0';
-    char c = l->src[l->cursor++];
-    if (c == '\n') {
-        l->line++;
-        l->col = 1;
-    } else {
-        l->col++;
+    CounterDef *c = &env->counters[env->counter_count++];
+    memset(c, 0, sizeof(*c));
+    snprintf(c->name, sizeof(c->name), "%.*s", (int)name.len, name.data);
+    c->value = 0;
+
+    if (parent.len > 0) {
+        CounterDef *p = counter_find_mut(env, parent);
+        if (p && p->reset_count < 8) {
+            snprintf(p->resets[p->reset_count++], sizeof(p->resets[0]), "%.*s", (int)name.len, name.data);
+        }
     }
     return c;
 }
 
-static Token lexer_next_token(Lexer *l) {
-    bool skipped_space = false;
-
-    while (l->cursor < l->len) {
-        char c = lexer_peek(l);
-
-        if (c == '%') {
-            while (l->cursor < l->len && lexer_peek(l) != '\n') {
-                lexer_advance(l);
-            }
-            continue;
+static void counter_reset_children(MacroEnv *env, CounterDef *c) {
+    for (size_t i = 0; i < c->reset_count; i++) {
+        StrView child_name = { c->resets[i], strlen(c->resets[i]) };
+        CounterDef *child = counter_find_mut(env, child_name);
+        if (child) {
+            child->value = 0;
+            counter_reset_children(env, child);
         }
-
-        if (c == ' ' || c == '\t' || c == '\r') {
-            skipped_space = true;
-            lexer_advance(l);
-            continue;
-        }
-
-        size_t line = l->line;
-        size_t col  = l->col;
-        const char *start = &l->src[l->cursor];
-
-        if (c == '\n') {
-            lexer_advance(l);
-            return (Token){ .type = TOKEN_NEWLINE, .text = { start, 1 }, .line = line, .col = col, .space_before = skipped_space };
-        }
-        if (c == '{') {
-            lexer_advance(l);
-            return (Token){ .type = TOKEN_LBRACE,  .text = { start, 1 }, .line = line, .col = col, .space_before = skipped_space };
-        }
-        if (c == '}') {
-            lexer_advance(l);
-            return (Token){ .type = TOKEN_RBRACE,  .text = { start, 1 }, .line = line, .col = col, .space_before = skipped_space };
-        }
-
-        if (c == '\\') {
-            lexer_advance(l);
-            while (isalpha((unsigned char)lexer_peek(l)) || lexer_peek(l) == '_') {
-                lexer_advance(l);
-            }
-            return (Token){
-                .type = TOKEN_COMMAND,
-                .text = { start + 1, (size_t)(&l->src[l->cursor] - (start + 1)) },
-                .line = line,
-                .col  = col,
-                .space_before = skipped_space
-            };
-        }
-
-        while (l->cursor < l->len) {
-            char next = lexer_peek(l);
-            if (next == '\\' || next == '{' || next == '}' || next == '%' ||
-                next == '\n' || next == ' ' || next == '\t' || next == '\r') {
-                break;
-            }
-            lexer_advance(l);
-        }
-
-        return (Token){
-            .type = TOKEN_TEXT,
-            .text = { start, (size_t)(&l->src[l->cursor] - start) },
-            .line = line,
-            .col  = col,
-            .space_before = skipped_space
-        };
     }
-
-    return (Token){
-        .type = TOKEN_EOF,
-        .text = { &l->src[l->cursor], 0 },
-        .line = l->line,
-        .col  = l->col,
-        .space_before = skipped_space
-    };
 }
 
-// ============================================================================
-// 10. Entorno y Expansión de Macros de Usuario
-// ============================================================================
+static void counter_step(MacroEnv *env, StrView name) {
+    CounterDef *c = counter_find_mut(env, name);
+    if (!c) c = counter_register(env, name, (StrView){nullptr, 0});
+    if (!c) return;
+    c->value++;
+    counter_reset_children(env, c);
+}
 
-static void macro_env_init(MacroEnv *env, FILE *aux_file) {
-    env->count    = 0;
-    env->aux_file = aux_file;
+static void int_to_roman(int val, bool uppercase, char *out_buf, size_t buf_size) {
+    if (val <= 0) {
+        out_buf[0] = '\0';
+        return;
+    }
+    static const int values[] = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+    static const char *const rom_low[] = { "m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i" };
+    static const char *const rom_up[]  = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+    const char *const *syms = uppercase ? rom_up : rom_low;
+
+    out_buf[0] = '\0';
+    size_t pos = 0;
+    for (size_t i = 0; i < 13 && val > 0; i++) {
+        while (val >= values[i]) {
+            size_t slen = strlen(syms[i]);
+            if (pos + slen < buf_size - 1) {
+                memcpy(out_buf + pos, syms[i], slen);
+                pos += slen;
+                out_buf[pos] = '\0';
+            }
+            val -= values[i];
+        }
+    }
+}
+
+static void format_counter_value(const MacroEnv *env, StrView name, char style, char *out_buf, size_t buf_size) {
+    CounterDef *c = counter_find_mut((MacroEnv *)env, name);
+    int val = c ? c->value : 0;
+
+    switch (style) {
+        case 'r':
+            int_to_roman(val, false, out_buf, buf_size);
+            break;
+        case 'R':
+            int_to_roman(val, true, out_buf, buf_size);
+            break;
+        case 'a':
+            if (val >= 1 && val <= 26) snprintf(out_buf, buf_size, "%c", 'a' + (val - 1));
+            else out_buf[0] = '\0';
+            break;
+        case 'A':
+            if (val >= 1 && val <= 26) snprintf(out_buf, buf_size, "%c", 'A' + (val - 1));
+            else out_buf[0] = '\0';
+            break;
+        case 'f': {
+            static const char *const fnsyms[] = { "", "∗", "†", "‡", "§", "¶", "‖", "∗∗", "††", "‡‡" };
+            if (val >= 1 && val <= 9) snprintf(out_buf, buf_size, "%s", fnsyms[val]);
+            else out_buf[0] = '\0';
+            break;
+        }
+        case '1':
+        default:
+            snprintf(out_buf, buf_size, "%d", val);
+            break;
+    }
+}
+
+static void format_the_counter(const MacroEnv *env, StrView name, char *out_buf, size_t buf_size) {
+    name = sv_trim(name);
+    if (sv_equals(name, "subsection")) {
+        CounterDef *s  = counter_find_mut((MacroEnv *)env, (StrView){"section", 7});
+        CounterDef *ss = counter_find_mut((MacroEnv *)env, name);
+        snprintf(out_buf, buf_size, "%d.%d", s ? s->value : 0, ss ? ss->value : 0);
+        return;
+    }
+    if (sv_equals(name, "subsubsection")) {
+        CounterDef *s   = counter_find_mut((MacroEnv *)env, (StrView){"section", 7});
+        CounterDef *ss  = counter_find_mut((MacroEnv *)env, (StrView){"subsection", 10});
+        CounterDef *sss = counter_find_mut((MacroEnv *)env, name);
+        snprintf(out_buf, buf_size, "%d.%d.%d", s ? s->value : 0, ss ? ss->value : 0, sss ? sss->value : 0);
+        return;
+    }
+    if (sv_equals(name, "part")) {
+        format_counter_value(env, name, 'R', out_buf, buf_size);
+        return;
+    }
+    if (sv_equals(name, "enumii")) {
+        format_counter_value(env, name, 'a', out_buf, buf_size);
+        return;
+    }
+    if (sv_equals(name, "enumiii")) {
+        format_counter_value(env, name, 'r', out_buf, buf_size);
+        return;
+    }
+    if (sv_equals(name, "enumiv")) {
+        format_counter_value(env, name, 'A', out_buf, buf_size);
+        return;
+    }
+    format_counter_value(env, name, '1', out_buf, buf_size);
+}
+
+static LengthDef *length_find_mut(MacroEnv *env, StrView name) {
+    name = sv_strip_leading_backslash(name);
+    for (size_t i = 0; i < env->length_count; i++) {
+        if (sv_equals(name, env->lengths[i].name)) return &env->lengths[i];
+    }
+    return nullptr;
+}
+
+static LengthDef *length_register(MacroEnv *env, StrView name, Measure initial) {
+    name = sv_strip_leading_backslash(name);
+    LengthDef *existing = length_find_mut(env, name);
+    if (existing) return existing;
+    if (env->length_count >= MAX_LENGTHS || name.len == 0 || name.len >= sizeof(env->lengths[0].name)) {
+        return nullptr;
+    }
+
+    LengthDef *ld = &env->lengths[env->length_count++];
+    snprintf(ld->name, sizeof(ld->name), "%.*s", (int)name.len, name.data);
+    ld->value = initial;
+    return ld;
+}
+
+static void prepare_para_state_mutation(XmlGenerator *gen) {
+    if (gen->para_open && gen->para_has_content && gen->inline_depth == 0) {
+        xml_close_para(gen);
+    }
+}
+
+static void sync_standard_length_to_generator(XmlGenerator *gen, StrView name, Measure val) {
+    name = sv_strip_leading_backslash(name);
+    if (sv_equals(name, "parindent")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.indent_first = val;
+    } else if (sv_equals(name, "parskip")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.space_after = val;
+    } else if (sv_equals(name, "baselineskip")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.line_spacing = val;
+    } else if (sv_equals(name, "leftskip")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.indent_left = val;
+    } else if (sv_equals(name, "rightskip")) {
+        prepare_para_state_mutation(gen);
+        gen->para_state.indent_right = val;
+    } else if (sv_equals(name, "paperwidth")) {
+        gen->page_width = val;
+    } else if (sv_equals(name, "paperheight")) {
+        gen->page_height = val;
+    } else if (sv_equals(name, "topmargin")) {
+        gen->margin_top = val;
+    } else if (sv_equals(name, "oddsidemargin") || sv_equals(name, "evensidemargin")) {
+        gen->margin_left = val;
+    } else if (sv_equals(name, "textwidth")) {
+        double rem = gen->page_width.mm - val.mm;
+        if (rem >= 10.0) {
+            gen->margin_left  = measure_make(rem * 0.5, UNIT_MM, 1.0);
+            gen->margin_right = measure_make(rem * 0.5, UNIT_MM, 1.0);
+        }
+    } else if (sv_equals(name, "textheight")) {
+        double rem = gen->page_height.mm - val.mm;
+        if (rem >= 10.0) {
+            gen->margin_top    = measure_make(rem * 0.5, UNIT_MM, 1.0);
+            gen->margin_bottom = measure_make(rem * 0.5, UNIT_MM, 1.0);
+        }
+    }
+}
+
+static void macro_env_init(MacroEnv *env) {
+    memset(env, 0, sizeof(*env));
+
+    // Contadores estándar de LaTeX2e (Cap. 13)
+    counter_register(env, (StrView){"part", 4},           (StrView){nullptr, 0});
+    counter_register(env, (StrView){"chapter", 7},        (StrView){nullptr, 0});
+    counter_register(env, (StrView){"section", 7},        (StrView){"chapter", 7});
+    counter_register(env, (StrView){"subsection", 10},    (StrView){"section", 7});
+    counter_register(env, (StrView){"subsubsection", 13}, (StrView){"subsection", 10});
+    counter_register(env, (StrView){"paragraph", 9},      (StrView){"subsubsection", 13});
+    counter_register(env, (StrView){"subparagraph", 12},  (StrView){"paragraph", 9});
+    counter_register(env, (StrView){"page", 4},           (StrView){nullptr, 0});
+    counter_register(env, (StrView){"equation", 8},       (StrView){nullptr, 0});
+    counter_register(env, (StrView){"figure", 6},         (StrView){nullptr, 0});
+    counter_register(env, (StrView){"table", 5},          (StrView){nullptr, 0});
+    counter_register(env, (StrView){"footnote", 8},       (StrView){nullptr, 0});
+    counter_register(env, (StrView){"mpfootnote", 10},    (StrView){nullptr, 0});
+    counter_register(env, (StrView){"enumi", 5},          (StrView){nullptr, 0});
+    counter_register(env, (StrView){"enumii", 6},         (StrView){nullptr, 0});
+    counter_register(env, (StrView){"enumiii", 7},        (StrView){nullptr, 0});
+    counter_register(env, (StrView){"enumiv", 6},         (StrView){nullptr, 0});
+    CounterDef *page_c = counter_find_mut(env, (StrView){"page", 4});
+    if (page_c) page_c->value = 1;
+
+    CounterDef *secnum = counter_register(env, (StrView){"secnumdepth", 11}, (StrView){nullptr, 0});
+    if (secnum) secnum->value = 3;
+    CounterDef *tocd = counter_register(env, (StrView){"tocdepth", 8}, (StrView){nullptr, 0});
+    if (tocd) tocd->value = 3;
+
+    // Longitudes estándar de LaTeX2e (Cap. 14)
+    double em = 11.0 * MM_PER_PT;
+    length_register(env, (StrView){"parindent", 9},       measure_make(8.0,   UNIT_MM, em));
+    length_register(env, (StrView){"parskip", 7},         measure_make(2.5,   UNIT_MM, em));
+    length_register(env, (StrView){"baselineskip", 12},   measure_make(5.5,   UNIT_MM, em));
+    length_register(env, (StrView){"leftskip", 8},        measure_make(0.0,   UNIT_MM, em));
+    length_register(env, (StrView){"rightskip", 9},       measure_make(0.0,   UNIT_MM, em));
+    length_register(env, (StrView){"textwidth", 9},       measure_make(170.0, UNIT_MM, em));
+    length_register(env, (StrView){"linewidth", 9},       measure_make(170.0, UNIT_MM, em));
+    length_register(env, (StrView){"columnwidth", 11},    measure_make(170.0, UNIT_MM, em));
+    length_register(env, (StrView){"textheight", 10},     measure_make(247.0, UNIT_MM, em));
+    length_register(env, (StrView){"paperwidth", 10},     measure_make(210.0, UNIT_MM, em));
+    length_register(env, (StrView){"paperheight", 11},    measure_make(297.0, UNIT_MM, em));
+    length_register(env, (StrView){"topmargin", 9},       measure_make(25.0,  UNIT_MM, em));
+    length_register(env, (StrView){"oddsidemargin", 13},  measure_make(20.0,  UNIT_MM, em));
+    length_register(env, (StrView){"evensidemargin", 14}, measure_make(20.0,  UNIT_MM, em));
+    length_register(env, (StrView){"fboxsep", 7},         measure_make(3.0,   UNIT_PT, em));
+    length_register(env, (StrView){"fboxrule", 8},        measure_make(0.4,   UNIT_PT, em));
+    length_register(env, (StrView){"tabcolsep", 9},       measure_make(6.0,   UNIT_PT, em));
+    length_register(env, (StrView){"arrayrulewidth", 14}, measure_make(0.4,   UNIT_PT, em));
+    length_register(env, (StrView){"unitlength", 10},     measure_make(1.0,   UNIT_PT, em));
 }
 
 static void macro_env_free(MacroEnv *env) {
     for (size_t i = 0; i < env->count; i++) {
+        free(env->items[i].opt_default);
         free(env->items[i].template_body);
     }
-    env->count = 0;
-}
-
-static bool macro_env_register(MacroEnv *env, StrView name, size_t params, StrView body) {
-    if (env->count >= MAX_MACROS || name.len >= sizeof(env->items[0].name)) return false;
-
-    char *body_copy = malloc(body.len + 1);
-    if (!body_copy) return false;
-    memcpy(body_copy, body.data, body.len);
-    body_copy[body.len] = '\0';
-
-    UserMacro *m = &env->items[env->count++];
-    snprintf(m->name, sizeof(m->name), "%.*s", (int)name.len, name.data);
-    m->param_count   = params;
-    m->template_body = body_copy;
-
-    if (env->aux_file) {
-        fprintf(env->aux_file, "\\newcommand{%s}{%zu}{%s}\n", m->name, m->param_count, m->template_body);
-        fflush(env->aux_file);
+    for (size_t i = 0; i < env->env_count; i++) {
+        free(env->envs[i].opt_default);
+        free(env->envs[i].begin_body);
+        free(env->envs[i].end_body);
     }
-    return true;
+    env->count     = 0;
+    env->env_count = 0;
 }
 
-static const UserMacro *macro_env_find(const MacroEnv *env, StrView name) {
+static UserMacro *macro_env_find_mut(MacroEnv *env, StrView name) {
+    name = sv_strip_leading_backslash(name);
     for (size_t i = 0; i < env->count; i++) {
         if (sv_equals(name, env->items[i].name)) return &env->items[i];
     }
     return nullptr;
 }
 
+static const UserMacro *macro_env_find(const MacroEnv *env, StrView name) {
+    return macro_env_find_mut((MacroEnv *)env, name);
+}
+
+static bool macro_env_define(MacroEnv *env, StrView name, size_t params, bool has_opt, StrView opt_def, StrView body, bool overwrite) {
+    name = sv_strip_leading_backslash(name);
+    if (name.len == 0 || name.len >= sizeof(env->items[0].name)) return false;
+    if (params > MAX_PARAMS) params = MAX_PARAMS;
+
+    UserMacro *m = macro_env_find_mut(env, name);
+    if (m && !overwrite) {
+        return true; // \providecommand no sobrescribe si ya existe
+    }
+    if (!m) {
+        if (env->count >= MAX_MACROS) return false;
+        m = &env->items[env->count++];
+        memset(m, 0, sizeof(*m));
+        snprintf(m->name, sizeof(m->name), "%.*s", (int)name.len, name.data);
+    } else {
+        free(m->opt_default);
+        free(m->template_body);
+        m->opt_default   = nullptr;
+        m->template_body = nullptr;
+    }
+
+    m->param_count     = params;
+    m->has_opt_default = has_opt;
+    m->opt_default     = has_opt ? dup_sv(opt_def) : nullptr;
+    m->template_body   = dup_sv(body);
+    return (m->template_body != nullptr);
+}
+
+static UserEnv *user_env_find_mut(MacroEnv *env, StrView name) {
+    name = sv_trim(name);
+    for (size_t i = 0; i < env->env_count; i++) {
+        if (sv_equals(name, env->envs[i].name)) return &env->envs[i];
+    }
+    return nullptr;
+}
+
+static bool user_env_define(MacroEnv *env, StrView name, size_t params, bool has_opt, StrView opt_def, StrView begin_body, StrView end_body, bool overwrite) {
+    name = sv_trim(name);
+    if (name.len == 0 || name.len >= sizeof(env->envs[0].name)) return false;
+    if (params > MAX_PARAMS) params = MAX_PARAMS;
+
+    UserEnv *ue = user_env_find_mut(env, name);
+    if (ue && !overwrite) return true;
+    if (!ue) {
+        if (env->env_count >= MAX_USER_ENVS) return false;
+        ue = &env->envs[env->env_count++];
+        memset(ue, 0, sizeof(*ue));
+        snprintf(ue->name, sizeof(ue->name), "%.*s", (int)name.len, name.data);
+    } else {
+        free(ue->opt_default);
+        free(ue->begin_body);
+        free(ue->end_body);
+    }
+
+    ue->param_count     = params;
+    ue->has_opt_default = has_opt;
+    ue->opt_default     = has_opt ? dup_sv(opt_def) : nullptr;
+    ue->begin_body      = dup_sv(begin_body);
+    ue->end_body        = dup_sv(end_body);
+    return (ue->begin_body != nullptr && ue->end_body != nullptr);
+}
+
+static void substitute_macro_params(StrBuf *out, const char *tpl, size_t param_count, StrView args[]) {
+    const char *ptr = tpl;
+    while (*ptr != '\0') {
+        if (*ptr == '#' && *(ptr + 1) == '#') {
+            sb_append_mem(out, "#", 1);
+            ptr += 2;
+        } else if (*ptr == '#' && isdigit((unsigned char)*(ptr + 1))) {
+            size_t idx = (size_t)(*(ptr + 1) - '1');
+            if (idx < param_count) {
+                sb_append_mem(out, args[idx].data, args[idx].len);
+            }
+            ptr += 2;
+        } else {
+            sb_append_mem(out, ptr, 1);
+            ptr++;
+        }
+    }
+}
+
+static void execute_tex_fragment(Parser *p, StrView fragment, bool preserve_space) {
+    if (p->macro_depth >= MAX_MACRO_DEPTH) {
+        fprintf(stderr, "Error: recursión excesiva en expansión TeX\n");
+        return;
+    }
+
+    Parser sub = {
+        .lexer            = lexer_init(fragment.data, fragment.len, p->env->allow_at),
+        .env              = p->env,
+        .gen              = p->gen,
+        .macro_depth      = p->macro_depth + 1,
+        .cmd_space_before = false
+    };
+
+    parser_advance(&sub);
+    if (preserve_space) {
+        sub.current.space_before = true;
+    }
+    parse_and_execute(&sub);
+}
 
 static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]) {
     if (p->macro_depth >= MAX_MACRO_DEPTH) {
@@ -1002,57 +1111,457 @@ static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]) {
 
     StrBuf expanded;
     if (!sb_init(&expanded, 256)) return;
+    substitute_macro_params(&expanded, m->template_body, m->param_count, args);
 
-    const char *ptr = m->template_body;
-    while (*ptr != '\0') {
-        if (*ptr == '#' && isdigit((unsigned char)*(ptr + 1))) {
-            size_t idx = (size_t)(*(ptr + 1) - '1');
-            if (idx < m->param_count) {
-                sb_append_mem(&expanded, args[idx].data, args[idx].len);
-            }
-            ptr += 2;
-        } else {
-            sb_append_mem(&expanded, ptr, 1);
-            ptr++;
-        }
-    }
-
-    bool saved_space = p->cmd_space_before;
-
-    Parser sub = {
-        .lexer            = lexer_init(expanded.data, expanded.len),
-        .env              = p->env,
-        .gen              = p->gen,
-        .macro_depth      = p->macro_depth + 1,
-        .cmd_space_before = false
-    };
-
-    parser_advance(&sub);
-
-    // Si el comando invocador tenía un espacio antes, se lo inyectamos al primer token del sub-parser si es texto
-    if (saved_space) {
-        sub.current.space_before = true;
-    }
-
-    parse_and_execute(&sub);
-
+    execute_tex_fragment(p, (StrView){ expanded.data, expanded.len }, p->cmd_space_before);
     sb_free(&expanded);
 }
 
-
 // ============================================================================
-// 11. Manejadores de Comandos Nativos y Mutadores de Estado
+// 9. Comandos Nativos de Fase 1 y Base Tipográfica LaTeX2e
 // ============================================================================
 
-static void builtin_newcommand(Parser *p, StrView args[]) {
-    size_t params = sv_to_size(args[1]);
-    if (params > MAX_PARAMS) params = MAX_PARAMS;
-    macro_env_register(p->env, args[0], params, args[2]);
+// Helper para parsear \newcommand, \renewcommand, \providecommand:
+// Sintaxis estándar LaTeX2e: \newcommand[*]{\cmd}[n][opt_default]{body}
+static void handle_command_definition(Parser *p, bool overwrite, bool allow_existing) {
+    parser_consume_star(p);
+
+    StrView cmd_name = {0};
+    if (!parse_cmd_or_arg(p, &cmd_name)) return;
+    cmd_name = sv_strip_leading_backslash(cmd_name);
+
+    size_t num_args = 0;
+    bool has_opt_default = false;
+    StrView opt_default = {0};
+    StrView body = {0};
+
+    StrView opt1 = {0};
+    if (parse_opt_arg(p, &opt1)) {
+        long n = sv_to_long(p, opt1);
+        if (n < 0) n = 0;
+        if (n > (long)MAX_PARAMS) n = (long)MAX_PARAMS;
+        num_args = (size_t)n;
+
+        if (parse_opt_arg(p, &opt_default)) {
+            has_opt_default = true;
+        }
+        if (!parse_arg(p, &body)) return;
+    } else {
+        if (!parse_arg(p, &body)) return;
+    }
+
+    if (!allow_existing && macro_env_find(p->env, cmd_name) != nullptr) {
+        fprintf(stderr, "Aviso: comando '\\%.*s' ya estaba definido; sobrescribiendo\n",
+                (int)cmd_name.len, cmd_name.data);
+    }
+    macro_env_define(p->env, cmd_name, num_args, has_opt_default, opt_default, body, overwrite);
 }
 
-static void builtin_include(Parser *p, StrView args[]) {
+static void builtin_newcommand(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    handle_command_definition(p, true, false);
+}
+
+static void builtin_renewcommand(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    handle_command_definition(p, true, true);
+}
+
+static void builtin_providecommand(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    handle_command_definition(p, false, true);
+}
+
+// Primitiva TeX \def\cmd#1#2{cuerpo}
+static void builtin_def(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView cmd_name = {0};
+    if (!parse_cmd_or_arg(p, &cmd_name)) return;
+    cmd_name = sv_strip_leading_backslash(cmd_name);
+
+    size_t max_param = 0;
+    while (p->current.type == TOKEN_TEXT) {
+        for (size_t i = 0; i + 1 < p->current.text.len; i++) {
+            if (p->current.text.data[i] == '#' && isdigit((unsigned char)p->current.text.data[i + 1])) {
+                size_t p_idx = (size_t)(p->current.text.data[i + 1] - '0');
+                if (p_idx > max_param) max_param = p_idx;
+            }
+        }
+        parser_advance(p);
+    }
+
+    StrView body = {0};
+    if (!parse_arg(p, &body)) return;
+    macro_env_define(p->env, cmd_name, max_param, false, (StrView){0}, body, true);
+}
+
+// Primitiva TeX \let\nuevo=\antiguo o \let\nuevo\antiguo
+static void builtin_let(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView dst = {0}, src = {0};
+    if (!parse_cmd_or_arg(p, &dst)) return;
+    if (p->current.type == TOKEN_TEXT && sv_equals(sv_trim(p->current.text), "=")) {
+        parser_advance(p);
+    }
+    if (!parse_cmd_or_arg(p, &src)) return;
+
+    dst = sv_strip_leading_backslash(dst);
+    src = sv_strip_leading_backslash(src);
+
+    const UserMacro *m = macro_env_find(p->env, src);
+    if (m) {
+        StrView opt_sv = m->opt_default ? (StrView){ m->opt_default, strlen(m->opt_default) } : (StrView){0};
+        StrView body_sv = { m->template_body, strlen(m->template_body) };
+        macro_env_define(p->env, dst, m->param_count, m->has_opt_default, opt_sv, body_sv, true);
+    } else {
+        char body_buf[64];
+        int n = snprintf(body_buf, sizeof(body_buf), "\\%.*s", (int)src.len, src.data);
+        if (n > 0) {
+            macro_env_define(p->env, dst, 0, false, (StrView){0}, (StrView){ body_buf, (size_t)n }, true);
+        }
+    }
+}
+
+// \newenvironment[*]{name}[n][default]{begin_def}{end_def}
+static void handle_env_definition(Parser *p, bool overwrite) {
+    parser_consume_star(p);
+    StrView env_name = {0};
+    if (!parse_arg(p, &env_name)) return;
+
+    size_t num_args = 0;
+    bool has_opt_default = false;
+    StrView opt_default = {0};
+    StrView opt1 = {0};
+
+    if (parse_opt_arg(p, &opt1)) {
+        long n = sv_to_long(p, opt1);
+        if (n < 0) n = 0;
+        if (n > (long)MAX_PARAMS) n = (long)MAX_PARAMS;
+        num_args = (size_t)n;
+        if (parse_opt_arg(p, &opt_default)) {
+            has_opt_default = true;
+        }
+    }
+
+    StrView begin_body = {0}, end_body = {0};
+    if (!parse_arg(p, &begin_body)) return;
+    if (!parse_arg(p, &end_body)) return;
+
+    user_env_define(p->env, env_name, num_args, has_opt_default, opt_default, begin_body, end_body, overwrite);
+}
+
+static void builtin_newenvironment(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    handle_env_definition(p, true);
+}
+
+static void builtin_renewenvironment(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    handle_env_definition(p, true);
+}
+
+static void builtin_makeatletter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->env->allow_at   = true;
+    p->lexer.allow_at  = true;
+}
+
+static void builtin_makeatother(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->env->allow_at   = false;
+    p->lexer.allow_at  = false;
+}
+
+static void builtin_noop(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    (void)p;
+}
+
+// --- Contadores (Cap. 13) ---
+
+static void builtin_newcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView parent = {0};
+    parse_opt_arg(p, &parent);
+    counter_register(p->env, args[0], parent);
+}
+
+static void builtin_setcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CounterDef *c = counter_find_mut(p->env, args[0]);
+    if (!c) c = counter_register(p->env, args[0], (StrView){0});
+    if (c) c->value = (int)sv_to_long(p, args[1]);
+}
+
+static void builtin_addtocounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CounterDef *c = counter_find_mut(p->env, args[0]);
+    if (!c) c = counter_register(p->env, args[0], (StrView){0});
+    if (c) c->value += (int)sv_to_long(p, args[1]);
+}
+
+static void builtin_stepcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    counter_step(p->env, args[0]);
+}
+
+static void builtin_refstepcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    counter_step(p->env, args[0]);
+    format_the_counter(p->env, args[0], p->env->current_ref, sizeof(p->env->current_ref));
+}
+
+static void emit_formatted_counter(Parser *p, StrView cname, char style) {
+    char buf[64];
+    format_counter_value(p->env, cname, style, buf, sizeof(buf));
+    xml_emit_text(p->gen, (StrView){ buf, strlen(buf) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_arabic(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], '1');
+}
+
+static void builtin_roman(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], 'r');
+}
+
+static void builtin_Roman(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], 'R');
+}
+
+static void builtin_alph(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], 'a');
+}
+
+static void builtin_Alph(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], 'A');
+}
+
+static void builtin_fnsymbol(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_formatted_counter(p, args[0], 'f');
+}
+
+// --- Longitudes (Cap. 14) ---
+
+static void builtin_newlength(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    length_register(p->env, name, measure_make(0.0, UNIT_MM, 1.0));
+}
+
+static void builtin_setlength(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, val_sv = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &val_sv)) return;
+
+    Measure m = measure_parse(p, val_sv, UNIT_MM);
+    LengthDef *ld = length_find_mut(p->env, name);
+    if (!ld) ld = length_register(p->env, name, m);
+    else ld->value = m;
+
+    sync_standard_length_to_generator(p->gen, name, m);
+}
+
+static void builtin_addtolength(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, delta_sv = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &delta_sv)) return;
+
+    Measure d = measure_parse(p, delta_sv, UNIT_MM);
+    LengthDef *ld = length_find_mut(p->env, name);
+    if (!ld) ld = length_register(p->env, name, d);
+    else {
+        ld->value = measure_make(ld->value.mm + d.mm, UNIT_MM, 1.0);
+    }
+
+    sync_standard_length_to_generator(p->gen, name, ld->value);
+}
+
+static void builtin_settowidth(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, text = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &text)) return;
+
+    double w_mm = (double)text.len * p->gen->char_state.size.mm * 0.50;
+    Measure m = measure_make(w_mm, UNIT_MM, 1.0);
+    LengthDef *ld = length_find_mut(p->env, name);
+    if (!ld) length_register(p->env, name, m);
+    else ld->value = m;
+}
+
+static void builtin_settoheight(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, text = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &text)) return;
+
+    Measure m = measure_make(p->gen->char_state.size.mm * 0.72, UNIT_MM, 1.0);
+    LengthDef *ld = length_find_mut(p->env, name);
+    if (!ld) length_register(p->env, name, m);
+    else ld->value = m;
+}
+
+static void builtin_settodepth(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    StrView name = {0}, text = {0};
+    if (!parse_cmd_or_arg(p, &name)) return;
+    if (!parse_arg(p, &text)) return;
+
+    Measure m = measure_make(p->gen->char_state.size.mm * 0.22, UNIT_MM, 1.0);
+    LengthDef *ld = length_find_mut(p->env, name);
+    if (!ld) length_register(p->env, name, m);
+    else ld->value = m;
+}
+
+// --- Símbolos dinámicos (\today, \rule) (Cap. 23) ---
+
+static void builtin_today(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    static const char *const meses[] = {
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    };
+    time_t now = time(nullptr);
+    struct tm *lt = localtime(&now);
+    char buf[64];
+    if (lt) {
+        snprintf(buf, sizeof(buf), "%d de %s de %d",
+                 lt->tm_mday, meses[lt->tm_mon % 12], lt->tm_year + 1900);
+    } else {
+        snprintf(buf, sizeof(buf), "4 de noviembre de 2026");
+    }
+    xml_emit_text(p->gen, (StrView){ buf, strlen(buf) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_rule(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    Measure w = measure_parse(p, args[0], UNIT_MM);
+    size_t blocks = (size_t)fmax(1.0, round(w.mm / (p->gen->char_state.size.mm * 0.5)));
+    if (blocks > 40) blocks = 40;
+    StrBuf bar;
+    if (!sb_init(&bar, blocks * 4 + 4)) return;
+    for (size_t i = 0; i < blocks; i++) {
+        sb_append_cstr(&bar, "―");
+    }
+    xml_emit_text(p->gen, (StrView){ bar.data, bar.len }, p->cmd_space_before);
+    p->cmd_space_before = false;
+    sb_free(&bar);
+}
+
+// --- Entornos \begin{...} y \end{...} ---
+
+static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView env_name = sv_trim(args[0]);
+
+    // document no abre grupo para que las definiciones globales persistan
+    if (sv_equals(env_name, "document")) {
+        return;
+    }
+
+    if (p->gen->env_depth < MAX_ENV_DEPTH) {
+        ActiveEnvFrame *ef = &p->gen->env_stack[p->gen->env_depth++];
+        memset(ef, 0, sizeof(*ef));
+        snprintf(ef->name, sizeof(ef->name), "%.*s", (int)env_name.len, env_name.data);
+        ef->saved_state = (GroupFrame){
+            .para_state = p->gen->para_state,
+            .char_state = p->gen->char_state
+        };
+
+        // ¿Es un entorno definido por el usuario con \newenvironment?
+        UserEnv *ue = user_env_find_mut(p->env, env_name);
+        if (ue) {
+            StrView uargs[MAX_PARAMS] = {0};
+            size_t start_idx = 0;
+            if (ue->has_opt_default && ue->param_count > 0) {
+                StrView opt_val = {0};
+                if (parse_opt_arg(p, &opt_val)) {
+                    uargs[0] = opt_val;
+                } else {
+                    uargs[0] = (StrView){ ue->opt_default, strlen(ue->opt_default) };
+                }
+                start_idx = 1;
+            }
+            for (size_t i = start_idx; i < ue->param_count; i++) {
+                parse_arg(p, &uargs[i]);
+            }
+            ef->end_expansion = dup_sv((StrView){ ue->end_body, strlen(ue->end_body) });
+
+            StrBuf beg_exp;
+            if (sb_init(&beg_exp, 256)) {
+                substitute_macro_params(&beg_exp, ue->begin_body, ue->param_count, uargs);
+                execute_tex_fragment(p, (StrView){ beg_exp.data, beg_exp.len }, false);
+                sb_free(&beg_exp);
+            }
+            return;
+        }
+
+        // Entornos estándar básicos
+        if (sv_equals(env_name, "center")) {
+            xml_close_para(p->gen);
+            p->gen->para_state.align       = ALIGN_CENTER;
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "flushleft")) {
+            xml_close_para(p->gen);
+            p->gen->para_state.align       = ALIGN_LEFT;
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "flushright")) {
+            xml_close_para(p->gen);
+            p->gen->para_state.align       = ALIGN_RIGHT;
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "quote") || sv_equals(env_name, "quotation")) {
+            xml_close_para(p->gen);
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 10.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_right = measure_make(p->gen->para_state.indent_right.mm + 10.0, UNIT_MM, 1.0);
+            if (sv_equals(env_name, "quote")) {
+                p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            }
+        }
+    }
+}
+
+static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView env_name = sv_trim(args[0]);
+    if (sv_equals(env_name, "document")) {
+        xml_close_para(p->gen);
+        return;
+    }
+
+    if (p->gen->env_depth > 0) {
+        ActiveEnvFrame ef = p->gen->env_stack[--p->gen->env_depth];
+        if (ef.end_expansion) {
+            execute_tex_fragment(p, (StrView){ ef.end_expansion, strlen(ef.end_expansion) }, false);
+            free(ef.end_expansion);
+        }
+        if (sv_equals(env_name, "center") || sv_equals(env_name, "flushleft") ||
+            sv_equals(env_name, "flushright") || sv_equals(env_name, "quote") ||
+            sv_equals(env_name, "quotation")) {
+            xml_close_para(p->gen);
+        }
+        p->gen->para_state = ef.saved_state.para_state;
+        p->gen->char_state = ef.saved_state.char_state;
+    }
+}
+
+// --- Estructura, Archivos y Geometría ---
+
+static void builtin_documentclass(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
+    double base_pt = 11.0;
+    for (size_t i = 0; i < opt_c; i++) {
+        // Parsear lista separada por comas: 10pt, 11pt, 12pt, a4paper, letterpaper, landscape
+        const char *cur = opt[i].data;
+        const char *end = opt[i].data + opt[i].len;
+        while (cur < end) {
+            const char *comma = memchr(cur, ',', (size_t)(end - cur));
+            size_t len = comma ? (size_t)(comma - cur) : (size_t)(end - cur);
+            StrView item = sv_trim((StrView){ cur, len });
+
+            if (sv_equals(item, "10pt")) base_pt = 10.0;
+            else if (sv_equals(item, "11pt")) base_pt = 11.0;
+            else if (sv_equals(item, "12pt")) base_pt = 12.0;
+            else if (sv_equals(item, "a4paper")) {
+                p->gen->page_width  = measure_make(210.0, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(297.0, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "letterpaper")) {
+                p->gen->page_width  = measure_make(215.9, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(279.4, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "landscape")) {
+                p->gen->orientation = ORIENT_LANDSCAPE;
+                sync_page_dimensions_to_orientation(p->gen);
+            }
+            cur = comma ? (comma + 1) : end;
+        }
+    }
+    p->gen->char_state.size         = measure_make(base_pt, UNIT_PT, 1.0);
+    p->gen->para_state.line_spacing = measure_make(base_pt * 1.35 * MM_PER_PT, UNIT_MM, 1.0);
+}
+
+static void builtin_include(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     char path_buf[256];
-    snprintf(path_buf, sizeof(path_buf), "%.*s", (int)args[0].len, args[0].data);
+    StrView raw = sv_trim(args[0]);
+    snprintf(path_buf, sizeof(path_buf), "%.*s", (int)raw.len, raw.data);
 
     if (!has_tks_extension(path_buf)) {
         if (strlen(path_buf) + 4 < sizeof(path_buf)) {
@@ -1068,64 +1577,78 @@ static void builtin_include(Parser *p, StrView args[]) {
     }
 }
 
-static void builtin_pagesize(Parser *p, StrView args[]) {
-    p->gen->page_width  = measure_parse(args[0], UNIT_MM);
-    p->gen->page_height = measure_parse(args[1], UNIT_MM);
+static void builtin_pagesize(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    p->gen->page_width  = measure_parse(p, args[0], UNIT_MM);
+    p->gen->page_height = measure_parse(p, args[1], UNIT_MM);
     p->gen->orientation = (p->gen->page_width.mm > p->gen->page_height.mm)
                           ? ORIENT_LANDSCAPE
                           : ORIENT_PORTRAIT;
 }
 
-static void builtin_orientation(Parser *p, StrView args[]) {
+static void builtin_orientation(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     if (sv_equals(args[0], "landscape") || sv_equals(args[0], "horizontal")) {
         p->gen->orientation = ORIENT_LANDSCAPE;
     } else if (sv_equals(args[0], "portrait") || sv_equals(args[0], "vertical")) {
         p->gen->orientation = ORIENT_PORTRAIT;
-    } else {
-        fprintf(stderr, "Aviso: orientación desconocida '%.*s'\n", (int)args[0].len, args[0].data);
-        return;
     }
     sync_page_dimensions_to_orientation(p->gen);
 }
 
-static void builtin_margins(Parser *p, StrView args[]) {
-    p->gen->margin_top    = measure_parse(args[0], UNIT_MM);
-    p->gen->margin_bottom = measure_parse(args[1], UNIT_MM);
-    p->gen->margin_left   = measure_parse(args[2], UNIT_MM);
-    p->gen->margin_right  = measure_parse(args[3], UNIT_MM);
+static void builtin_margins(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    p->gen->margin_top    = measure_parse(p, args[0], UNIT_MM);
+    p->gen->margin_bottom = measure_parse(p, args[1], UNIT_MM);
+    p->gen->margin_left   = measure_parse(p, args[2], UNIT_MM);
+    p->gen->margin_right  = measure_parse(p, args[3], UNIT_MM);
 }
 
-static void builtin_newpage(Parser *p, [[maybe_unused]] StrView args[]) {
-    if (p->gen->inline_depth > 0) {
-        fprintf(stderr, "Aviso (línea %zu): \\newpage ignorado en contexto en línea\n", p->current.line);
-        return;
-    }
+static void builtin_newpage(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    if (p->gen->inline_depth > 0) return;
     if (p->gen->page_count < MAX_PAGES) {
         p->gen->page_count++;
     }
+    counter_step(p->env, (StrView){"page", 4});
     xml_emit_page_break(p->gen);
 }
 
-static void builtin_newframe(Parser *p, StrView args[]) {
+static void builtin_newframe(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     if (p->gen->frame_count >= MAX_FRAMES) return;
 
     size_t idx = p->gen->frame_count++;
     p->gen->frames[idx] = (LayoutFrame){
         .page_num = p->gen->page_count - 1,
-        .x        = measure_parse(args[0], UNIT_MM),
-        .y        = measure_parse(args[1], UNIT_MM),
-        .width    = measure_parse(args[2], UNIT_MM),
-        .height   = measure_parse(args[3], UNIT_MM)
+        .x        = measure_parse(p, args[0], UNIT_MM),
+        .y        = measure_parse(p, args[1], UNIT_MM),
+        .width    = measure_parse(p, args[2], UNIT_MM),
+        .height   = measure_parse(p, args[3], UNIT_MM)
     };
 }
 
-static void prepare_para_state_mutation(XmlGenerator *gen) {
-    if (gen->para_open && gen->para_has_content && gen->inline_depth == 0) {
-        xml_close_para(gen);
+static void builtin_twocolumn(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    xml_close_para(p->gen);
+    double usable_w = p->gen->page_width.mm - p->gen->margin_left.mm - p->gen->margin_right.mm;
+    double usable_h = p->gen->page_height.mm - p->gen->margin_top.mm - p->gen->margin_bottom.mm;
+    double gap = 6.0;
+    double col_w = (usable_w - gap) * 0.5;
+
+    if (p->gen->frame_count + 2 <= MAX_FRAMES) {
+        p->gen->frames[p->gen->frame_count++] = (LayoutFrame){
+            .page_num = p->gen->page_count - 1,
+            .x        = p->gen->margin_left,
+            .y        = p->gen->margin_top,
+            .width    = measure_make(col_w, UNIT_MM, 1.0),
+            .height   = measure_make(usable_h, UNIT_MM, 1.0)
+        };
+        p->gen->frames[p->gen->frame_count++] = (LayoutFrame){
+            .page_num = p->gen->page_count - 1,
+            .x        = measure_make(p->gen->margin_left.mm + col_w + gap, UNIT_MM, 1.0),
+            .y        = p->gen->margin_top,
+            .width    = measure_make(col_w, UNIT_MM, 1.0),
+            .height   = measure_make(usable_h, UNIT_MM, 1.0)
+        };
     }
 }
 
-static void builtin_align(Parser *p, StrView args[]) {
+static void builtin_align(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     prepare_para_state_mutation(p->gen);
     if (sv_equals(args[0], "left"))         p->gen->para_state.align = ALIGN_LEFT;
     else if (sv_equals(args[0], "center"))  p->gen->para_state.align = ALIGN_CENTER;
@@ -1133,55 +1656,108 @@ static void builtin_align(Parser *p, StrView args[]) {
     else if (sv_equals(args[0], "justify")) p->gen->para_state.align = ALIGN_JUSTIFY;
 }
 
-static void builtin_linespacing(Parser *p, StrView args[]) {
+static void builtin_centering(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     prepare_para_state_mutation(p->gen);
-    p->gen->para_state.line_spacing = measure_parse(args[0], UNIT_MM);
+    p->gen->para_state.align        = ALIGN_CENTER;
+    p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
 }
 
-static void builtin_parindent(Parser *p, StrView args[]) {
+static void builtin_raggedright(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     prepare_para_state_mutation(p->gen);
-    p->gen->para_state.indent_first = measure_parse(args[0], UNIT_MM);
+    p->gen->para_state.align        = ALIGN_LEFT;
+    p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
 }
 
-static void builtin_parmargins(Parser *p, StrView args[]) {
+static void builtin_raggedleft(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     prepare_para_state_mutation(p->gen);
-    p->gen->para_state.indent_left  = measure_parse(args[0], UNIT_MM);
-    p->gen->para_state.indent_right = measure_parse(args[1], UNIT_MM);
+    p->gen->para_state.align        = ALIGN_RIGHT;
+    p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
 }
 
-static void builtin_parspacing(Parser *p, StrView args[]) {
-    prepare_para_state_mutation(p->gen);
-    p->gen->para_state.space_before = measure_parse(args[0], UNIT_MM);
-    p->gen->para_state.space_after  = measure_parse(args[1], UNIT_MM);
+static void builtin_noindent(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->next_para_noindent = true;
 }
 
-static void builtin_parbreak(Parser *p, [[maybe_unused]] StrView args[]) {
+static void builtin_indent(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->next_para_noindent = false;
+}
+
+static void builtin_linespacing(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    prepare_para_state_mutation(p->gen);
+    p->gen->para_state.line_spacing = measure_parse(p, args[0], UNIT_MM);
+}
+
+static void builtin_parmargins(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    prepare_para_state_mutation(p->gen);
+    p->gen->para_state.indent_left  = measure_parse(p, args[0], UNIT_MM);
+    p->gen->para_state.indent_right = measure_parse(p, args[1], UNIT_MM);
+}
+
+static void builtin_parspacing(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    prepare_para_state_mutation(p->gen);
+    p->gen->para_state.space_before = measure_parse(p, args[0], UNIT_MM);
+    p->gen->para_state.space_after  = measure_parse(p, args[1], UNIT_MM);
+}
+
+static void builtin_par(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->cmd_space_before = false;
     if (p->gen->inline_depth > 0) return;
     xml_close_para(p->gen);
 }
 
-static void builtin_font(Parser *p, StrView args[]) {
+// --- Fuentes y Estilos Tipográficos ---
+
+static void builtin_font(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family),
              "%.*s", (int)args[0].len, args[0].data);
 }
 
-static void builtin_fontsize(Parser *p, StrView args[]) {
-    p->gen->char_state.size = measure_parse(args[0], UNIT_PT);
+static void builtin_fontsize(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    p->gen->char_state.size = measure_parse(p, args[0], UNIT_PT);
 }
 
-static void builtin_fontcolor(Parser *p, StrView args[]) {
+static void builtin_fontcolor(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     snprintf(p->gen->char_state.color, sizeof(p->gen->char_state.color),
              "%.*s", (int)args[0].len, args[0].data);
 }
 
-static void builtin_fontweight(Parser *p, StrView args[]) {
-    if (sv_equals(args[0], "bold"))        p->gen->char_state.weight = WEIGHT_BOLD;
-    else if (sv_equals(args[0], "normal")) p->gen->char_state.weight = WEIGHT_NORMAL;
+static void builtin_rmfamily(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
 }
 
-static void builtin_fontslant(Parser *p, StrView args[]) {
-    if (sv_equals(args[0], "italic"))      p->gen->char_state.slant = SLANT_ITALIC;
-    else if (sv_equals(args[0], "normal")) p->gen->char_state.slant = SLANT_NORMAL;
+static void builtin_sffamily(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_SANS_FAMILY);
+}
+
+static void builtin_ttfamily(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+}
+
+static void builtin_bfseries(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.weight = WEIGHT_BOLD;
+}
+
+static void builtin_mdseries(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.weight = WEIGHT_NORMAL;
+}
+
+static void builtin_itshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.slant = SLANT_ITALIC;
+}
+
+static void builtin_upshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.slant = SLANT_NORMAL;
+}
+
+static void builtin_normalfont(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
+    p->gen->char_state.weight    = WEIGHT_NORMAL;
+    p->gen->char_state.slant     = SLANT_NORMAL;
+    p->gen->char_state.underline = false;
+}
+
+static void builtin_em(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.slant = (p->gen->char_state.slant == SLANT_ITALIC) ? SLANT_NORMAL : SLANT_ITALIC;
 }
 
 static void parse_inline_scoped(Parser *p, StrView fragment, CharState modified_state) {
@@ -1198,14 +1774,13 @@ static void parse_inline_scoped(Parser *p, StrView fragment, CharState modified_
     p->gen->inline_depth++;
 
     Parser sub = {
-        .lexer       = lexer_init(fragment.data, fragment.len),
+        .lexer       = lexer_init(fragment.data, fragment.len, p->env->allow_at),
         .env         = p->env,
         .gen         = p->gen,
         .macro_depth = p->macro_depth
     };
     parser_advance(&sub);
 
-    // Si el comando en línea tenía espacio antes, se lo pasamos al primer token del fragmento
     if (p->cmd_space_before) {
         sub.current.space_before = true;
         p->cmd_space_before = false;
@@ -1217,23 +1792,173 @@ static void parse_inline_scoped(Parser *p, StrView fragment, CharState modified_
     p->gen->char_state = saved_state;
 }
 
-static void builtin_textbf(Parser *p, StrView args[]) {
+static void builtin_textbf(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     CharState next = p->gen->char_state;
     next.weight    = WEIGHT_BOLD;
     parse_inline_scoped(p, args[0], next);
 }
 
-static void builtin_textit(Parser *p, StrView args[]) {
+static void builtin_textmd(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.weight    = WEIGHT_NORMAL;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textit(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     CharState next = p->gen->char_state;
     next.slant     = SLANT_ITALIC;
     parse_inline_scoped(p, args[0], next);
 }
 
-static void builtin_underline(Parser *p, StrView args[]) {
+static void builtin_textup(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.slant     = SLANT_NORMAL;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textrm(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_FONT_FAMILY);
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textsf(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_SANS_FAMILY);
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_texttt(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_MONO_FAMILY);
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_emph(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.slant     = (next.slant == SLANT_ITALIC) ? SLANT_NORMAL : SLANT_ITALIC;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_underline(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     CharState next = p->gen->char_state;
     next.underline = true;
     parse_inline_scoped(p, args[0], next);
 }
+
+// ============================================================================
+// 10. Tabla de Comandos Nativos (Builtins)
+// ============================================================================
+
+static const BuiltinCommand BUILTIN_LIST[] = {
+    // Cap. 12: Definiciones de comandos y entornos
+    { "newcommand",       0, 0, true,  builtin_newcommand },
+    { "renewcommand",     0, 0, true,  builtin_renewcommand },
+    { "providecommand",   0, 0, true,  builtin_providecommand },
+    { "def",              0, 0, false, builtin_def },
+    { "gdef",             0, 0, false, builtin_def },
+    { "edef",             0, 0, false, builtin_def },
+    { "xdef",             0, 0, false, builtin_def },
+    { "let",              0, 0, false, builtin_let },
+    { "newenvironment",   0, 0, true,  builtin_newenvironment },
+    { "renewenvironment", 0, 0, true,  builtin_renewenvironment },
+    { "makeatletter",     0, 0, false, builtin_makeatletter },
+    { "makeatother",      0, 0, false, builtin_makeatother },
+    { "relax",            0, 0, false, builtin_noop },
+    { "ignorespaces",     0, 0, false, builtin_noop },
+    { "protect",          0, 0, false, builtin_noop },
+
+    // Cap. 13: Contadores
+    { "newcounter",       0, 1, false, builtin_newcounter },
+    { "setcounter",       0, 2, false, builtin_setcounter },
+    { "addtocounter",     0, 2, false, builtin_addtocounter },
+    { "stepcounter",      0, 1, false, builtin_stepcounter },
+    { "refstepcounter",   0, 1, false, builtin_refstepcounter },
+    { "arabic",           0, 1, false, builtin_arabic },
+    { "roman",            0, 1, false, builtin_roman },
+    { "Roman",            0, 1, false, builtin_Roman },
+    { "alph",             0, 1, false, builtin_alph },
+    { "Alph",             0, 1, false, builtin_Alph },
+    { "fnsymbol",         0, 1, false, builtin_fnsymbol },
+
+    // Cap. 14: Longitudes
+    { "newlength",        0, 0, false, builtin_newlength },
+    { "setlength",        0, 0, false, builtin_setlength },
+    { "addtolength",      0, 0, false, builtin_addtolength },
+    { "settowidth",       0, 0, false, builtin_settowidth },
+    { "settoheight",      0, 0, false, builtin_settoheight },
+    { "settodepth",       0, 0, false, builtin_settodepth },
+
+    // Cap. 23: Inserciones especiales dinámicas
+    { "today",            0, 0, false, builtin_today },
+    { "rule",             1, 2, false, builtin_rule },
+
+    // Entornos y estructura documental
+    { "begin",            0, 1, false, builtin_begin },
+    { "end",              0, 1, false, builtin_end },
+    { "documentclass",    1, 1, false, builtin_documentclass },
+    { "documentstyle",    1, 1, false, builtin_documentclass },
+    { "usepackage",       1, 1, false, builtin_noop },
+    { "input",            0, 1, false, builtin_include },
+    { "include",          0, 1, false, builtin_include },
+    { "includeonly",      0, 1, false, builtin_noop },
+
+    // Geometría, página y párrafo
+    { "pagesize",         0, 2, false, builtin_pagesize },
+    { "orientation",      0, 1, false, builtin_orientation },
+    { "margins",          0, 4, false, builtin_margins },
+    { "newpage",          0, 0, false, builtin_newpage },
+    { "clearpage",        0, 0, false, builtin_newpage },
+    { "cleardoublepage",  0, 0, false, builtin_newpage },
+    { "pagebreak",        1, 0, false, builtin_newpage },
+    { "newframe",         0, 4, false, builtin_newframe },
+    { "twocolumn",        1, 0, false, builtin_twocolumn },
+    { "align",            0, 1, false, builtin_align },
+    { "centering",        0, 0, false, builtin_centering },
+    { "raggedright",      0, 0, false, builtin_raggedright },
+    { "raggedleft",       0, 0, false, builtin_raggedleft },
+    { "noindent",         0, 0, false, builtin_noindent },
+    { "indent",           0, 0, false, builtin_indent },
+    { "linespacing",      0, 1, false, builtin_linespacing },
+    { "parmargins",       0, 2, false, builtin_parmargins },
+    { "parspacing",       0, 2, false, builtin_parspacing },
+    { "par",              0, 0, false, builtin_par },
+    { "parbreak",         0, 0, false, builtin_par },
+
+    // Fuentes y estilos tipográficos
+    { "font",             0, 1, false, builtin_font },
+    { "fontsize",         0, 1, false, builtin_fontsize },
+    { "fontcolor",        0, 1, false, builtin_fontcolor },
+    { "color",            0, 1, false, builtin_fontcolor },
+    { "rmfamily",         0, 0, false, builtin_rmfamily },
+    { "sffamily",         0, 0, false, builtin_sffamily },
+    { "ttfamily",         0, 0, false, builtin_ttfamily },
+    { "bfseries",         0, 0, false, builtin_bfseries },
+    { "mdseries",         0, 0, false, builtin_mdseries },
+    { "itshape",          0, 0, false, builtin_itshape },
+    { "slshape",          0, 0, false, builtin_itshape },
+    { "upshape",          0, 0, false, builtin_upshape },
+    { "normalfont",       0, 0, false, builtin_normalfont },
+    { "em",               0, 0, false, builtin_em },
+    { "rm",               0, 0, false, builtin_rmfamily },
+    { "sf",               0, 0, false, builtin_sffamily },
+    { "tt",               0, 0, false, builtin_ttfamily },
+    { "bf",               0, 0, false, builtin_bfseries },
+    { "it",               0, 0, false, builtin_itshape },
+    { "sl",               0, 0, false, builtin_itshape },
+    { "textbf",           0, 1, false, builtin_textbf },
+    { "textmd",           0, 1, false, builtin_textmd },
+    { "textit",           0, 1, false, builtin_textit },
+    { "textsl",           0, 1, false, builtin_textit },
+    { "textup",           0, 1, false, builtin_textup },
+    { "textrm",           0, 1, false, builtin_textrm },
+    { "textsf",           0, 1, false, builtin_textsf },
+    { "texttt",           0, 1, false, builtin_texttt },
+    { "textnormal",       0, 1, false, builtin_textrm },
+    { "emph",             0, 1, false, builtin_emph },
+    { "underline",        0, 1, false, builtin_underline },
+};
+constexpr size_t BUILTIN_COUNT = sizeof(BUILTIN_LIST) / sizeof(BUILTIN_LIST[0]);
 
 static const BuiltinCommand *find_builtin(StrView name) {
     for (size_t i = 0; i < BUILTIN_COUNT; i++) {
@@ -1243,43 +1968,132 @@ static const BuiltinCommand *find_builtin(StrView name) {
 }
 
 // ============================================================================
-// 12. Parser y Ejecución
+// 11. Parser TeX (Argumentos Opcionales [...], Variantes *, Grupos y Acentos)
 // ============================================================================
 
 static void parser_advance(Parser *p) {
     p->current = lexer_next_token(&p->lexer);
 }
 
-static bool parse_arg(Parser *p, StrView *out_arg) {
-    while (p->current.type == TOKEN_NEWLINE) {
-        parser_advance(p);
+// Comprueba y consume un modificador '*' inmediatamente después de un comando
+static bool parser_consume_star(Parser *p) {
+    if (p->current.type == TOKEN_TEXT && p->current.text.len >= 1 && p->current.text.data[0] == '*') {
+        if (p->current.text.len == 1) {
+            parser_advance(p);
+        } else {
+            p->current.text.data++;
+            p->current.text.len--;
+            p->current.col++;
+        }
+        return true;
     }
+    return false;
+}
 
-    if (p->current.type != TOKEN_LBRACE) {
-        fprintf(stderr, "Error sintáctico: se esperaba '{' en línea %zu, col %zu\n",
-                p->current.line, p->current.col);
+// Comprueba y consume un argumento opcional entre corchetes [...]
+static bool parse_opt_arg(Parser *p, StrView *out_opt) {
+    if (p->current.type != TOKEN_TEXT || p->current.text.len == 0 || p->current.text.data[0] != '[') {
         return false;
     }
 
-    size_t open_line  = p->current.line;
     const char *start = p->current.text.data + 1;
-    int depth = 1;
+    size_t start_offset = (size_t)(start - p->lexer.src);
+    p->lexer.cursor = start_offset;
 
-    while (p->lexer.cursor < p->lexer.len && depth > 0) {
+    int bracket_depth = 1;
+    int brace_depth   = 0;
+
+    while (p->lexer.cursor < p->lexer.len && bracket_depth > 0) {
         char c = lexer_advance(&p->lexer);
-        if (c == '{') depth++;
-        else if (c == '}') depth--;
+        if (c == '\\' && p->lexer.cursor < p->lexer.len) {
+            lexer_advance(&p->lexer);
+            continue;
+        }
+        if (c == '{') brace_depth++;
+        else if (c == '}' && brace_depth > 0) brace_depth--;
+        else if (brace_depth == 0) {
+            if (c == '[') bracket_depth++;
+            else if (c == ']') bracket_depth--;
+        }
     }
 
-    if (depth != 0) {
-        fprintf(stderr, "Error sintáctico: llave sin cerrar abierta en línea %zu\n", open_line);
+    if (bracket_depth != 0) {
+        fprintf(stderr, "Error sintáctico: '[' sin cerrar en línea %zu\n", p->current.line);
         return false;
     }
 
-    out_arg->data = start;
-    out_arg->len  = (size_t)(&p->lexer.src[p->lexer.cursor - 1] - start);
+    out_opt->data = start;
+    out_opt->len  = (size_t)(&p->lexer.src[p->lexer.cursor - 1] - start);
     parser_advance(p);
     return true;
+}
+
+// Consume un argumento obligatorio entre llaves { ... } (o un único token TeX si no lleva llaves)
+static bool parse_arg(Parser *p, StrView *out_arg) {
+    if (p->current.type == TOKEN_LBRACE) {
+        size_t open_line  = p->current.line;
+        const char *start = p->current.text.data + 1;
+        int depth = 1;
+
+        while (p->lexer.cursor < p->lexer.len && depth > 0) {
+            char c = lexer_advance(&p->lexer);
+            if (c == '\\' && p->lexer.cursor < p->lexer.len) {
+                char esc = lexer_peek(&p->lexer);
+                if (esc == '{' || esc == '}' || esc == '\\') {
+                    lexer_advance(&p->lexer);
+                    continue;
+                }
+            }
+            if (c == '{') depth++;
+            else if (c == '}') depth--;
+        }
+
+        if (depth != 0) {
+            fprintf(stderr, "Error sintáctico: llave sin cerrar abierta en línea %zu\n", open_line);
+            return false;
+        }
+
+        out_arg->data = start;
+        out_arg->len  = (size_t)(&p->lexer.src[p->lexer.cursor - 1] - start);
+        parser_advance(p);
+        return true;
+    }
+
+    // En TeX, si un argumento obligatorio no va entre llaves, toma el siguiente carácter o comando
+    if (p->current.type == TOKEN_TEXT && p->current.text.len > 0) {
+        out_arg->data = p->current.text.data;
+        out_arg->len  = 1;
+        if (p->current.text.len == 1) {
+            parser_advance(p);
+        } else {
+            p->current.text.data++;
+            p->current.text.len--;
+            p->current.col++;
+            p->current.space_before = false;
+        }
+        return true;
+    }
+
+    if (p->current.type == TOKEN_COMMAND) {
+        out_arg->data = p->current.text.data - 1;
+        out_arg->len  = p->current.text.len + 1;
+        parser_advance(p);
+        return true;
+    }
+
+    fprintf(stderr, "Error sintáctico: se esperaba argumento '{...}' en línea %zu, col %zu\n",
+            p->current.line, p->current.col);
+    return false;
+}
+
+// Consume {\cmd} o \cmd indistintamente (usado en \newcommand\foo, \setlength\parindent, \def\foo)
+static bool parse_cmd_or_arg(Parser *p, StrView *out_arg) {
+    if (p->current.type == TOKEN_COMMAND) {
+        *out_arg = p->current.text;
+        parser_advance(p);
+        return true;
+    }
+    return parse_arg(p, out_arg);
 }
 
 static void parse_and_execute(Parser *p) {
@@ -1290,43 +2104,69 @@ static void parse_and_execute(Parser *p) {
             continue;
         }
 
-        if (p->current.type == TOKEN_NEWLINE) {
-            if (p->gen->inline_depth > 0) {
-                parser_advance(p);
-                p->current.space_before = true;
-            } else {
+        if (p->current.type == TOKEN_PAR) {
+            if (p->gen->inline_depth == 0) {
                 xml_close_para(p->gen);
-                parser_advance(p);
             }
+            parser_advance(p);
             continue;
         }
+
+        // Agrupamiento léxico TeX: { ... } apila y restaura el estado tipográfico
+        if (p->current.type == TOKEN_LBRACE) {
+            if (p->current.space_before && p->gen->para_has_content) {
+                xml_ensure_para_open(p->gen);
+                xml_activate_current_char_style(p->gen);
+                sb_append_cstr(&p->gen->story, " ");
+            }
+            xml_push_group(p->gen);
+            parser_advance(p);
+            continue;
+        }
+
+        if (p->current.type == TOKEN_RBRACE) {
+            xml_pop_group(p->gen);
+            parser_advance(p);
+            continue;
+        }
+
         if (p->current.type == TOKEN_COMMAND) {
-            StrView cmd = p->current.text;
-            bool space_pend = p->current.space_before; // Capturar el espacio antes de avanzar
+            StrView cmd     = p->current.text;
+            bool space_pend = p->current.space_before;
             parser_advance(p);
 
-            const BuiltinCommand *builtin = find_builtin(cmd);
-            if (builtin) {
-                p->cmd_space_before = space_pend; // Pasar al contexto
-                StrView args[MAX_PARAMS];
-                bool ok = true;
-                for (size_t i = 0; i < builtin->arity; i++) {
-                    if (!parse_arg(p, &args[i])) {
-                        ok = false;
-                        break;
-                    }
+            // 1. ¿Es un comando de acento componible (\', \`, \^, \", \~...)?
+            char accent_char = '\0';
+            if (is_accent_command(cmd, &accent_char)) {
+                StrView base_arg = {0};
+                if (p->current.type == TOKEN_LBRACE || p->current.type == TOKEN_TEXT || p->current.type == TOKEN_COMMAND) {
+                    parse_arg(p, &base_arg);
                 }
-                if (ok) builtin->handler(p, args);
-                p->cmd_space_before = false;
+                char utf8_buf[32];
+                compose_latex_accent(accent_char, base_arg, utf8_buf, sizeof(utf8_buf));
+                xml_emit_text(p->gen, (StrView){ utf8_buf, strlen(utf8_buf) }, space_pend);
                 continue;
             }
 
+            // 2. ¿Es una macro definida por el usuario? (Prioridad alta por si \renewcommand redefine \thesection, etc.)
             const UserMacro *macro = macro_env_find(p->env, cmd);
             if (macro) {
-                p->cmd_space_before = space_pend; // Pasar al contexto de la macro
-                StrView args[MAX_PARAMS];
+                p->cmd_space_before = space_pend;
+                StrView args[MAX_PARAMS] = {0};
                 bool ok = true;
-                for (size_t i = 0; i < macro->param_count; i++) {
+                size_t start_idx = 0;
+
+                if (macro->has_opt_default && macro->param_count > 0) {
+                    StrView opt_val = {0};
+                    if (parse_opt_arg(p, &opt_val)) {
+                        args[0] = opt_val;
+                    } else {
+                        args[0] = (StrView){ macro->opt_default, strlen(macro->opt_default) };
+                    }
+                    start_idx = 1;
+                }
+
+                for (size_t i = start_idx; i < macro->param_count; i++) {
                     if (!parse_arg(p, &args[i])) {
                         ok = false;
                         break;
@@ -1337,6 +2177,53 @@ static void parse_and_execute(Parser *p) {
                 continue;
             }
 
+            // 3. ¿Es un símbolo de texto o logo de LaTeX2e (Cap. 23)?
+            const char *sym_utf8 = find_latex_text_symbol(cmd);
+            if (sym_utf8) {
+                xml_emit_text(p->gen, (StrView){ sym_utf8, strlen(sym_utf8) }, space_pend);
+                continue;
+            }
+
+            // 4. ¿Es un comando nativo (Builtin)?
+            const BuiltinCommand *builtin = find_builtin(cmd);
+            if (builtin) {
+                p->cmd_space_before = space_pend;
+                bool starred = builtin->supports_star ? parser_consume_star(p) : false;
+
+                StrView opt_args[MAX_PARAMS] = {0};
+                size_t opt_count = 0;
+                while (opt_count < builtin->max_opt_args && parse_opt_arg(p, &opt_args[opt_count])) {
+                    opt_count++;
+                }
+
+                StrView args[MAX_PARAMS] = {0};
+                bool ok = true;
+                for (size_t i = 0; i < builtin->arity; i++) {
+                    if (!parse_arg(p, &args[i])) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) builtin->handler(p, starred, opt_args, opt_count, args);
+                if (p->cmd_space_before && p->gen->para_has_content) {
+                    p->current.space_before = true;
+                }
+                p->cmd_space_before = false;
+                continue;
+            }
+
+            // 5. ¿Es \the<counter> (Cap. 13)?
+            if (cmd.len > 3 && strncmp(cmd.data, "the", 3) == 0) {
+                StrView cname = { cmd.data + 3, cmd.len - 3 };
+                if (counter_find_mut(p->env, cname) != nullptr) {
+                    char cbuf[64];
+                    format_the_counter(p->env, cname, cbuf, sizeof(cbuf));
+                    xml_emit_text(p->gen, (StrView){ cbuf, strlen(cbuf) }, space_pend);
+                    continue;
+                }
+            }
+
+            // 6. Comando desconocido: emitir literalmente
             char raw_cmd[64];
             int n = snprintf(raw_cmd, sizeof(raw_cmd), "\\%.*s", (int)cmd.len, cmd.data);
             if (n > 0) {
@@ -1364,7 +2251,7 @@ static bool process_file(const char *path, MacroEnv *env, XmlGenerator *gen, siz
     }
 
     Parser p = {
-        .lexer       = lexer_init(source, len),
+        .lexer       = lexer_init(source, len, env->allow_at),
         .env         = env,
         .gen         = gen,
         .macro_depth = macro_depth
@@ -1378,7 +2265,7 @@ static bool process_file(const char *path, MacroEnv *env, XmlGenerator *gen, siz
 }
 
 // ============================================================================
-// 13. Función Principal (main)
+// 12. Función Principal (main)
 // ============================================================================
 
 int main(int argc, char **argv) {
@@ -1393,14 +2280,8 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    FILE *aux_file = fopen("comandos_auxiliares.tks", "w");
-    if (!aux_file) {
-        perror("Error creando fichero auxiliar");
-        return EXIT_FAILURE;
-    }
-
     MacroEnv user_macros;
-    macro_env_init(&user_macros, aux_file);
+    macro_env_init(&user_macros);
 
     char xml_output_path[256];
     replace_extension(input_path, ".xml", xml_output_path, sizeof(xml_output_path));
@@ -1408,7 +2289,6 @@ int main(int argc, char **argv) {
     XmlGenerator gen;
     if (!xml_gen_init(&gen, xml_output_path)) {
         perror("Error inicializando generador XML");
-        fclose(aux_file);
         macro_env_free(&user_macros);
         return EXIT_FAILURE;
     }
@@ -1418,15 +2298,13 @@ int main(int argc, char **argv) {
     if (!process_file(input_path, &user_macros, &gen, 0)) {
         fprintf(stderr, "Fallo durante el procesamiento del documento\n");
         xml_gen_finalize(&gen);
-        fclose(aux_file);
         macro_env_free(&user_macros);
         return EXIT_FAILURE;
     }
 
     xml_gen_finalize(&gen);
-    fclose(aux_file);
     macro_env_free(&user_macros);
 
-    printf("Completado con éxito. Archivos generados: '%s' y 'comandos_auxiliares.tks'\n", xml_output_path);
+    printf("Completado con éxito. Archivo generado: '%s'\n", xml_output_path);
     return EXIT_SUCCESS;
 }

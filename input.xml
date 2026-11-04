@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document version="0.2">
   <definitions>
-    <page-defaults width="0.21m" height="29.7cm" orientation="portrait">
+    <page-defaults width="210mm" height="297mm" orientation="portrait">
       <margins top="2.5cm" bottom="2.5cm" left="20mm" right="20mm"/>
     </page-defaults>
     <fonts>
@@ -9,7 +9,6 @@
         <variant id="f1-regular" weight="normal" slant="normal"/>
         <variant id="f1-bold" weight="bold" slant="normal"/>
         <variant id="f1-italic" weight="normal" slant="italic"/>
-        <variant id="f1-bold-italic" weight="bold" slant="italic"/>
       </font-family>
       <font-family id="f2" name="Liberation Serif">
         <variant id="f2-regular" weight="normal" slant="normal"/>
@@ -18,56 +17,69 @@
       </font-family>
       <font-family id="f3" name="Liberation Mono">
         <variant id="f3-regular" weight="normal" slant="normal"/>
-        <variant id="f3-bold" weight="bold" slant="normal"/>
         <variant id="f3-italic" weight="normal" slant="italic"/>
       </font-family>
     </fonts>
     <styles>
-      <para-style id="ps1" align="center" line-spacing="9mm" space-before="4mm" space-after="6mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps1" align="center" line-spacing="9mm" space-before="4mm" space-after="6mm" indent-first="0mm" indent-left="0cm" indent-right="0cm"/>
       <para-style id="ps2" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="8mm" indent-left="0mm" indent-right="0mm"/>
       <para-style id="ps3" align="left" line-spacing="5mm" space-before="3mm" space-after="3mm" indent-first="0mm" indent-left="1.2cm" indent-right="1.2cm"/>
       <para-style id="ps4" align="left" line-spacing="7mm" space-before="5mm" space-after="2.5mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
-      <para-style id="ps5" align="left" line-spacing="5mm" space-before="0.5mm" space-after="1mm" indent-first="0mm" indent-left="6mm" indent-right="0mm"/>
+      <para-style id="ps5" align="left" line-spacing="6mm" space-before="3.5mm" space-after="1.8mm" indent-first="0mm" indent-left="0mm" indent-right="0mm"/>
+      <para-style id="ps6" align="left" line-spacing="5mm" space-before="0.5mm" space-after="1mm" indent-first="0mm" indent-left="6mm" indent-right="0mm"/>
+      <para-style id="ps7" align="left" line-spacing="5.5mm" space-before="2mm" space-after="2mm" indent-first="0mm" indent-left="8mm" indent-right="8mm"/>
+      <para-style id="ps8" align="justify" line-spacing="5.5mm" space-before="0mm" space-after="2.5mm" indent-first="6.05mm" indent-left="0mm" indent-right="0mm"/>
       <char-style id="cs1" font-ref="f1-bold" size="20pt" color="Navy" underline="false"/>
       <char-style id="cs2" font-ref="f2-regular" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs3" font-ref="f2-bold" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs4" font-ref="f2-bold-italic" size="11pt" color="Black" underline="false"/>
-      <char-style id="cs5" font-ref="f2-bold-italic" size="11pt" color="Black" underline="true"/>
-      <char-style id="cs6" font-ref="f2-regular" size="11pt" color="Black" underline="true"/>
+      <char-style id="cs3" font-ref="f3-regular" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs4" font-ref="f2-bold" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs5" font-ref="f2-bold-italic" size="11pt" color="Black" underline="false"/>
+      <char-style id="cs6" font-ref="f2-bold-italic" size="11pt" color="Black" underline="true"/>
       <char-style id="cs7" font-ref="f1-bold" size="10pt" color="DarkRed" underline="false"/>
       <char-style id="cs8" font-ref="f1-regular" size="10pt" color="DarkRed" underline="false"/>
       <char-style id="cs9" font-ref="f1-italic" size="10pt" color="DarkRed" underline="false"/>
-      <char-style id="cs10" font-ref="f1-bold" size="14pt" color="DarkSlateGray" underline="false"/>
-      <char-style id="cs11" font-ref="f3-regular" size="9.5pt" color="Teal" underline="false"/>
-      <char-style id="cs12" font-ref="f3-bold" size="9.5pt" color="Teal" underline="false"/>
-      <char-style id="cs13" font-ref="f3-italic" size="9.5pt" color="Teal" underline="false"/>
-      <char-style id="cs14" font-ref="f1-bold" size="10pt" color="Navy" underline="false"/>
-      <char-style id="cs15" font-ref="f2-regular" size="10.5pt" color="Black" underline="false"/>
-      <char-style id="cs16" font-ref="f1-bold-italic" size="10.5pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs10" font-ref="f3-italic" size="9.5pt" color="Teal" underline="false"/>
+      <char-style id="cs11" font-ref="f1-bold" size="14pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs12" font-ref="f1-bold" size="12pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs13" font-ref="f1-bold" size="10pt" color="Navy" underline="false"/>
+      <char-style id="cs14" font-ref="f2-regular" size="10.5pt" color="Black" underline="false"/>
+      <char-style id="cs15" font-ref="f1-bold" size="10pt" color="DarkSlateGray" underline="false"/>
+      <char-style id="cs16" font-ref="f1-italic" size="10pt" color="DarkSlateGray" underline="false"/>
     </styles>
   </definitions>
   <layout total-pages="2">
-    <frame id="fr1" page="2" x="20mm" y="25mm" width="82mm" height="24.7cm"/>
-    <frame id="fr2" page="2" x="10.8cm" y="25mm" width="82mm" height="24.7cm"/>
+    <frame id="fr1" page="2" x="20mm" y="2.5cm" width="82mm" height="247mm"/>
+    <frame id="fr2" page="2" x="108mm" y="2.5cm" width="82mm" height="247mm"/>
   </layout>
   <body>
     <story id="main">
-      <p style="ps1"><span style="cs1">Especificacion del Formato Intermedio XML</span></p>
-      <p style="ps2"><span style="cs2">Este primer parrafo demuestra l control de estado tipografico continuo con alineacion justificada, sangria de primera linea en milimetros e interlineado metrico. El generador registra automaticamente cada familia tipografica y deduplica las combinaciones de estilo empleadas, permitiendo anidar </span><span style="cs3">negrita con </span><span style="cs4">cursiva combinada y </span><span style="cs5">subrayado simultaneo</span><span style="cs2"> o destacar terminos con </span><span style="cs6">subrayado simple</span><span style="cs2"> manteniendo referencias limpias hacia el bloque inicial de definiciones.</span></p>
-      <p style="ps3"><span style="cs7">[AVISO:</span><span style="cs8"> </span><span style="cs9">Todas las dimensiones equivalentes como 20mm, 2cm o 0.02m se normalizan internamente para evitar duplicar estilos en el catalogo XML.</span><span style="cs7">]</span></p>
-      <p style="ps4"><span style="cs10">Capitulo 1: Arquitectura del Motor de Estados</span></p>
-      <p style="ps2"><span style="cs2">Este bloque procede de un fichero externo incorporado mediante el comando</span><span style="cs11"> -include-</span><span style="cs2">. Al combinar</span><span style="cs11"> Liberation Mono</span><span style="cs2"> con modificadores como</span><span style="cs11"> </span><span style="cs12">variant=&quot;bold&quot;</span><span style="cs2"> o</span><span style="cs11"> </span><span style="cs13">slant=&quot;italic&quot;</span><span style="cs2">, el registro inicial incorpora unicamente las variantes realmente utilizadas por cada familia.</span></p>
-      <p style="ps5"><span style="cs14">Formato de salida:</span><span style="cs15">XML intermedio v0.2 con bloque declarativo definitions</span></p>
-      <p style="ps5"><span style="cs14">Unidades soportadas:</span><span style="cs15">Milimetros (mm), centimetros (cm), metros (m) y puntos (pt)</span></p>
-      <p style="ps5"><span style="cs14">Gestion de estilos:</span><span style="cs15">Internado automatico de para-style y char-style sin duplicados</span></p>
-      <p style="ps5"><span style="cs14">Persistencia:</span><span style="cs15">Volcado secuencial de macros en comandos_auxiliares.tks</span></p>
-      <p style="ps2"><span style="cs2">Al concluir la lectura de este modulo, el analizador retoma el cursor del documento principal conservando intactos el entorno de macros y el estado tipografico activo.</span></p>
+      <p style="ps1"><span style="cs1">Adaptación de LaTeX2ε en Teksto: Fase 1</span></p>
+      <p style="ps2"><span style="cs2">Este primer párrafo demuestra el procesamiento al estilo TeX donde los saltos de línea simples se funden en el mismo párrafo justificado y las líneas en blanco generan </span><span style="cs3">\par</span><span style="cs2">. Asimismo, los grupos léxicos permiten acotar declaraciones conmutadoras como </span><span style="cs4">negrita en grupo con </span><span style="cs5">cursiva anidada</span><span style="cs4"> que se restaura al cerrar la llave</span><span style="cs2"> o emplear comandos con argumento como </span><span style="cs4">negrita con </span><span style="cs5">cursiva y </span><span style="cs6">subrayado simultáneo</span><span style="cs2">.</span></p>
+      <p style="ps3"><span style="cs7">[AVISO:</span><span style="cs8"> </span><span style="cs9">Todas las unidades de TeX (</span><span style="cs10">pt</span><span style="cs9">, </span><span style="cs10">bp</span><span style="cs9">, </span><span style="cs10">in</span><span style="cs9">, </span><span style="cs10">pc</span><span style="cs9">, </span><span style="cs10">em</span><span style="cs9">, </span><span style="cs10">ex</span><span style="cs9">, </span><span style="cs10">mm</span><span style="cs9">, </span><span style="cs10">cm</span><span style="cs9">) se normalizan al emitir el catálogo XML.</span><span style="cs7">]</span></p>
+      <p style="ps3"><span style="cs7">[FASE 1 COMPLETADA:</span><span style="cs8"> </span><span style="cs9">Soporte de </span><span style="cs10">\newcommand[*][\cmd][n][def]{...}</span><span style="cs9">, contadores jerárquicos, registros de longitud y acentos componibles.</span><span style="cs7">]</span></p>
+      <p style="ps4"><span style="cs11">1. Arquitectura de la Boca y el Esófago de TeX</span></p>
+      <p style="ps2"><span style="cs2">Este módulo externo se incorpora mediante </span><span style="cs3">\input{capitulo1}</span><span style="cs2">. En LaTeX2ε, un salto de línea simple en el fichero fuente equivale a un espacio ordinario, mientras que una línea en blanco emite el token </span><span style="cs3">\par</span><span style="cs2"> cerrando el párrafo. Además, los comentarios con </span><span style="cs3">%</span><span style="cs2"> absorben el salto de línea y los espacios iniciales de la línea siguiente—exactamente como hace el motor de Knuth—evitando huecos indeseados.</span></p>
+      <p style="ps5"><span style="cs12">1.1 Símbolos Especiales, Acentos y Ligaduras (Cap. 23)</span></p>
+      <p style="ps2"><span style="cs2">El analizador soporta acentos componibles con o sin llaves (á, é, í, ó, ú, ñ, ü, ç, š, ő, å), ligaduras tipográficas automáticas como “comillas dobles inglesas”, guiones cortos (págs. 10–25), rayas de inciso—sin espacios—y signos de apertura ¿Cómo funciona! ¡Así de limpio!</span></p>
+      <p style="ps6"><span style="cs13">Caracteres escapados:</span><span style="cs14"> # $ % &amp; _ { } ~ ^ \</span></p>
+      <p style="ps6"><span style="cs13">Símbolos y divisas:</span><span style="cs14"> © ® ™ † ‡ § ¶ £ € … •</span></p>
+      <p style="ps6"><span style="cs13">Logos y fecha:</span><span style="cs14"> TeX, LaTeX, LaTeX2ε — Generado el 4 de noviembre de 2026</span></p>
+      <p style="ps5"><span style="cs12">1.2 Contadores y Longitudes de LaTeX2ε (Caps. 13 y 14)</span></p>
+      <p style="ps6"><span style="cs13">Requisito 1.1 (I):</span><span style="cs14"> Pila de agrupamiento léxico { … } con restauración automática de estado.</span></p>
+      <p style="ps6"><span style="cs13">Requisito 1.2 (II):</span><span style="cs14"> Argumentos opcionales con valor por defecto en </span><span style="cs3">\newcommand</span><span style="cs14"> y </span><span style="cs3">\newenvironment</span><span style="cs14">.</span></p>
+      <p style="ps6"><span style="cs13">Requisito 1.3 (III):</span><span style="cs14"> Registros de longitud con unidades </span><span style="cs3">pt</span><span style="cs14">, </span><span style="cs3">bp</span><span style="cs14">, </span><span style="cs3">mm</span><span style="cs14">, </span><span style="cs3">cm</span><span style="cs14">, </span><span style="cs3">in</span><span style="cs14">, </span><span style="cs3">pc</span><span style="cs14">, </span><span style="cs3">dd</span><span style="cs14">, </span><span style="cs3">cc</span><span style="cs14">, </span><span style="cs3">sp</span><span style="cs14">, </span><span style="cs3">em</span><span style="cs14"> y </span><span style="cs3">ex</span><span style="cs14">.</span></p>
+      <p style="ps7"><span style="cs15">Verificación de Entorno —</span><span style="cs16"> Este bloque utiliza un entorno definido con </span><span style="cs10">\newenvironment{nota}[1][Nota Técnica]</span><span style="cs16"> que restaura el estado al cerrarse con </span><span style="cs10">\end{nota}</span><span style="cs16">.</span></p>
       <break type="page"/>
-      <p style="ps1"><span style="cs1">Maquetacion Multipagina y Persistencia de Estado</span></p>
-      <p style="ps2"><span style="cs2">Tras ejecutar el salto de pagina e instanciar dos marcos simetricos en milimetros y centimetros, las macros registradas dentro del fichero incluido siguen activas en el entorno global:</span></p>
-      <p style="ps4"><span style="cs10">Mutacion Directa del Estado de Fuente</span></p>
-      <p style="ps2"><span style="cs2">Ademas de los modificadores acotados entre llaves, el procesador permite conmutar directamente los registros de estado como</span><span style="cs16">peso negrita e inclinacion cursiva persistentes sobre otra familia tipografica</span></p>
-      <p style="ps2"><span style="cs2">y retomar de inmediato el estilo del cuerpo principal en el mismo flujo documental.</span></p>
+      <p style="ps1"><span style="cs1">Maquetación Multipágina y Agrupamiento TeX</span></p>
+      <p style="ps4"><span style="cs11">2. Persistencia y Ámbitos Léxicos</span></p>
+      <p style="ps2"><span style="cs2">Tras ejecutar el salto de página (</span><span style="cs3">\newpage</span><span style="cs2">, página actual: 2) y activar el flujo a dos columnas mediante </span><span style="cs3">\twocolumn</span><span style="cs2">, el contador de secciones se reinicia automáticamente en sus subcontadores dependientes (</span><span style="cs3">subsection</span><span style="cs2"> = 2.0).</span></p>
+      <p style="ps5"><span style="cs12">2.1 Prueba de Longitudes Dinámicas</span></p>
+      <p style="ps2"><span style="cs2">Modificando temporalmente </span><span style="cs3">\parindent</span><span style="cs2"> dentro de un grupo léxico:</span></p>
+      <p style="ps8"><span style="cs2">Este párrafo aplica la longitud calculada en el registro </span><span style="cs3">\sangriaextra</span><span style="cs2"> (combinando unidades relativas </span><span style="cs3">em</span><span style="cs2"> y puntos </span><span style="cs3">pt</span><span style="cs2">). Al cerrarse el grupo de llaves, el valor estándar de </span><span style="cs3">\parindent</span><span style="cs2"> se restaura de forma transparente.</span></p>
+      <p style="ps2"><span style="cs2">Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.</span></p>
+      <p style="ps2"><span style="cs2">Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.</span></p>
+      <p style="ps2"><span style="cs2">Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.</span></p>
+      <p style="ps2"><span style="cs2">Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.</span></p>
     </story>
   </body>
 </document>
