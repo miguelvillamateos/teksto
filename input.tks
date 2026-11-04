@@ -1,29 +1,30 @@
 % ==========================================
-% Fichero principal: input.tks (Sintaxis LaTeX2e - Fase 1)
+% Fichero principal: input.tks (Sintaxis LaTeX2e - Fases 1 y 2)
 % ==========================================
 
 \documentclass[11pt,a4paper]{article}
-\margins{2.5cm}{2.5cm}{20mm}{20mm}
+\margins{2.2cm}{2.2cm}{20mm}{20mm}
 
-% Incluir definiciones y entornos LaTeX2e
+% Incluir definiciones y entornos auxiliares LaTeX2e
 \input{comandos_auxiliares}
+
+\title{Adaptaci\'on de \LaTeXe{} en Teksto: Fases 1 y 2}
+\author{Equipo de Desarrollo de Teksto}
+\date{\today}
+\thanks{Documento compilado nativamente mediante el pipeline tks2xml + xml2svg.}
 
 \begin{document}
 
 \cuerpobase
+\maketitle
 
-\titulo{Adaptaci\'on de \LaTeXe{} en Teksto: Fase 1}
-
-Este primer p\'arrafo demuestra el procesamiento al estilo \TeX{} donde los saltos
-de l\'{\i}nea simples se funden en el mismo p\'arrafo justificado y las l\'{\i}neas en
-blanco generan \codigo{\textbackslash par}. Asimismo, los grupos l\'exicos permiten acotar
-declaraciones conmutadoras como {\bfseries negrita en grupo con {\itshape cursiva anidada}
-que se restaura al cerrar la llave} o emplear comandos con argumento como
-\textbf{negrita con \textit{cursiva y \underline{subrayado simult\'aneo}}}.
-
-% Uso de \alerta con argumento opcional por defecto y con argumento opcional explícito
-\alerta{Todas las unidades de \TeX{} (\codigo{pt}, \codigo{bp}, \codigo{in}, \codigo{pc}, \codigo{em}, \codigo{ex}, \codigo{mm}, \codigo{cm}) se normalizan al emitir el cat\'alogo XML.}
-\alerta[FASE 1 COMPLETADA]{Soporte de \codigo{\textbackslash newcommand[*][\textbackslash cmd][n][def]\{...\}}, contadores jer\'arquicos, registros de longitud y acentos componibles.}
+\begin{abstract}
+Este documento verifica la implementaci\'on de las Fases 1 y 2 del manual de referencia de \LaTeXe{}:
+procesamiento l\'exico al estilo \TeX{}, agrupamiento con pila de estados, contadores, longitudes,
+selecci\'on de fuentes NFSS, versalitas (\textsc{Small Caps}), super\'{\i}ndices, sub\'{\i}ndices,
+escala est\'andar de tama\~nos (\codigo{\textbackslash tiny} a \codigo{\textbackslash Huge}), portada autom\'atica con \codigo{\textbackslash maketitle}
+y seccionado jer\'arquico nativo.
+\end{abstract}
 
 % Inclusión de módulo externo
 \input{capitulo1}
@@ -32,13 +33,11 @@ que se restaura al cerrar la llave} o emplear comandos con argumento como
 \newpage
 \twocolumn
 
-\titulo{Maquetaci\'on Multip\'agina y Agrupamiento \TeX}
+\section{Maquetaci\'on Multip\'agina y Agrupamiento \TeX}
 
-\seccion{Persistencia y \'Ambitos L\'exicos}
+Tras ejecutar el salto de p\'agina (\codigo{\textbackslash newpage}, p\'agina actual: \thepage) y activar el flujo a dos columnas mediante \codigo{\textbackslash twocolumn}, el comando nativo \codigo{\textbackslash section} incrementa el contador principal y reinicia autom\'aticamente sus subcontadores dependientes (\codigo{subsection} = \thesubsection).
 
-Tras ejecutar el salto de p\'agina (\codigo{\textbackslash newpage}, p\'agina actual: \thepage) y activar el flujo a dos columnas mediante \codigo{\textbackslash twocolumn}, el contador de secciones se reinicia autom\'aticamente en sus subcontadores dependientes (\codigo{subsection} = \thesubsection).
-
-\subseccion{Prueba de Longitudes Din\'amicas}
+\subsection{Prueba de Longitudes Din\'amicas}
 
 \newlength{\sangriaextra}
 \setlength{\sangriaextra}{1.2em}
@@ -49,13 +48,17 @@ Modificando temporalmente \codigo{\textbackslash parindent} dentro de un grupo l
 {\setlength{\parindent}{\sangriaextra}
 Este p\'arrafo aplica la longitud calculada en el registro \codigo{\textbackslash sangriaextra} (combinando unidades relativas \codigo{em} y puntos \codigo{pt}). Al cerrarse el grupo de llaves, el valor est\'andar de \codigo{\textbackslash parindent} se restaura de forma transparente.\par}
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+\section*{Secci\'on sin Numerar (\textbackslash section*)}
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+La variante con estrella \codigo{\textbackslash section*} emite el encabezamiento con el mismo formato tipogr\'afico pero sin incrementar ni mostrar el contador de secci\'on.
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+\appendix
+\section{Anexo de Especificaci\'on XML Intermedio}
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+Al invocar \codigo{\textbackslash appendix}, la numeraci\'on de las secciones principales conmuta autom\'aticamente al formato alfab\'etico (\thesection) tal como especifica el manual de \LaTeXe{}.
+
+\subsection{Atributos de Estilo de Car\'acter}
+
+Los estilos \codigo{<char-style>} incorporan ahora los atributos \codigo{small-caps="true"} y \codigo{shift="super|sub"}, traducidos por \codigo{xml2svg} a reglas CSS y m\'etricas proporcionales.
 
 \end{document}
-

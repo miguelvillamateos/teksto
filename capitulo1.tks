@@ -1,8 +1,8 @@
 % ==========================================
-% Fichero secundario: capitulo1.tks (Sintaxis LaTeX2e Fase 1)
+% Fichero secundario: capitulo1.tks (Sintaxis LaTeX2e)
 % ==========================================
 
-\seccion{Arquitectura de la Boca y el Es\'ofago de \TeX}
+\section{El Ecosistema de \TeX}
 
 Este m\'odulo externo se incorpora mediante \codigo{\textbackslash input\{capitulo1\}}.
 En \LaTeXe{}, un salto de l\'{\i}nea simple en el fichero fuente equivale a un espacio ordinario,
@@ -10,7 +10,7 @@ mientras que una l\'{\i}nea en blanco emite el token \codigo{\textbackslash par}
 Adem\'as, los comentarios con \codigo{\%} absorben el salto de l\'{\i}nea y los espacios iniciales de la l\'{\i}nea siguiente%
 ---exactamente como hace el motor de Knuth---evitando huecos indeseados.
 
-\subseccion{S\'{\i}mbolos Especiales, Acentos y Ligaduras (Cap.~23)}
+\subsection{S\'{\i}mbolos Especiales, Acentos y Ligaduras}
 
 El analizador soporta acentos componibles con o sin llaves (\'a, \'e, \'{\i}, \'o, \'u, \~n, \"u, \c{c}, \v{s}, \H{o}, \r{a}),
 ligaduras tipogr\'aficas autom\'aticas como ``comillas dobles inglesas'', guiones cortos (p\'ags.~10--25),
@@ -20,14 +20,17 @@ rayas de inciso---sin espacios---y signos de apertura ?`C\'omo funciona! !`As\'{
 \clavevalor{S\'{\i}mbolos y divisas}{\copyright\ \textregistered\ \texttrademark\ \dag\ \ddag\ \S\ \P\ \pounds\ \euro\ \dots\ \textbullet}
 \clavevalor{Logos y fecha}{\TeX, \LaTeX, \LaTeXe{} --- Generado el \today}
 
-\subseccion{Contadores y Longitudes de \LaTeXe{} (Caps.~13 y 14)}
+\subsection{Fuentes NFSS, Versalitas, Super\'{\i}ndices y Tama\~nos }
 
-\newcounter{req}[section]
-\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Pila de agrupamiento l\'exico \{ \dots\ \} con restauraci\'on autom\'atica de estado.}
-\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Argumentos opcionales con valor por defecto en \codigo{\textbackslash newcommand} y \codigo{\textbackslash newenvironment}.}
-\stepcounter{req}\clavevalor{Requisito \thesection.\arabic{req} (\Roman{req})}{Registros de longitud con unidades \codigo{pt}, \codigo{bp}, \codigo{mm}, \codigo{cm}, \codigo{in}, \codigo{pc}, \codigo{dd}, \codigo{cc}, \codigo{sp}, \codigo{em} y \codigo{ex}.}
+\clavevalor{Familias y formas}{\textrm{Serif Roman}, \textsf{Sans Serif}, \texttt{Monospace Typewriter}, \textsc{Versalitas Small Caps}, {\scshape declaraci\'on scshape}}
+\clavevalor{Super y sub\'{\i}ndices}{ Agua H\textsubscript{2}O, relatividad E=mc\textsuperscript{2}, edici\'on 1.\textsuperscript{a}}
+\clavevalor{Escala de tama\~nos}{{\tiny tiny} {\scriptsize scriptsize} {\footnotesize footnotesize} {\small small} {\normalsize normalsize} {\large large} {\Large Large} {\LARGE LARGE}}
+\clavevalor{Selecci\'on NFSS}{{\usefont{OT1}{cmss}{bx}{it} Fuente seleccionada con \textbackslash usefont\{OT1\}\{cmss\}\{bx\}\{it\}}}
+
+\subsubsection{Seccionado de Tercer Nivel y P\'arrafos con T\'{\i}tulo}
+
+\paragraph{P\'arrafo titulado (\textbackslash paragraph)} En \LaTeXe{}, el comando \codigo{\textbackslash paragraph} compone el encabezamiento en l\'{\i}nea seguido inmediatamente del cuerpo del p\'arrafo sin salto de bloque.
 
 \begin{nota}[Verificaci\'on de Entorno]
 Este bloque utiliza un entorno definido con \codigo{\textbackslash newenvironment\{nota\}[1][Nota T\'ecnica]} que restaura el estado al cerrarse con \codigo{\textbackslash end\{nota\}}.
 \end{nota}
-

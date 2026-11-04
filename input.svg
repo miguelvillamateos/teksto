@@ -14,22 +14,32 @@
     .hud-btn:hover { fill: #334155; }
     .hud-btn-disabled { opacity: 0.38; cursor: default; pointer-events: none; }
     .hud-label { font-family: system-ui, sans-serif; font-size: 3.6px; fill: #f8fafc; user-select: none; pointer-events: none; }
-    .cs-cs1 { font-family: "DejaVu Sans"; font-size: 7.056px; fill: Navy; font-weight: bold; font-style: normal; }
-    .cs-cs2 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs3 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: normal; }
-    .cs-cs4 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs5 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: italic; }
-    .cs-cs6 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: italic; text-decoration: underline; }
-    .cs-cs7 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: bold; font-style: normal; }
-    .cs-cs8 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: normal; font-style: normal; }
-    .cs-cs9 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkRed; font-weight: normal; font-style: italic; }
-    .cs-cs10 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: italic; }
-    .cs-cs11 { font-family: "DejaVu Sans"; font-size: 4.939px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
-    .cs-cs12 { font-family: "DejaVu Sans"; font-size: 4.233px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
-    .cs-cs13 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: Navy; font-weight: bold; font-style: normal; }
-    .cs-cs14 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs15 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
-    .cs-cs16 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
+    .cs-cs1 { font-family: "Liberation Serif"; font-size: 6.096px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs2 { font-family: "Liberation Serif"; font-size: 4.233px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs3 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs4 { font-family: "Liberation Serif"; font-size: 3.175px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs5 { font-family: "Liberation Serif"; font-size: 3.528px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs6 { font-family: "Liberation Serif"; font-size: 3.528px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs7 { font-family: "Liberation Serif"; font-size: 3.528px; fill: Black; font-weight: normal; font-style: normal; font-variant: small-caps; }
+    .cs-cs8 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: normal; }
+    .cs-cs9 { font-family: "DejaVu Sans"; font-size: 5.080px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs10 { font-family: "DejaVu Sans"; font-size: 4.233px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs11 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: Navy; font-weight: bold; font-style: normal; }
+    .cs-cs12 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs13 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs14 { font-family: "Liberation Mono"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs15 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; font-variant: small-caps; }
+    .cs-cs16 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: sub; }
+    .cs-cs17 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: super; }
+    .cs-cs18 { font-family: "Liberation Serif"; font-size: 2.117px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs19 { font-family: "Liberation Serif"; font-size: 2.822px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs20 { font-family: "Liberation Serif"; font-size: 5.080px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs21 { font-family: "Liberation Serif"; font-size: 6.096px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs22 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: bold; font-style: italic; }
+    .cs-cs23 { font-family: "DejaVu Sans"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs24 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
+    .cs-cs25 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
+    .cs-cs26 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: italic; }
   ]]></style>
 
   <rect x="-242.000" y="-337.000" width="1040.000" height="1011.000" fill="#1e2430"/>
@@ -39,36 +49,41 @@
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-1"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-1)">
-        <text x="37.285" y="31.840" xml:space="preserve"><tspan class="cs-cs1">Adaptación de LaTeX2ε en Teksto: Fase 1</tspan></text>
-        <text x="28.000" y="44.180" xml:space="preserve" style="word-spacing:0.251px;"><tspan class="cs-cs2">Este primer párrafo demuestra el procesamiento al estilo TeX donde los saltos de línea simples</tspan></text>
-        <text x="20.000" y="49.680" xml:space="preserve" style="word-spacing:0.178px;"><tspan class="cs-cs2">se funden en el mismo párrafo justificado y las líneas en blanco generan </tspan><tspan class="cs-cs3">\par</tspan><tspan class="cs-cs2">. Asimismo, los grupos</tspan></text>
-        <text x="20.000" y="55.180" xml:space="preserve" style="word-spacing:0.166px;"><tspan class="cs-cs2">léxicos permiten acotar declaraciones conmutadoras como </tspan><tspan class="cs-cs4">negrita en grupo con </tspan><tspan class="cs-cs5">cursiva anidada </tspan><tspan class="cs-cs4">que</tspan></text>
-        <text x="20.000" y="60.680" xml:space="preserve" style="word-spacing:0.970px;"><tspan class="cs-cs4">se restaura al cerrar la llave </tspan><tspan class="cs-cs2">o emplear comandos con argumento como </tspan><tspan class="cs-cs4">negrita con </tspan><tspan class="cs-cs5">cursiva y</tspan></text>
-        <text x="20.000" y="66.180" xml:space="preserve"><tspan class="cs-cs6">subrayado simultáneo</tspan><tspan class="cs-cs2">.</tspan></text>
-        <text x="32.000" y="76.800" xml:space="preserve"><tspan class="cs-cs7">[AVISO: </tspan><tspan class="cs-cs9">Todas las unidades de TeX (</tspan><tspan class="cs-cs10">pt</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">bp</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">in</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">pc</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">em</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">ex</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">mm</tspan><tspan class="cs-cs9">, </tspan><tspan class="cs-cs10">cm</tspan><tspan class="cs-cs9">) se normalizan al emitir el</tspan></text>
-        <text x="32.000" y="81.800" xml:space="preserve"><tspan class="cs-cs9">catálogo XML.</tspan><tspan class="cs-cs7">]</tspan></text>
-        <text x="32.000" y="92.800" xml:space="preserve"><tspan class="cs-cs7">[FASE 1 COMPLETADA: </tspan><tspan class="cs-cs9">Soporte de </tspan><tspan class="cs-cs10">\newcommand[*][\cmd][n][def]{...}</tspan><tspan class="cs-cs9">, contadores</tspan></text>
-        <text x="32.000" y="97.800" xml:space="preserve"><tspan class="cs-cs9">jerárquicos, registros de longitud y acentos componibles.</tspan><tspan class="cs-cs7">]</tspan></text>
-        <text x="20.000" y="112.320" xml:space="preserve"><tspan class="cs-cs11">1. Arquitectura de la Boca y el Esófago de TeX</tspan></text>
-        <text x="28.000" y="120.680" xml:space="preserve" style="word-spacing:0.206px;"><tspan class="cs-cs2">Este módulo externo se incorpora mediante </tspan><tspan class="cs-cs3">\input{capitulo1}</tspan><tspan class="cs-cs2">. En LaTeX2ε, un salto de línea</tspan></text>
-        <text x="20.000" y="126.180" xml:space="preserve" style="word-spacing:0.137px;"><tspan class="cs-cs2">simple en el fichero fuente equivale a un espacio ordinario, mientras que una línea en blanco emite el</tspan></text>
-        <text x="20.000" y="131.680" xml:space="preserve" style="word-spacing:0.704px;"><tspan class="cs-cs2">token </tspan><tspan class="cs-cs3">\par </tspan><tspan class="cs-cs2">cerrando el párrafo. Además, los comentarios con </tspan><tspan class="cs-cs3">% </tspan><tspan class="cs-cs2">absorben el salto de línea y los</tspan></text>
-        <text x="20.000" y="137.180" xml:space="preserve" style="word-spacing:0.345px;"><tspan class="cs-cs2">espacios iniciales de la línea siguiente—exactamente como hace el motor de Knuth—evitando huecos</tspan></text>
-        <text x="20.000" y="142.680" xml:space="preserve"><tspan class="cs-cs2">indeseados.</tspan></text>
-        <text x="20.000" y="154.560" xml:space="preserve"><tspan class="cs-cs12">1.1 Símbolos Especiales, Acentos y Ligaduras (Cap. 23)</tspan></text>
-        <text x="28.000" y="161.980" xml:space="preserve" style="word-spacing:0.808px;"><tspan class="cs-cs2">El analizador soporta acentos componibles con o sin llaves (á, é, í, ó, ú, ñ, ü, ç, š, ő, å),</tspan></text>
-        <text x="20.000" y="167.480" xml:space="preserve" style="word-spacing:0.577px;"><tspan class="cs-cs2">ligaduras tipográficas automáticas como “comillas dobles inglesas”, guiones cortos (págs. 10–25),</tspan></text>
-        <text x="20.000" y="172.980" xml:space="preserve"><tspan class="cs-cs2">rayas de inciso—sin espacios—y signos de apertura ¿Cómo funciona! ¡Así de limpio!</tspan></text>
-        <text x="26.000" y="181.100" xml:space="preserve"><tspan class="cs-cs13">Caracteres escapados: </tspan><tspan class="cs-cs14"># $ % &amp; _ { } ~ ^ \</tspan></text>
-        <text x="26.000" y="187.600" xml:space="preserve"><tspan class="cs-cs13">Símbolos y divisas: </tspan><tspan class="cs-cs14">© ® ™ † ‡ § ¶ £ € … •</tspan></text>
-        <text x="26.000" y="194.100" xml:space="preserve"><tspan class="cs-cs13">Logos y fecha: </tspan><tspan class="cs-cs14">TeX, LaTeX, LaTeX2ε — Generado el 4 de noviembre de 2026</tspan></text>
-        <text x="20.000" y="204.360" xml:space="preserve"><tspan class="cs-cs12">1.2 Contadores y Longitudes de LaTeX2ε (Caps. 13 y 14)</tspan></text>
-        <text x="26.000" y="211.900" xml:space="preserve"><tspan class="cs-cs13">Requisito 1.1 (I): </tspan><tspan class="cs-cs14">Pila de agrupamiento léxico { … } con restauración automática de estado.</tspan></text>
-        <text x="26.000" y="218.400" xml:space="preserve"><tspan class="cs-cs13">Requisito 1.2 (II): </tspan><tspan class="cs-cs14">Argumentos opcionales con valor por defecto en </tspan><tspan class="cs-cs3">\newcommand </tspan><tspan class="cs-cs14">y </tspan><tspan class="cs-cs3">\newenvironment</tspan><tspan class="cs-cs14">.</tspan></text>
-        <text x="26.000" y="224.900" xml:space="preserve"><tspan class="cs-cs13">Requisito 1.3 (III): </tspan><tspan class="cs-cs14">Registros de longitud con unidades </tspan><tspan class="cs-cs3">pt</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">bp</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">mm</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">cm</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">in</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">pc</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">dd</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">cc</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">sp</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs3">em </tspan><tspan class="cs-cs14">y </tspan><tspan class="cs-cs3">ex</tspan><tspan class="cs-cs14">.</tspan></text>
-        <text x="28.000" y="233.280" xml:space="preserve"><tspan class="cs-cs15">Verificación de Entorno — </tspan><tspan class="cs-cs16">Este bloque utiliza un entorno definido con</tspan></text>
-        <text x="28.000" y="238.780" xml:space="preserve"><tspan class="cs-cs10">\newenvironment{nota}[1][Nota Técnica] </tspan><tspan class="cs-cs16">que restaura el estado al cerrarse con</tspan></text>
-        <text x="28.000" y="244.280" xml:space="preserve"><tspan class="cs-cs10">\end{nota}</tspan><tspan class="cs-cs16">.</tspan></text>
+        <text x="40.002" y="27.905" xml:space="preserve"><tspan class="cs-cs1">Adaptación de LaTeX2ε en Teksto: Fases 1 y 2</tspan></text>
+        <text x="76.848" y="36.374" xml:space="preserve"><tspan class="cs-cs2">Equipo de Desarrollo de Teksto</tspan></text>
+        <text x="85.636" y="43.932" xml:space="preserve"><tspan class="cs-cs3">4 de noviembre de 2026</tspan></text>
+        <text x="52.311" y="50.698" xml:space="preserve"><tspan class="cs-cs4">∗ Documento compilado nativamente mediante el pipeline tks2xml + xml2svg.</tspan></text>
+        <text x="97.633" y="57.590" xml:space="preserve"><tspan class="cs-cs5">Resumen</tspan></text>
+        <text x="40.000" y="64.590" xml:space="preserve" style="word-spacing:0.157px;"><tspan class="cs-cs6">Este documento verifica la implementación de las Fases 1 y 2 del manual de referencia de</tspan></text>
+        <text x="32.000" y="69.090" xml:space="preserve" style="word-spacing:0.570px;"><tspan class="cs-cs6">LaTeX2ε: procesamiento léxico al estilo TeX, agrupamiento con pila de estados, contadores,</tspan></text>
+        <text x="32.000" y="73.590" xml:space="preserve" style="word-spacing:0.832px;"><tspan class="cs-cs6">longitudes, selección de fuentes NFSS, versalitas (</tspan><tspan class="cs-cs7">Small Caps</tspan><tspan class="cs-cs6">), superíndices, subíndices,</tspan></text>
+        <text x="32.000" y="78.090" xml:space="preserve" style="word-spacing:1.333px;"><tspan class="cs-cs6">escala estándar de tamaños (</tspan><tspan class="cs-cs8">\tiny </tspan><tspan class="cs-cs6">a </tspan><tspan class="cs-cs8">\Huge</tspan><tspan class="cs-cs6">), portada automática con </tspan><tspan class="cs-cs8">\maketitle </tspan><tspan class="cs-cs6">y</tspan></text>
+        <text x="32.000" y="82.590" xml:space="preserve"><tspan class="cs-cs6">seccionado jerárquico nativo.</tspan></text>
+        <text x="20.000" y="96.095" xml:space="preserve"><tspan class="cs-cs9">1. Arquitectura de la Boca y el Esófago de TeX</tspan></text>
+        <text x="20.000" y="104.330" xml:space="preserve" style="word-spacing:0.873px;"><tspan class="cs-cs3">Este módulo externo se incorpora mediante </tspan><tspan class="cs-cs8">\input{capitulo1}</tspan><tspan class="cs-cs3">. En LaTeX2ε, un salto de línea</tspan></text>
+        <text x="20.000" y="109.830" xml:space="preserve" style="word-spacing:0.137px;"><tspan class="cs-cs3">simple en el fichero fuente equivale a un espacio ordinario, mientras que una línea en blanco emite el</tspan></text>
+        <text x="20.000" y="115.330" xml:space="preserve" style="word-spacing:0.704px;"><tspan class="cs-cs3">token </tspan><tspan class="cs-cs8">\par </tspan><tspan class="cs-cs3">cerrando el párrafo. Además, los comentarios con </tspan><tspan class="cs-cs8">% </tspan><tspan class="cs-cs3">absorben el salto de línea y los</tspan></text>
+        <text x="20.000" y="120.830" xml:space="preserve" style="word-spacing:0.345px;"><tspan class="cs-cs3">espacios iniciales de la línea siguiente—exactamente como hace el motor de Knuth—evitando huecos</tspan></text>
+        <text x="20.000" y="126.330" xml:space="preserve"><tspan class="cs-cs3">indeseados.</tspan></text>
+        <text x="20.000" y="137.754" xml:space="preserve"><tspan class="cs-cs10">1.1 Símbolos Especiales, Acentos y Ligaduras (Cap. 23)</tspan></text>
+        <text x="20.000" y="145.030" xml:space="preserve" style="word-spacing:0.359px;"><tspan class="cs-cs3">El analizador soporta acentos componibles con o sin llaves (á, é, í, ó, ú, ñ, ü, ç, š, ő, å), ligaduras</tspan></text>
+        <text x="20.000" y="150.530" xml:space="preserve" style="word-spacing:0.647px;"><tspan class="cs-cs3">tipográficas automáticas como “comillas dobles inglesas”, guiones cortos (págs. 10–25), rayas de</tspan></text>
+        <text x="20.000" y="156.030" xml:space="preserve"><tspan class="cs-cs3">inciso—sin espacios—y signos de apertura ¿Cómo funciona! ¡Así de limpio!</tspan></text>
+        <text x="26.000" y="164.150" xml:space="preserve"><tspan class="cs-cs11">Caracteres escapados: </tspan><tspan class="cs-cs12"># $ % &amp; _ { } ~ ^ \</tspan></text>
+        <text x="26.000" y="170.650" xml:space="preserve"><tspan class="cs-cs11">Símbolos y divisas: </tspan><tspan class="cs-cs12">© ® ™ † ‡ § ¶ £ € … •</tspan></text>
+        <text x="26.000" y="177.150" xml:space="preserve"><tspan class="cs-cs11">Logos y fecha: </tspan><tspan class="cs-cs12">TeX, LaTeX, LaTeX2ε — Generado el 4 de noviembre de 2026</tspan></text>
+        <text x="20.000" y="186.954" xml:space="preserve"><tspan class="cs-cs10">1.2 Fuentes NFSS, Versalitas, Superíndices y Tamaños (Caps. 4 y 22)</tspan></text>
+        <text x="26.000" y="194.350" xml:space="preserve"><tspan class="cs-cs11">Familias y formas: </tspan><tspan class="cs-cs12">Serif Roman, </tspan><tspan class="cs-cs13">Sans Serif</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs14">Monospace Typewriter</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs15">Versalitas Small Caps</tspan><tspan class="cs-cs12">,</tspan></text>
+        <text x="26.000" y="199.350" xml:space="preserve"><tspan class="cs-cs15">declaración scshape</tspan></text>
+        <text x="26.000" y="205.850" xml:space="preserve"><tspan class="cs-cs11">Super y subíndices: </tspan><tspan class="cs-cs12">Agua H</tspan><tspan class="cs-cs16">2</tspan><tspan class="cs-cs12">O, relatividad E=mc</tspan><tspan class="cs-cs17">2</tspan><tspan class="cs-cs12">, edición 1.</tspan><tspan class="cs-cs17">a</tspan></text>
+        <text x="26.000" y="213.549" xml:space="preserve"><tspan class="cs-cs11">Escala de tamaños: </tspan><tspan class="cs-cs18">tiny </tspan><tspan class="cs-cs19">scriptsize </tspan><tspan class="cs-cs4">footnotesize </tspan><tspan class="cs-cs6">small </tspan><tspan class="cs-cs3">normalsize </tspan><tspan class="cs-cs2">large </tspan><tspan class="cs-cs20">Large </tspan><tspan class="cs-cs21">LARGE</tspan></text>
+        <text x="26.000" y="218.850" xml:space="preserve"><tspan class="cs-cs11">Selección NFSS: </tspan><tspan class="cs-cs22">Fuente seleccionada con \usefont{OT1}{cmss}{bx}{it}</tspan></text>
+        <text x="20.000" y="227.312" xml:space="preserve"><tspan class="cs-cs23">1.2.1 Seccionado de Tercer Nivel y Párrafos con Título</tspan></text>
+        <text x="20.000" y="233.880" xml:space="preserve" style="word-spacing:0.275px;"><tspan class="cs-cs23">Párrafo titulado (\paragraph) </tspan><tspan class="cs-cs3">En LaTeX2ε, el comando </tspan><tspan class="cs-cs8">\paragraph </tspan><tspan class="cs-cs3">compone el encabezamiento en</tspan></text>
+        <text x="20.000" y="239.380" xml:space="preserve"><tspan class="cs-cs3">línea seguido inmediatamente del cuerpo del párrafo sin salto de bloque.</tspan></text>
+        <text x="28.000" y="249.380" xml:space="preserve"><tspan class="cs-cs24">Verificación de Entorno — </tspan><tspan class="cs-cs25">Este bloque utiliza un entorno definido con</tspan></text>
+        <text x="28.000" y="254.880" xml:space="preserve"><tspan class="cs-cs26">\newenvironment{nota}[1][Nota Técnica] </tspan><tspan class="cs-cs25">que restaura el estado al cerrarse con</tspan></text>
+        <text x="28.000" y="260.380" xml:space="preserve"><tspan class="cs-cs26">\end{nota}</tspan><tspan class="cs-cs25">.</tspan></text>
       </g>
       <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">1 / 2</text>
     </g>
@@ -76,46 +91,38 @@
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-2"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-2)">
-        <text x="21.008" y="31.840" xml:space="preserve"><tspan class="cs-cs1">Maquetación Multipágina</tspan></text>
-        <text x="28.731" y="40.840" xml:space="preserve"><tspan class="cs-cs1">y Agrupamiento TeX</tspan></text>
-        <text x="20.000" y="59.320" xml:space="preserve"><tspan class="cs-cs11">2. Persistencia y Ámbitos Léxicos</tspan></text>
-        <text x="28.000" y="67.680" xml:space="preserve" style="word-spacing:0.417px;"><tspan class="cs-cs2">Tras ejecutar el salto de página (</tspan><tspan class="cs-cs3">\newpage</tspan><tspan class="cs-cs2">,</tspan></text>
-        <text x="20.000" y="73.180" xml:space="preserve" style="word-spacing:2.111px;"><tspan class="cs-cs2">página actual: 2) y activar el flujo a dos</tspan></text>
-        <text x="20.000" y="78.680" xml:space="preserve" style="word-spacing:0.698px;"><tspan class="cs-cs2">columnas mediante </tspan><tspan class="cs-cs3">\twocolumn</tspan><tspan class="cs-cs2">, el contador de</tspan></text>
-        <text x="20.000" y="84.180" xml:space="preserve" style="word-spacing:1.134px;"><tspan class="cs-cs2">secciones se reinicia automáticamente en sus</tspan></text>
-        <text x="20.000" y="89.680" xml:space="preserve"><tspan class="cs-cs2">subcontadores dependientes (</tspan><tspan class="cs-cs3">subsection </tspan><tspan class="cs-cs2">= 2.0).</tspan></text>
-        <text x="20.000" y="101.560" xml:space="preserve"><tspan class="cs-cs12">2.1 Prueba de Longitudes Dinámicas</tspan></text>
-        <text x="28.000" y="108.980" xml:space="preserve" style="word-spacing:3.585px;"><tspan class="cs-cs2">Modificando temporalmente </tspan><tspan class="cs-cs3">\parindent</tspan></text>
-        <text x="20.000" y="114.480" xml:space="preserve"><tspan class="cs-cs2">dentro de un grupo léxico:</tspan></text>
-        <text x="26.050" y="122.480" xml:space="preserve" style="word-spacing:0.068px;"><tspan class="cs-cs2">Este párrafo aplica la longitud calculada en el</tspan></text>
-        <text x="20.000" y="127.980" xml:space="preserve" style="word-spacing:1.211px;"><tspan class="cs-cs2">registro </tspan><tspan class="cs-cs3">\sangriaextra </tspan><tspan class="cs-cs2">(combinando unidades</tspan></text>
-        <text x="20.000" y="133.480" xml:space="preserve" style="word-spacing:0.147px;"><tspan class="cs-cs2">relativas </tspan><tspan class="cs-cs3">em </tspan><tspan class="cs-cs2">y puntos </tspan><tspan class="cs-cs3">pt</tspan><tspan class="cs-cs2">). Al cerrarse el grupo de</tspan></text>
-        <text x="20.000" y="138.980" xml:space="preserve" style="word-spacing:1.721px;"><tspan class="cs-cs2">llaves, el valor estándar de </tspan><tspan class="cs-cs3">\parindent </tspan><tspan class="cs-cs2">se</tspan></text>
-        <text x="20.000" y="144.480" xml:space="preserve"><tspan class="cs-cs2">restaura de forma transparente.</tspan></text>
-        <text x="28.000" y="152.480" xml:space="preserve" style="word-spacing:1.691px;"><tspan class="cs-cs2">Lorem ipsum dolor sit amet consectetur</tspan></text>
-        <text x="20.000" y="157.980" xml:space="preserve" style="word-spacing:0.305px;"><tspan class="cs-cs2">adipiscing elit. Quisque faucibus ex sapien vitae</tspan></text>
-        <text x="20.000" y="163.480" xml:space="preserve" style="word-spacing:2.012px;"><tspan class="cs-cs2">pellentesque sem placerat. In id cursus mi</tspan></text>
-        <text x="20.000" y="168.980" xml:space="preserve" style="word-spacing:1.404px;"><tspan class="cs-cs2">pretium tellus duis convallis. Tempus leo eu</tspan></text>
-        <text x="20.000" y="174.480" xml:space="preserve" style="word-spacing:0.499px;"><tspan class="cs-cs2">aenean sed diam urna tempor. Pulvinar vivamus</tspan></text>
-        <text x="20.000" y="179.980" xml:space="preserve"><tspan class="cs-cs2">fringilla lacus nec metus bibendum egestas.</tspan></text>
-        <text x="28.000" y="187.980" xml:space="preserve" style="word-spacing:1.691px;"><tspan class="cs-cs2">Lorem ipsum dolor sit amet consectetur</tspan></text>
-        <text x="20.000" y="193.480" xml:space="preserve" style="word-spacing:0.305px;"><tspan class="cs-cs2">adipiscing elit. Quisque faucibus ex sapien vitae</tspan></text>
-        <text x="20.000" y="198.980" xml:space="preserve" style="word-spacing:2.012px;"><tspan class="cs-cs2">pellentesque sem placerat. In id cursus mi</tspan></text>
-        <text x="20.000" y="204.480" xml:space="preserve" style="word-spacing:1.404px;"><tspan class="cs-cs2">pretium tellus duis convallis. Tempus leo eu</tspan></text>
-        <text x="20.000" y="209.980" xml:space="preserve" style="word-spacing:0.499px;"><tspan class="cs-cs2">aenean sed diam urna tempor. Pulvinar vivamus</tspan></text>
-        <text x="20.000" y="215.480" xml:space="preserve"><tspan class="cs-cs2">fringilla lacus nec metus bibendum egestas.</tspan></text>
-        <text x="28.000" y="223.480" xml:space="preserve" style="word-spacing:1.691px;"><tspan class="cs-cs2">Lorem ipsum dolor sit amet consectetur</tspan></text>
-        <text x="20.000" y="228.980" xml:space="preserve" style="word-spacing:0.305px;"><tspan class="cs-cs2">adipiscing elit. Quisque faucibus ex sapien vitae</tspan></text>
-        <text x="20.000" y="234.480" xml:space="preserve" style="word-spacing:2.012px;"><tspan class="cs-cs2">pellentesque sem placerat. In id cursus mi</tspan></text>
-        <text x="20.000" y="239.980" xml:space="preserve" style="word-spacing:1.404px;"><tspan class="cs-cs2">pretium tellus duis convallis. Tempus leo eu</tspan></text>
-        <text x="20.000" y="245.480" xml:space="preserve" style="word-spacing:0.499px;"><tspan class="cs-cs2">aenean sed diam urna tempor. Pulvinar vivamus</tspan></text>
-        <text x="20.000" y="250.980" xml:space="preserve"><tspan class="cs-cs2">fringilla lacus nec metus bibendum egestas.</tspan></text>
-        <text x="28.000" y="258.980" xml:space="preserve" style="word-spacing:1.691px;"><tspan class="cs-cs2">Lorem ipsum dolor sit amet consectetur</tspan></text>
-        <text x="20.000" y="264.480" xml:space="preserve" style="word-spacing:0.305px;"><tspan class="cs-cs2">adipiscing elit. Quisque faucibus ex sapien vitae</tspan></text>
-        <text x="20.000" y="269.980" xml:space="preserve" style="word-spacing:2.012px;"><tspan class="cs-cs2">pellentesque sem placerat. In id cursus mi</tspan></text>
-        <text x="108.000" y="29.180" xml:space="preserve" style="word-spacing:1.404px;"><tspan class="cs-cs2">pretium tellus duis convallis. Tempus leo eu</tspan></text>
-        <text x="108.000" y="34.680" xml:space="preserve" style="word-spacing:0.499px;"><tspan class="cs-cs2">aenean sed diam urna tempor. Pulvinar vivamus</tspan></text>
-        <text x="108.000" y="40.180" xml:space="preserve"><tspan class="cs-cs2">fringilla lacus nec metus bibendum egestas.</tspan></text>
+        <text x="20.000" y="26.925" xml:space="preserve"><tspan class="cs-cs9">2. Maquetación Multipágina y</tspan></text>
+        <text x="20.000" y="33.405" xml:space="preserve"><tspan class="cs-cs9">Agrupamiento TeX</tspan></text>
+        <text x="20.000" y="41.640" xml:space="preserve" style="word-spacing:1.750px;"><tspan class="cs-cs3">Tras ejecutar el salto de página (</tspan><tspan class="cs-cs8">\newpage</tspan><tspan class="cs-cs3">,</tspan></text>
+        <text x="20.000" y="47.140" xml:space="preserve" style="word-spacing:2.111px;"><tspan class="cs-cs3">página actual: 2) y activar el flujo a dos</tspan></text>
+        <text x="20.000" y="52.640" xml:space="preserve" style="word-spacing:1.910px;"><tspan class="cs-cs3">columnas mediante </tspan><tspan class="cs-cs8">\twocolumn</tspan><tspan class="cs-cs3">, el comando</tspan></text>
+        <text x="20.000" y="58.140" xml:space="preserve" style="word-spacing:3.839px;"><tspan class="cs-cs3">nativo </tspan><tspan class="cs-cs8">\section </tspan><tspan class="cs-cs3">incrementa el contador</tspan></text>
+        <text x="20.000" y="63.640" xml:space="preserve" style="word-spacing:3.717px;"><tspan class="cs-cs3">principal y reinicia automáticamente sus</tspan></text>
+        <text x="20.000" y="69.140" xml:space="preserve"><tspan class="cs-cs3">subcontadores dependientes (</tspan><tspan class="cs-cs8">subsection </tspan><tspan class="cs-cs3">= 2.0).</tspan></text>
+        <text x="20.000" y="80.564" xml:space="preserve"><tspan class="cs-cs10">2.1 Prueba de Longitudes Dinámicas</tspan></text>
+        <text x="20.000" y="87.840" xml:space="preserve" style="word-spacing:1.023px;"><tspan class="cs-cs3">Modificando temporalmente </tspan><tspan class="cs-cs8">\parindent </tspan><tspan class="cs-cs3">dentro</tspan></text>
+        <text x="20.000" y="93.340" xml:space="preserve"><tspan class="cs-cs3">de un grupo léxico:</tspan></text>
+        <text x="26.050" y="101.340" xml:space="preserve" style="word-spacing:0.068px;"><tspan class="cs-cs3">Este párrafo aplica la longitud calculada en el</tspan></text>
+        <text x="20.000" y="106.840" xml:space="preserve" style="word-spacing:1.211px;"><tspan class="cs-cs3">registro </tspan><tspan class="cs-cs8">\sangriaextra </tspan><tspan class="cs-cs3">(combinando unidades</tspan></text>
+        <text x="20.000" y="112.340" xml:space="preserve" style="word-spacing:0.147px;"><tspan class="cs-cs3">relativas </tspan><tspan class="cs-cs8">em </tspan><tspan class="cs-cs3">y puntos </tspan><tspan class="cs-cs8">pt</tspan><tspan class="cs-cs3">). Al cerrarse el grupo de</tspan></text>
+        <text x="20.000" y="117.840" xml:space="preserve" style="word-spacing:1.721px;"><tspan class="cs-cs3">llaves, el valor estándar de </tspan><tspan class="cs-cs8">\parindent </tspan><tspan class="cs-cs3">se</tspan></text>
+        <text x="20.000" y="123.340" xml:space="preserve"><tspan class="cs-cs3">restaura de forma transparente.</tspan></text>
+        <text x="20.000" y="137.085" xml:space="preserve"><tspan class="cs-cs9">Sección sin Numerar (\section*)</tspan></text>
+        <text x="20.000" y="145.320" xml:space="preserve" style="word-spacing:1.396px;"><tspan class="cs-cs3">La variante con estrella </tspan><tspan class="cs-cs8">\section* </tspan><tspan class="cs-cs3">emite el</tspan></text>
+        <text x="20.000" y="150.820" xml:space="preserve" style="word-spacing:4.609px;"><tspan class="cs-cs3">encabezamiento con el mismo formato</tspan></text>
+        <text x="20.000" y="156.320" xml:space="preserve" style="word-spacing:1.352px;"><tspan class="cs-cs3">tipográfico pero sin incrementar ni mostrar el</tspan></text>
+        <text x="20.000" y="161.820" xml:space="preserve"><tspan class="cs-cs3">contador de sección.</tspan></text>
+        <text x="20.000" y="175.565" xml:space="preserve"><tspan class="cs-cs9">A. Anexo de Especificación XML</tspan></text>
+        <text x="20.000" y="182.045" xml:space="preserve"><tspan class="cs-cs9">Intermedio</tspan></text>
+        <text x="20.000" y="190.280" xml:space="preserve" style="word-spacing:1.609px;"><tspan class="cs-cs3">Al invocar </tspan><tspan class="cs-cs8">\appendix</tspan><tspan class="cs-cs3">, la numeración de las</tspan></text>
+        <text x="20.000" y="195.780" xml:space="preserve" style="word-spacing:0.519px;"><tspan class="cs-cs3">secciones principales conmuta automáticamente</tspan></text>
+        <text x="20.000" y="201.280" xml:space="preserve" style="word-spacing:0.655px;"><tspan class="cs-cs3">al formato alfabético (A) tal como especifica el</tspan></text>
+        <text x="20.000" y="206.780" xml:space="preserve"><tspan class="cs-cs3">manual de LaTeX2ε.</tspan></text>
+        <text x="20.000" y="218.204" xml:space="preserve"><tspan class="cs-cs10">A.1 Atributos de Estilo de Carácter</tspan></text>
+        <text x="20.000" y="225.480" xml:space="preserve" style="word-spacing:0.601px;"><tspan class="cs-cs3">Los estilos </tspan><tspan class="cs-cs8">&lt;char-style&gt; </tspan><tspan class="cs-cs3">incorporan ahora los</tspan></text>
+        <text x="20.000" y="230.980" xml:space="preserve" style="word-spacing:14.229px;"><tspan class="cs-cs3">atributos </tspan><tspan class="cs-cs8">small-caps=&quot;true&quot; </tspan><tspan class="cs-cs3">y</tspan></text>
+        <text x="20.000" y="236.480" xml:space="preserve" style="word-spacing:0.841px;"><tspan class="cs-cs8">shift=&quot;super|sub&quot;</tspan><tspan class="cs-cs3">, traducidos por </tspan><tspan class="cs-cs8">xml2svg </tspan><tspan class="cs-cs3">a</tspan></text>
+        <text x="20.000" y="241.980" xml:space="preserve"><tspan class="cs-cs3">reglas CSS y métricas proporcionales.</tspan></text>
       </g>
       <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">2 / 2</text>
     </g>

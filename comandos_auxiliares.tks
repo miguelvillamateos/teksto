@@ -1,5 +1,5 @@
 % ==========================================
-% Preludio de macros en sintaxis LaTeX2e (Cap. 12-14)
+% Preludio de macros en sintaxis LaTeX2e
 % ==========================================
 
 \newcommand{\textobase}{\rmfamily\mdseries\upshape\fontsize{11pt}\fontcolor{Black}}
@@ -11,5 +11,5 @@
 \newcommand{\clavevalor}[2]{\par{\raggedright\linespacing{5mm}\parmargins{6mm}{0mm}\parspacing{0.5mm}{1mm}\sffamily\fontsize{10pt}\fontcolor{Navy}\textbf{#1:} \rmfamily\fontsize{10.5pt}\fontcolor{Black}#2\par}}
 \newcommand{\codigo}[1]{{\ttfamily\fontsize{9.5pt}\fontcolor{Teal}#1}}
 
-% Entorno personalizado con argumento opcional por defecto (Cap. 12.8 \newenvironment)
+% Entorno personalizado con argumento opcional por defecto (\newenvironment)
 \newenvironment{nota}[1][Nota Técnica]{\par\raggedright\parmargins{8mm}{8mm}\parspacing{2mm}{2mm}\sffamily\fontsize{10pt}\fontcolor{DarkSlateGray}\textbf{#1 --- }\itshape}{\par}

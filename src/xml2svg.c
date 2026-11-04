@@ -528,11 +528,19 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             const char *sz   = get_attr(attrs, attr_count, "size");
             const char *col  = get_attr(attrs, attr_count, "color");
             const char *ul   = get_attr(attrs, attr_count, "underline");
+            const char *sc   = get_attr(attrs, attr_count, "small-caps");
+            const char *sh   = get_attr(attrs, attr_count, "shift");
             snprintf(cs->id, sizeof(cs->id), "%s", id ? id : "");
             cs->font_variant_idx = fref ? find_variant_idx(doc, fref) : 0;
             cs->size_mm          = sz ? parse_mm(sz) : (11.0 * MM_PER_PT);
             snprintf(cs->color, sizeof(cs->color), "%s", col ? col : "Black");
             cs->underline        = (ul && strcmp(ul, "true") == 0);
+            cs->small_caps       = (sc && strcmp(sc, "true") == 0);
+            cs->shift            = 0;
+            if (sh) {
+                if (strcmp(sh, "super") == 0)    cs->shift = 1;
+                else if (strcmp(sh, "sub") == 0) cs->shift = 2;
+            }
         } else if (strcmp(tag, "layout") == 0) {
             const char *tp = get_attr(attrs, attr_count, "total-pages");
             if (tp) {
@@ -613,12 +621,15 @@ static double estimate_word_width_mm(const char *word, const CharStyle *cs, cons
     }
 
     if (fv->bold && !is_mono) total_em *= 1.06;
+    if (cs->small_caps && !is_mono) total_em *= 1.05;
+    if (cs->shift != 0) total_em *= 0.72;
     return total_em * em;
 }
 
 static double estimate_space_width_mm(const CharStyle *cs, const FontVariant *fv) {
     bool is_mono = str_contains_ci(fv->family, "Mono") || str_contains_ci(fv->family, "Courier");
-    return cs->size_mm * (is_mono ? 0.60 : 0.27);
+    double scale = (cs->shift != 0) ? 0.72 : 1.0;
+    return cs->size_mm * scale * (is_mono ? 0.60 : 0.27);
 }
 
 static FlowFrame make_default_frame(const IrDocument *doc, size_t page_idx) {
@@ -927,15 +938,22 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
         const FontVariant *fv = (cs->font_variant_idx < doc->variant_count)
                                 ? &doc->variants[cs->font_variant_idx]
                                 : &(FontVariant){ .family = "sans-serif" };
+        double eff_size = (cs->shift != 0) ? (cs->size_mm * 0.72) : cs->size_mm;
+        const char *shift_css = "";
+        if (cs->shift == 1)      shift_css = " baseline-shift: super;";
+        else if (cs->shift == 2) shift_css = " baseline-shift: sub;";
+
         fprintf(out,
-                "    .cs-%s { font-family: \"%s\"; font-size: %.3fpx; fill: %s; font-weight: %s; font-style: %s;%s }\n",
+                "    .cs-%s { font-family: \"%s\"; font-size: %.3fpx; fill: %s; font-weight: %s; font-style: %s;%s%s%s }\n",
                 cs->id,
                 fv->family,
-                cs->size_mm,
+                eff_size,
                 cs->color,
                 fv->bold   ? "bold"   : "normal",
                 fv->italic ? "italic" : "normal",
-                cs->underline ? " text-decoration: underline;" : "");
+                cs->underline  ? " text-decoration: underline;" : "",
+                cs->small_caps ? " font-variant: small-caps;"   : "",
+                shift_css);
     }
     fprintf(out, "  ]]></style>\n\n");
 

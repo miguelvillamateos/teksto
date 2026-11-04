@@ -436,6 +436,10 @@ static bool xml_gen_init(XmlGenerator *gen, const char *xml_path) {
     }
 
     double default_em = 11.0 * MM_PER_PT;
+    snprintf(gen->doc_class, sizeof(gen->doc_class), "article");
+    gen->base_font_pt      = 11.0;
+    gen->linespread_factor = 1.0;
+
     gen->page_width    = measure_make(210.0, UNIT_MM, default_em);
     gen->page_height   = measure_make(297.0, UNIT_MM, default_em);
     gen->orientation   = ORIENT_PORTRAIT;
@@ -456,11 +460,13 @@ static bool xml_gen_init(XmlGenerator *gen, const char *xml_path) {
     };
 
     snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
-    gen->char_state.weight    = WEIGHT_NORMAL;
-    gen->char_state.slant     = SLANT_NORMAL;
-    gen->char_state.size      = measure_make(11.0, UNIT_PT, default_em);
+    gen->char_state.weight     = WEIGHT_NORMAL;
+    gen->char_state.slant      = SLANT_NORMAL;
+    gen->char_state.size       = measure_make(11.0, UNIT_PT, default_em);
     snprintf(gen->char_state.color, sizeof(gen->char_state.color), "%s", DEFAULT_COLOR);
-    gen->char_state.underline = false;
+    gen->char_state.underline  = false;
+    gen->char_state.small_caps = false;
+    gen->char_state.shift      = SHIFT_NORMAL;
 
     gen->active_char_style_id = -1;
     return true;
@@ -528,6 +534,8 @@ static size_t xml_intern_char_style(XmlGenerator *gen, const CharState *state) {
             def->variant.weight     == vref.weight     &&
             def->variant.slant      == vref.slant      &&
             def->underline          == state->underline &&
+            def->small_caps         == state->small_caps &&
+            def->shift              == state->shift     &&
             measure_equals(def->size, state->size)     &&
             strcmp(def->color, state->color) == 0) {
             return i;
@@ -536,9 +544,11 @@ static size_t xml_intern_char_style(XmlGenerator *gen, const CharState *state) {
 
     size_t idx = (gen->char_style_count < MAX_CHAR_STYLES) ? gen->char_style_count++ : (MAX_CHAR_STYLES - 1);
     CharStyleDef *target = &gen->char_styles[idx];
-    target->variant   = vref;
-    target->size      = state->size;
-    target->underline = state->underline;
+    target->variant    = vref;
+    target->size       = state->size;
+    target->underline  = state->underline;
+    target->small_caps = state->small_caps;
+    target->shift      = state->shift;
     snprintf(target->color, sizeof(target->color), "%s", state->color);
     return idx;
 }
@@ -675,7 +685,16 @@ static void xml_gen_finalize(XmlGenerator *gen) {
         fprintf(gen->file, "      <char-style id=\"cs%zu\" font-ref=\"f%zu-%s\" size=\"%s\" color=\"",
                 i + 1, cs->variant.family_idx + 1, vsuf, b1);
         fprint_escaped_xml(gen->file, cs->color);
-        fprintf(gen->file, "\" underline=\"%s\"/>\n", cs->underline ? "true" : "false");
+        fprintf(gen->file, "\" underline=\"%s\"", cs->underline ? "true" : "false");
+        if (cs->small_caps) {
+            fprintf(gen->file, " small-caps=\"true\"");
+        }
+        if (cs->shift == SHIFT_SUPER) {
+            fprintf(gen->file, " shift=\"super\"");
+        } else if (cs->shift == SHIFT_SUB) {
+            fprintf(gen->file, " shift=\"sub\"");
+        }
+        fprintf(gen->file, "/>\n");
     }
     fprintf(gen->file, "    </styles>\n");
     fprintf(gen->file, "  </definitions>\n");
@@ -821,19 +840,32 @@ static void format_counter_value(const MacroEnv *env, StrView name, char style, 
     }
 }
 
-static void format_the_counter(const MacroEnv *env, StrView name, char *out_buf, size_t buf_size) {
+static void format_the_counter(const MacroEnv *env, const XmlGenerator *gen, StrView name, char *out_buf, size_t buf_size) {
     name = sv_trim(name);
+    bool app_sec = (gen && gen->in_appendix && strcmp(gen->doc_class, "article") == 0);
+    bool app_ch  = (gen && gen->in_appendix && strcmp(gen->doc_class, "article") != 0);
+
+    if (sv_equals(name, "chapter")) {
+        format_counter_value(env, name, app_ch ? 'A' : '1', out_buf, buf_size);
+        return;
+    }
+    if (sv_equals(name, "section")) {
+        format_counter_value(env, name, app_sec ? 'A' : '1', out_buf, buf_size);
+        return;
+    }
     if (sv_equals(name, "subsection")) {
-        CounterDef *s  = counter_find_mut((MacroEnv *)env, (StrView){"section", 7});
         CounterDef *ss = counter_find_mut((MacroEnv *)env, name);
-        snprintf(out_buf, buf_size, "%d.%d", s ? s->value : 0, ss ? ss->value : 0);
+        char sbuf[16];
+        format_counter_value(env, (StrView){"section", 7}, app_sec ? 'A' : '1', sbuf, sizeof(sbuf));
+        snprintf(out_buf, buf_size, "%s.%d", sbuf, ss ? ss->value : 0);
         return;
     }
     if (sv_equals(name, "subsubsection")) {
-        CounterDef *s   = counter_find_mut((MacroEnv *)env, (StrView){"section", 7});
         CounterDef *ss  = counter_find_mut((MacroEnv *)env, (StrView){"subsection", 10});
         CounterDef *sss = counter_find_mut((MacroEnv *)env, name);
-        snprintf(out_buf, buf_size, "%d.%d.%d", s ? s->value : 0, ss ? ss->value : 0, sss ? sss->value : 0);
+        char sbuf[16];
+        format_counter_value(env, (StrView){"section", 7}, app_sec ? 'A' : '1', sbuf, sizeof(sbuf));
+        snprintf(out_buf, buf_size, "%s.%d.%d", sbuf, ss ? ss->value : 0, sss ? sss->value : 0);
         return;
     }
     if (sv_equals(name, "part")) {
@@ -1293,7 +1325,7 @@ static void builtin_stepcounter(Parser *p, [[maybe_unused]] bool starred, [[mayb
 
 static void builtin_refstepcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     counter_step(p->env, args[0]);
-    format_the_counter(p->env, args[0], p->env->current_ref, sizeof(p->env->current_ref));
+    format_the_counter(p->env, p->gen, args[0], p->env->current_ref, sizeof(p->env->current_ref));
 }
 
 static void emit_formatted_counter(Parser *p, StrView cname, char style) {
@@ -1431,7 +1463,61 @@ static void builtin_rule(Parser *p, [[maybe_unused]] bool starred, [[maybe_unuse
     sb_free(&bar);
 }
 
+// --- Escala de Tamaños de Fuente de LaTeX2e (Cap. 22) ---
+
+typedef struct {
+    const char *name;
+    double pt_10;
+    double pt_11;
+    double pt_12;
+} FontSizeScaleEntry;
+
+static const FontSizeScaleEntry LATEX_FONT_SIZES[] = {
+    { "tiny",         5.0,   6.0,   6.0   },
+    { "scriptsize",   7.0,   8.0,   8.0   },
+    { "footnotesize", 8.0,   9.0,   10.0  },
+    { "small",        9.0,   10.0,  10.95 },
+    { "normalsize",   10.0,  11.0,  12.0  },
+    { "large",        12.0,  12.0,  14.4  },
+    { "Large",        14.4,  14.4,  17.28 },
+    { "LARGE",        17.28, 17.28, 20.74 },
+    { "huge",         20.74, 20.74, 24.88 },
+    { "Huge",         24.88, 24.88, 24.88 },
+};
+constexpr size_t LATEX_FONT_SIZE_COUNT = sizeof(LATEX_FONT_SIZES) / sizeof(LATEX_FONT_SIZES[0]);
+
+static bool apply_named_font_size(XmlGenerator *gen, StrView name) {
+    for (size_t i = 0; i < LATEX_FONT_SIZE_COUNT; i++) {
+        if (sv_equals(name, LATEX_FONT_SIZES[i].name)) {
+            double pt = LATEX_FONT_SIZES[i].pt_11;
+            if (fabs(gen->base_font_pt - 10.0) < 0.2)      pt = LATEX_FONT_SIZES[i].pt_10;
+            else if (fabs(gen->base_font_pt - 12.0) < 0.2) pt = LATEX_FONT_SIZES[i].pt_12;
+
+            gen->char_state.size = measure_make(pt, UNIT_PT, 1.0);
+            if (!gen->para_open || !gen->para_has_content) {
+                double spread = (gen->linespread_factor > 0.1) ? gen->linespread_factor : 1.0;
+                gen->para_state.line_spacing = measure_make(pt * 1.28 * spread * MM_PER_PT, UNIT_MM, 1.0);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+static void builtin_tiny(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"tiny", 4}); }
+static void builtin_scriptsize(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"scriptsize", 10}); }
+static void builtin_footnotesize(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"footnotesize", 12}); }
+static void builtin_small(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"small", 5}); }
+static void builtin_normalsize(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"normalsize", 10}); }
+static void builtin_large(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"large", 5}); }
+static void builtin_Large(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"Large", 5}); }
+static void builtin_LARGE(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"LARGE", 5}); }
+static void builtin_huge(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"huge", 4}); }
+static void builtin_Huge(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) { apply_named_font_size(p->gen, (StrView){"Huge", 4}); }
+
 // --- Entornos \begin{...} y \end{...} ---
+
+static void builtin_newpage(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]);
 
 static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     StrView env_name = sv_trim(args[0]);
@@ -1478,25 +1564,59 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
             return;
         }
 
-        // Entornos estándar básicos
+        // ¿Es un entorno de tamaño de fuente (\begin{large}...\end{large})?
+        if (apply_named_font_size(p->gen, env_name)) {
+            return;
+        }
+
+        // Entornos estándar de bloque, portada y carta
         if (sv_equals(env_name, "center")) {
             xml_close_para(p->gen);
-            p->gen->para_state.align       = ALIGN_CENTER;
+            p->gen->para_state.align        = ALIGN_CENTER;
             p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
         } else if (sv_equals(env_name, "flushleft")) {
             xml_close_para(p->gen);
-            p->gen->para_state.align       = ALIGN_LEFT;
+            p->gen->para_state.align        = ALIGN_LEFT;
             p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
         } else if (sv_equals(env_name, "flushright")) {
             xml_close_para(p->gen);
-            p->gen->para_state.align       = ALIGN_RIGHT;
+            p->gen->para_state.align        = ALIGN_RIGHT;
             p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
-        } else if (sv_equals(env_name, "quote") || sv_equals(env_name, "quotation")) {
+        } else if (sv_equals(env_name, "quote") || sv_equals(env_name, "quotation") || sv_equals(env_name, "verse")) {
             xml_close_para(p->gen);
             p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 10.0, UNIT_MM, 1.0);
             p->gen->para_state.indent_right = measure_make(p->gen->para_state.indent_right.mm + 10.0, UNIT_MM, 1.0);
-            if (sv_equals(env_name, "quote")) {
+            if (sv_equals(env_name, "quote") || sv_equals(env_name, "verse")) {
                 p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            }
+        } else if (sv_equals(env_name, "abstract")) {
+            xml_close_para(p->gen);
+            const char *abs_hdr = "\\par{\\centering\\small\\bfseries Resumen\\par}";
+            execute_tex_fragment(p, (StrView){ abs_hdr, strlen(abs_hdr) }, false);
+            apply_named_font_size(p->gen, (StrView){"small", 5});
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 12.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_right = measure_make(p->gen->para_state.indent_right.mm + 12.0, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "titlepage")) {
+            xml_close_para(p->gen);
+        } else if (sv_equals(env_name, "letter")) {
+            xml_close_para(p->gen);
+            StrView recipient = {0};
+            parse_arg(p, &recipient);
+            if (p->gen->sender_address[0] != '\0') {
+                StrBuf hdr;
+                if (sb_init(&hdr, 256)) {
+                    sb_appendf(&hdr, "\\par{\\raggedleft %s\\par}", p->gen->sender_address);
+                    execute_tex_fragment(p, (StrView){ hdr.data, hdr.len }, false);
+                    sb_free(&hdr);
+                }
+            }
+            if (recipient.len > 0) {
+                StrBuf rec;
+                if (sb_init(&rec, 256)) {
+                    sb_appendf(&rec, "\\par{\\raggedright %.*s\\par}", (int)recipient.len, recipient.data);
+                    execute_tex_fragment(p, (StrView){ rec.data, rec.len }, false);
+                    sb_free(&rec);
+                }
             }
         }
     }
@@ -1517,20 +1637,28 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
         }
         if (sv_equals(env_name, "center") || sv_equals(env_name, "flushleft") ||
             sv_equals(env_name, "flushright") || sv_equals(env_name, "quote") ||
-            sv_equals(env_name, "quotation")) {
+            sv_equals(env_name, "quotation") || sv_equals(env_name, "verse") ||
+            sv_equals(env_name, "abstract") || sv_equals(env_name, "letter")) {
             xml_close_para(p->gen);
+        } else if (sv_equals(env_name, "titlepage")) {
+            xml_close_para(p->gen);
+            builtin_newpage(p, false, nullptr, 0, nullptr);
         }
         p->gen->para_state = ef.saved_state.para_state;
         p->gen->char_state = ef.saved_state.char_state;
     }
 }
 
-// --- Estructura, Archivos y Geometría ---
+// --- Estructura, Clases de Documento, Archivos y Geometría (Caps. 2, 3, 24) ---
 
-static void builtin_documentclass(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, [[maybe_unused]] StrView args[]) {
-    double base_pt = 11.0;
+static void builtin_documentclass(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    StrView cls = sv_trim(args[0]);
+    snprintf(p->gen->doc_class, sizeof(p->gen->doc_class), "%.*s", (int)cls.len, cls.data);
+
+    double base_pt = 10.0;
+    if (sv_equals(cls, "slides")) base_pt = 12.0;
+
     for (size_t i = 0; i < opt_c; i++) {
-        // Parsear lista separada por comas: 10pt, 11pt, 12pt, a4paper, letterpaper, landscape
         const char *cur = opt[i].data;
         const char *end = opt[i].data + opt[i].len;
         while (cur < end) {
@@ -1544,21 +1672,66 @@ static void builtin_documentclass(Parser *p, [[maybe_unused]] bool starred, StrV
             else if (sv_equals(item, "a4paper")) {
                 p->gen->page_width  = measure_make(210.0, UNIT_MM, 1.0);
                 p->gen->page_height = measure_make(297.0, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "a5paper")) {
+                p->gen->page_width  = measure_make(148.0, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(210.0, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "b5paper")) {
+                p->gen->page_width  = measure_make(176.0, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(250.0, UNIT_MM, 1.0);
             } else if (sv_equals(item, "letterpaper")) {
                 p->gen->page_width  = measure_make(215.9, UNIT_MM, 1.0);
                 p->gen->page_height = measure_make(279.4, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "legalpaper")) {
+                p->gen->page_width  = measure_make(215.9, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(355.6, UNIT_MM, 1.0);
+            } else if (sv_equals(item, "executivepaper")) {
+                p->gen->page_width  = measure_make(184.15, UNIT_MM, 1.0);
+                p->gen->page_height = measure_make(266.7, UNIT_MM, 1.0);
             } else if (sv_equals(item, "landscape")) {
                 p->gen->orientation = ORIENT_LANDSCAPE;
                 sync_page_dimensions_to_orientation(p->gen);
+            } else if (sv_equals(item, "portrait")) {
+                p->gen->orientation = ORIENT_PORTRAIT;
+                sync_page_dimensions_to_orientation(p->gen);
+            } else if (sv_equals(item, "twocolumn")) {
+                p->gen->twocolumn = true;
+            } else if (sv_equals(item, "onecolumn")) {
+                p->gen->twocolumn = false;
+            } else if (sv_equals(item, "twoside")) {
+                p->gen->twoside = true;
+            } else if (sv_equals(item, "oneside")) {
+                p->gen->twoside = false;
             }
             cur = comma ? (comma + 1) : end;
         }
     }
+    p->gen->base_font_pt            = base_pt;
     p->gen->char_state.size         = measure_make(base_pt, UNIT_PT, 1.0);
     p->gen->para_state.line_spacing = measure_make(base_pt * 1.35 * MM_PER_PT, UNIT_MM, 1.0);
 }
 
-static void builtin_include(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+static void builtin_includeonly(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView list = sv_trim(args[0]);
+    snprintf(p->env->include_only, sizeof(p->env->include_only), "%.*s", (int)list.len, list.data);
+}
+
+static bool is_allowed_by_includeonly(const MacroEnv *env, StrView name) {
+    if (env->include_only[0] == '\0') return true;
+    const char *cur = env->include_only;
+    const char *end = cur + strlen(cur);
+    while (cur < end) {
+        const char *comma = strchr(cur, ',');
+        size_t len = comma ? (size_t)(comma - cur) : (size_t)(end - cur);
+        StrView item = sv_trim((StrView){ cur, len });
+        if (item.len == name.len && strncmp(item.data, name.data, name.len) == 0) {
+            return true;
+        }
+        cur = comma ? (comma + 1) : end;
+    }
+    return false;
+}
+
+static void builtin_input(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     char path_buf[256];
     StrView raw = sv_trim(args[0]);
     snprintf(path_buf, sizeof(path_buf), "%.*s", (int)raw.len, raw.data);
@@ -1575,6 +1748,240 @@ static void builtin_include(Parser *p, [[maybe_unused]] bool starred, [[maybe_un
     if (!process_file(path_buf, p->env, p->gen, p->macro_depth)) {
         fprintf(stderr, "Error: fallo al incluir '%s'\n", path_buf);
     }
+}
+
+static void builtin_include(Parser *p, bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+    StrView raw = sv_trim(args[0]);
+    if (!is_allowed_by_includeonly(p->env, raw)) return;
+
+    if (p->gen->para_open || p->gen->story.len > 0) {
+        builtin_newpage(p, false, nullptr, 0, nullptr);
+    }
+    builtin_input(p, starred, opt, opt_c, args);
+    xml_close_para(p->gen);
+}
+
+// --- Metadatos, Portada (\maketitle), Seccionado y Clase Letter (Caps. 6, 26, 27) ---
+
+static void builtin_title(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView v = sv_trim(args[0]);
+    snprintf(p->gen->title, sizeof(p->gen->title), "%.*s", (int)v.len, v.data);
+}
+
+static void builtin_author(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView v = sv_trim(args[0]);
+    snprintf(p->gen->author, sizeof(p->gen->author), "%.*s", (int)v.len, v.data);
+}
+
+static void builtin_date(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView v = sv_trim(args[0]);
+    snprintf(p->gen->date, sizeof(p->gen->date), "%.*s", (int)v.len, v.data);
+}
+
+static void builtin_thanks(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    StrView v = sv_trim(args[0]);
+    snprintf(p->gen->thanks, sizeof(p->gen->thanks), "%.*s", (int)v.len, v.data);
+    if (p->gen->para_open) {
+        xml_emit_text(p->gen, (StrView){"∗", 3}, false);
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_and(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    xml_emit_text(p->gen, (StrView){"   •   ", 9}, true);
+    p->cmd_space_before = false;
+}
+
+static void builtin_maketitle(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    xml_close_para(p->gen);
+    StrBuf mbuf;
+    if (!sb_init(&mbuf, 512)) return;
+
+    if (p->gen->title[0] != '\0') {
+        sb_appendf(&mbuf, "\\par{\\centering\\LARGE\\bfseries %s\\par}", p->gen->title);
+    }
+    if (p->gen->author[0] != '\0') {
+        sb_appendf(&mbuf, "\\par{\\centering\\large %s\\par}", p->gen->author);
+    }
+    if (p->gen->date[0] != '\0') {
+        sb_appendf(&mbuf, "\\par{\\centering\\normalsize %s\\par}", p->gen->date);
+    } else {
+        sb_append_cstr(&mbuf, "\\par{\\centering\\normalsize \\today\\par}");
+    }
+    if (p->gen->thanks[0] != '\0') {
+        sb_appendf(&mbuf, "\\par{\\centering\\footnotesize ∗ %s\\par}", p->gen->thanks);
+    }
+
+    execute_tex_fragment(p, (StrView){ mbuf.data, mbuf.len }, false);
+    sb_free(&mbuf);
+    p->cmd_space_before = false;
+}
+
+// Seccionado nativo de LaTeX2e (Cap. 6): \part, \chapter, \section, \subsection, \subsubsection, \paragraph, \subparagraph
+static void emit_section_heading(Parser *p, int level, const char *counter_name, bool starred, StrView title, const char *size_cmd, double before_mm, double after_mm, bool inline_runin) {
+    CounterDef *secnum = counter_find_mut(p->env, (StrView){"secnumdepth", 11});
+    int max_num_level = secnum ? secnum->value : 3;
+    bool numbered = (!starred && level <= max_num_level && p->gen->matter_mode == 0);
+
+    char num_prefix[64] = {0};
+    if (numbered && counter_name != nullptr) {
+        StrView cname = { counter_name, strlen(counter_name) };
+        counter_step(p->env, cname);
+
+        if (level == 0) { // \chapter
+            if (p->gen->in_appendix) {
+                char abuf[16];
+                format_counter_value(p->env, cname, 'A', abuf, sizeof(abuf));
+                snprintf(num_prefix, sizeof(num_prefix), "Apéndice %s: ", abuf);
+                snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", abuf);
+            } else {
+                char cbuf[16];
+                format_counter_value(p->env, cname, '1', cbuf, sizeof(cbuf));
+                snprintf(num_prefix, sizeof(num_prefix), "Capítulo %s. ", cbuf);
+                snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", cbuf);
+            }
+        } else if (level == -1) { // \part
+            char rbuf[16];
+            format_counter_value(p->env, cname, 'R', rbuf, sizeof(rbuf));
+            snprintf(num_prefix, sizeof(num_prefix), "Parte %s — ", rbuf);
+            snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", rbuf);
+        } else if (level == 1 && p->gen->in_appendix && strcmp(p->gen->doc_class, "article") == 0) {
+            char abuf[16];
+            format_counter_value(p->env, cname, 'A', abuf, sizeof(abuf));
+            snprintf(num_prefix, sizeof(num_prefix), "%s. ", abuf);
+            snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", abuf);
+        } else {
+            char tbuf[32];
+            format_the_counter(p->env, p->gen, cname, tbuf, sizeof(tbuf));
+            snprintf(num_prefix, sizeof(num_prefix), "%s%s ", tbuf, (level == 1) ? "." : "");
+            snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", tbuf);
+        }
+    }
+
+    StrBuf hbuf;
+    if (!sb_init(&hbuf, 256)) return;
+
+    if (inline_runin) {
+        xml_close_para(p->gen);
+        if (level == 4) p->gen->next_para_noindent = true;
+        sb_appendf(&hbuf, "{\\sffamily\\bfseries %s%.*s} ", num_prefix, (int)title.len, title.data);
+        execute_tex_fragment(p, (StrView){ hbuf.data, hbuf.len }, false);
+    } else {
+        xml_close_para(p->gen);
+        sb_appendf(&hbuf,
+                   "\\par{\\raggedright\\parmargins{0mm}{0mm}\\parspacing{%.2fmm}{%.2fmm}\\sffamily\\%s\\bfseries %s%.*s\\par}",
+                   before_mm, after_mm, size_cmd, num_prefix, (int)title.len, title.data);
+        execute_tex_fragment(p, (StrView){ hbuf.data, hbuf.len }, false);
+        p->gen->next_para_noindent = true;
+    }
+
+    sb_free(&hbuf);
+    p->cmd_space_before = false;
+}
+
+static void builtin_part(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, -1, "part", starred, args[0], "LARGE", 7.0, 4.0, false);
+}
+
+static void builtin_chapter(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    if (p->gen->para_open || p->gen->story.len > 0) {
+        builtin_newpage(p, false, nullptr, 0, nullptr);
+    }
+    emit_section_heading(p, 0, "chapter", starred, args[0], " Huge" + 1, 8.0, 5.0, false);
+}
+
+static void builtin_section(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, 1, "section", starred, args[0], "Large", 5.0, 2.5, false);
+}
+
+static void builtin_subsection(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, 2, "subsection", starred, args[0], "large", 3.5, 1.8, false);
+}
+
+static void builtin_subsubsection(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, 3, "subsubsection", starred, args[0], "normalsize", 2.5, 1.2, false);
+}
+
+static void builtin_paragraph(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, 4, "paragraph", starred, args[0], "normalsize", 1.5, 0.0, true);
+}
+
+static void builtin_subparagraph(Parser *p, bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    emit_section_heading(p, 5, "subparagraph", starred, args[0], "normalsize", 1.0, 0.0, true);
+}
+
+static void builtin_appendix(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->in_appendix = true;
+    CounterDef *ch = counter_find_mut(p->env, (StrView){"chapter", 7});
+    if (ch) ch->value = 0;
+    CounterDef *sec = counter_find_mut(p->env, (StrView){"section", 7});
+    if (sec) sec->value = 0;
+}
+
+static void builtin_frontmatter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->matter_mode = 1;
+}
+
+static void builtin_mainmatter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->matter_mode = 0;
+}
+
+static void builtin_backmatter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->matter_mode = 2;
+}
+
+// Comandos de la clase letter (Cap. 27)
+static void builtin_address(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    snprintf(p->gen->sender_address, sizeof(p->gen->sender_address), "%.*s", (int)args[0].len, args[0].data);
+}
+static void builtin_signature(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    snprintf(p->gen->sender_signature, sizeof(p->gen->sender_signature), "%.*s", (int)args[0].len, args[0].data);
+}
+static void builtin_name(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    snprintf(p->gen->sender_name, sizeof(p->gen->sender_name), "%.*s", (int)args[0].len, args[0].data);
+}
+static void builtin_location(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    snprintf(p->gen->sender_location, sizeof(p->gen->sender_location), "%.*s", (int)args[0].len, args[0].data);
+}
+static void builtin_telephone(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    snprintf(p->gen->sender_telephone, sizeof(p->gen->sender_telephone), "%.*s", (int)args[0].len, args[0].data);
+}
+static void builtin_opening(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrBuf b;
+    if (sb_init(&b, 128)) {
+        sb_appendf(&b, "\\par\\noindent %.*s\\par", (int)args[0].len, args[0].data);
+        execute_tex_fragment(p, (StrView){ b.data, b.len }, false);
+        sb_free(&b);
+    }
+}
+static void builtin_closing(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrBuf b;
+    if (sb_init(&b, 256)) {
+        const char *sig = (p->gen->sender_signature[0] != '\0') ? p->gen->sender_signature : p->gen->sender_name;
+        sb_appendf(&b, "\\par\\noindent %.*s\\par\\noindent %s\\par", (int)args[0].len, args[0].data, sig);
+        execute_tex_fragment(p, (StrView){ b.data, b.len }, false);
+        sb_free(&b);
+    }
+}
+static void builtin_cc(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrBuf b;
+    if (sb_init(&b, 128)) {
+        sb_appendf(&b, "\\par\\noindent\\textbf{cc:} %.*s\\par", (int)args[0].len, args[0].data);
+        execute_tex_fragment(p, (StrView){ b.data, b.len }, false);
+        sb_free(&b);
+    }
+}
+static void builtin_encl(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    StrBuf b;
+    if (sb_init(&b, 128)) {
+        sb_appendf(&b, "\\par\\noindent\\textbf{Adj.:} %.*s\\par", (int)args[0].len, args[0].data);
+        execute_tex_fragment(p, (StrView){ b.data, b.len }, false);
+        sb_free(&b);
+    }
+}
+static void builtin_onecolumn(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->twocolumn = false;
+    xml_close_para(p->gen);
 }
 
 static void builtin_pagesize(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
@@ -1707,13 +2114,95 @@ static void builtin_par(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
 
 // --- Fuentes y Estilos Tipográficos ---
 
+static void apply_nfss_family(XmlGenerator *gen, StrView fam) {
+    fam = sv_trim(fam);
+    if (sv_equals(fam, "cmr") || sv_equals(fam, "lmr") || sv_equals(fam, "ptm") || sv_equals(fam, "rm")) {
+        snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
+    } else if (sv_equals(fam, "cmss") || sv_equals(fam, "lmss") || sv_equals(fam, "phv") || sv_equals(fam, "sf")) {
+        snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family), "%s", DEFAULT_SANS_FAMILY);
+    } else if (sv_equals(fam, "cmtt") || sv_equals(fam, "lmtt") || sv_equals(fam, "pcr") || sv_equals(fam, "tt")) {
+        snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family), "%s", DEFAULT_MONO_FAMILY);
+    } else {
+        snprintf(gen->char_state.font_family, sizeof(gen->char_state.font_family),
+                 "%.*s", (int)fam.len, fam.data);
+    }
+}
+
+static void apply_nfss_series(XmlGenerator *gen, StrView ser) {
+    ser = sv_trim(ser);
+    if (sv_equals(ser, "b") || sv_equals(ser, "bx") || sv_equals(ser, "sbc") || sv_equals(ser, "bold")) {
+        gen->char_state.weight = WEIGHT_BOLD;
+    } else {
+        gen->char_state.weight = WEIGHT_NORMAL;
+    }
+}
+
+static void apply_nfss_shape(XmlGenerator *gen, StrView shp) {
+    shp = sv_trim(shp);
+    if (sv_equals(shp, "it") || sv_equals(shp, "sl") || sv_equals(shp, "italic")) {
+        gen->char_state.slant      = SLANT_ITALIC;
+        gen->char_state.small_caps = false;
+    } else if (sv_equals(shp, "sc")) {
+        gen->char_state.slant      = SLANT_NORMAL;
+        gen->char_state.small_caps = true;
+    } else {
+        gen->char_state.slant      = SLANT_NORMAL;
+        gen->char_state.small_caps = false;
+    }
+}
+
 static void builtin_font(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
-    snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family),
-             "%.*s", (int)args[0].len, args[0].data);
+    apply_nfss_family(p->gen, args[0]);
+}
+
+static void builtin_fontfamily(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    apply_nfss_family(p->gen, args[0]);
+}
+
+static void builtin_fontseries(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    apply_nfss_series(p->gen, args[0]);
+}
+
+static void builtin_fontshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    apply_nfss_shape(p->gen, args[0]);
 }
 
 static void builtin_fontsize(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     p->gen->char_state.size = measure_parse(p, args[0], UNIT_PT);
+    // En NFSS de LaTeX2e, \fontsize{size}{skip} recibe un segundo argumento {baselineskip}
+    if (p->current.type == TOKEN_LBRACE) {
+        StrView skip_arg = {0};
+        if (parse_arg(p, &skip_arg)) {
+            p->gen->pending_nfss_baselineskip     = measure_parse(p, skip_arg, UNIT_PT);
+            p->gen->has_pending_nfss_baselineskip = true;
+        }
+    }
+}
+
+static void builtin_selectfont(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    if (p->gen->has_pending_nfss_baselineskip) {
+        if (!p->gen->para_open || !p->gen->para_has_content) {
+            double spread = (p->gen->linespread_factor > 0.1) ? p->gen->linespread_factor : 1.0;
+            p->gen->para_state.line_spacing = measure_make(p->gen->pending_nfss_baselineskip.mm * spread, UNIT_MM, 1.0);
+        }
+        p->gen->has_pending_nfss_baselineskip = false;
+    }
+}
+
+static void builtin_usefont(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    (void)args[0]; // encoding
+    apply_nfss_family(p->gen, args[1]);
+    apply_nfss_series(p->gen, args[2]);
+    apply_nfss_shape(p->gen, args[3]);
+}
+
+static void builtin_linespread(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    char buf[32];
+    size_t n = (args[0].len < sizeof(buf) - 1) ? args[0].len : (sizeof(buf) - 1);
+    memcpy(buf, args[0].data, n);
+    buf[n] = '\0';
+    double f = strtod(buf, nullptr);
+    if (f > 0.1) p->gen->linespread_factor = f;
 }
 
 static void builtin_fontcolor(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
@@ -1742,18 +2231,27 @@ static void builtin_mdseries(Parser *p, [[maybe_unused]] bool starred, [[maybe_u
 }
 
 static void builtin_itshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
-    p->gen->char_state.slant = SLANT_ITALIC;
+    p->gen->char_state.slant      = SLANT_ITALIC;
+    p->gen->char_state.small_caps = false;
+}
+
+static void builtin_scshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    p->gen->char_state.slant      = SLANT_NORMAL;
+    p->gen->char_state.small_caps = true;
 }
 
 static void builtin_upshape(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
-    p->gen->char_state.slant = SLANT_NORMAL;
+    p->gen->char_state.slant      = SLANT_NORMAL;
+    p->gen->char_state.small_caps = false;
 }
 
 static void builtin_normalfont(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     snprintf(p->gen->char_state.font_family, sizeof(p->gen->char_state.font_family), "%s", DEFAULT_FONT_FAMILY);
-    p->gen->char_state.weight    = WEIGHT_NORMAL;
-    p->gen->char_state.slant     = SLANT_NORMAL;
-    p->gen->char_state.underline = false;
+    p->gen->char_state.weight     = WEIGHT_NORMAL;
+    p->gen->char_state.slant      = SLANT_NORMAL;
+    p->gen->char_state.underline  = false;
+    p->gen->char_state.small_caps = false;
+    p->gen->char_state.shift      = SHIFT_NORMAL;
 }
 
 static void builtin_em(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
@@ -1805,14 +2303,23 @@ static void builtin_textmd(Parser *p, [[maybe_unused]] bool starred, [[maybe_unu
 }
 
 static void builtin_textit(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
-    CharState next = p->gen->char_state;
-    next.slant     = SLANT_ITALIC;
+    CharState next  = p->gen->char_state;
+    next.slant      = SLANT_ITALIC;
+    next.small_caps = false;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textsc(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next  = p->gen->char_state;
+    next.slant      = SLANT_NORMAL;
+    next.small_caps = true;
     parse_inline_scoped(p, args[0], next);
 }
 
 static void builtin_textup(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
-    CharState next = p->gen->char_state;
-    next.slant     = SLANT_NORMAL;
+    CharState next  = p->gen->char_state;
+    next.slant      = SLANT_NORMAL;
+    next.small_caps = false;
     parse_inline_scoped(p, args[0], next);
 }
 
@@ -1834,6 +2341,17 @@ static void builtin_texttt(Parser *p, [[maybe_unused]] bool starred, [[maybe_unu
     parse_inline_scoped(p, args[0], next);
 }
 
+static void builtin_textnormal(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_FONT_FAMILY);
+    next.weight     = WEIGHT_NORMAL;
+    next.slant      = SLANT_NORMAL;
+    next.small_caps = false;
+    next.underline  = false;
+    next.shift      = SHIFT_NORMAL;
+    parse_inline_scoped(p, args[0], next);
+}
+
 static void builtin_emph(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     CharState next = p->gen->char_state;
     next.slant     = (next.slant == SLANT_ITALIC) ? SLANT_NORMAL : SLANT_ITALIC;
@@ -1844,6 +2362,22 @@ static void builtin_underline(Parser *p, [[maybe_unused]] bool starred, [[maybe_
     CharState next = p->gen->char_state;
     next.underline = true;
     parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textsuperscript(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.shift     = SHIFT_SUPER;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_textsubscript(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.shift     = SHIFT_SUB;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_oldstylenums(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
+    parse_inline_scoped(p, args[0], p->gen->char_state);
 }
 
 // ============================================================================
@@ -1893,15 +2427,48 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "today",            0, 0, false, builtin_today },
     { "rule",             1, 2, false, builtin_rule },
 
-    // Entornos y estructura documental
+    // Caps. 2, 3, 24: Clases de documento, paquetes y archivos
     { "begin",            0, 1, false, builtin_begin },
     { "end",              0, 1, false, builtin_end },
     { "documentclass",    1, 1, false, builtin_documentclass },
     { "documentstyle",    1, 1, false, builtin_documentclass },
     { "usepackage",       1, 1, false, builtin_noop },
-    { "input",            0, 1, false, builtin_include },
+    { "RequirePackage",   1, 1, false, builtin_noop },
+    { "ProvidesClass",    1, 1, false, builtin_noop },
+    { "ProvidesPackage",  1, 1, false, builtin_noop },
+    { "input",            0, 1, false, builtin_input },
     { "include",          0, 1, false, builtin_include },
-    { "includeonly",      0, 1, false, builtin_noop },
+    { "includeonly",      0, 1, false, builtin_includeonly },
+
+    // Caps. 6, 26, 27: Metadatos, portada, seccionado y cartas
+    { "title",            0, 1, false, builtin_title },
+    { "author",           0, 1, false, builtin_author },
+    { "date",             0, 1, false, builtin_date },
+    { "thanks",           0, 1, false, builtin_thanks },
+    { "and",              0, 0, false, builtin_and },
+    { "maketitle",        0, 0, false, builtin_maketitle },
+    { "part",             1, 1, true,  builtin_part },
+    { "chapter",          1, 1, true,  builtin_chapter },
+    { "section",          1, 1, true,  builtin_section },
+    { "subsection",       1, 1, true,  builtin_subsection },
+    { "subsubsection",    1, 1, true,  builtin_subsubsection },
+    { "paragraph",        1, 1, true,  builtin_paragraph },
+    { "subparagraph",     1, 1, true,  builtin_subparagraph },
+    { "appendix",         0, 0, false, builtin_appendix },
+    { "frontmatter",      0, 0, false, builtin_frontmatter },
+    { "mainmatter",       0, 0, false, builtin_mainmatter },
+    { "backmatter",       0, 0, false, builtin_backmatter },
+    { "address",          0, 1, false, builtin_address },
+    { "signature",        0, 1, false, builtin_signature },
+    { "name",             0, 1, false, builtin_name },
+    { "location",         0, 1, false, builtin_location },
+    { "telephone",        0, 1, false, builtin_telephone },
+    { "makelabels",       0, 0, false, builtin_noop },
+    { "opening",          0, 1, false, builtin_opening },
+    { "closing",          0, 1, false, builtin_closing },
+    { "cc",               0, 1, false, builtin_cc },
+    { "encl",             0, 1, false, builtin_encl },
+    { "ps",               0, 0, false, builtin_par },
 
     // Geometría, página y párrafo
     { "pagesize",         0, 2, false, builtin_pagesize },
@@ -1913,6 +2480,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "pagebreak",        1, 0, false, builtin_newpage },
     { "newframe",         0, 4, false, builtin_newframe },
     { "twocolumn",        1, 0, false, builtin_twocolumn },
+    { "onecolumn",        0, 0, false, builtin_onecolumn },
     { "align",            0, 1, false, builtin_align },
     { "centering",        0, 0, false, builtin_centering },
     { "raggedright",      0, 0, false, builtin_raggedright },
@@ -1925,9 +2493,16 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "par",              0, 0, false, builtin_par },
     { "parbreak",         0, 0, false, builtin_par },
 
-    // Fuentes y estilos tipográficos
+    // Cap. 4: Fuentes, estilos tipográficos y NFSS
     { "font",             0, 1, false, builtin_font },
+    { "fontencoding",     0, 1, false, builtin_noop },
+    { "fontfamily",       0, 1, false, builtin_fontfamily },
+    { "fontseries",       0, 1, false, builtin_fontseries },
+    { "fontshape",        0, 1, false, builtin_fontshape },
     { "fontsize",         0, 1, false, builtin_fontsize },
+    { "selectfont",       0, 0, false, builtin_selectfont },
+    { "usefont",          0, 4, false, builtin_usefont },
+    { "linespread",       0, 1, false, builtin_linespread },
     { "fontcolor",        0, 1, false, builtin_fontcolor },
     { "color",            0, 1, false, builtin_fontcolor },
     { "rmfamily",         0, 0, false, builtin_rmfamily },
@@ -1937,6 +2512,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "mdseries",         0, 0, false, builtin_mdseries },
     { "itshape",          0, 0, false, builtin_itshape },
     { "slshape",          0, 0, false, builtin_itshape },
+    { "scshape",          0, 0, false, builtin_scshape },
     { "upshape",          0, 0, false, builtin_upshape },
     { "normalfont",       0, 0, false, builtin_normalfont },
     { "em",               0, 0, false, builtin_em },
@@ -1946,17 +2522,34 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "bf",               0, 0, false, builtin_bfseries },
     { "it",               0, 0, false, builtin_itshape },
     { "sl",               0, 0, false, builtin_itshape },
+    { "sc",               0, 0, false, builtin_scshape },
     { "textbf",           0, 1, false, builtin_textbf },
     { "textmd",           0, 1, false, builtin_textmd },
     { "textit",           0, 1, false, builtin_textit },
     { "textsl",           0, 1, false, builtin_textit },
+    { "textsc",           0, 1, false, builtin_textsc },
     { "textup",           0, 1, false, builtin_textup },
     { "textrm",           0, 1, false, builtin_textrm },
     { "textsf",           0, 1, false, builtin_textsf },
     { "texttt",           0, 1, false, builtin_texttt },
-    { "textnormal",       0, 1, false, builtin_textrm },
+    { "textnormal",       0, 1, false, builtin_textnormal },
     { "emph",             0, 1, false, builtin_emph },
     { "underline",        0, 1, false, builtin_underline },
+    { "textsuperscript",  0, 1, false, builtin_textsuperscript },
+    { "textsubscript",    0, 1, false, builtin_textsubscript },
+    { "oldstylenums",     0, 1, false, builtin_oldstylenums },
+
+    // Cap. 22: Tamaños estándar de fuente
+    { "tiny",             0, 0, false, builtin_tiny },
+    { "scriptsize",       0, 0, false, builtin_scriptsize },
+    { "footnotesize",     0, 0, false, builtin_footnotesize },
+    { "small",            0, 0, false, builtin_small },
+    { "normalsize",       0, 0, false, builtin_normalsize },
+    { "large",            0, 0, false, builtin_large },
+    { "Large",            0, 0, false, builtin_Large },
+    { "LARGE",            0, 0, false, builtin_LARGE },
+    { "huge",             0, 0, false, builtin_huge },
+    { "Huge",             0, 0, false, builtin_Huge },
 };
 constexpr size_t BUILTIN_COUNT = sizeof(BUILTIN_LIST) / sizeof(BUILTIN_LIST[0]);
 
@@ -2217,7 +2810,7 @@ static void parse_and_execute(Parser *p) {
                 StrView cname = { cmd.data + 3, cmd.len - 3 };
                 if (counter_find_mut(p->env, cname) != nullptr) {
                     char cbuf[64];
-                    format_the_counter(p->env, cname, cbuf, sizeof(cbuf));
+                    format_the_counter(p->env, p->gen, cname, cbuf, sizeof(cbuf));
                     xml_emit_text(p->gen, (StrView){ cbuf, strlen(cbuf) }, space_pend);
                     continue;
                 }
