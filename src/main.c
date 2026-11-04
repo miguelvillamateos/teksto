@@ -958,7 +958,7 @@ static void sync_standard_length_to_generator(XmlGenerator *gen, StrView name, M
 static void macro_env_init(MacroEnv *env) {
     memset(env, 0, sizeof(*env));
 
-    // Contadores estándar de LaTeX2e (Cap. 13)
+    // Contadores estándar de LaTeX2e
     counter_register(env, (StrView){"part", 4},           (StrView){nullptr, 0});
     counter_register(env, (StrView){"chapter", 7},        (StrView){nullptr, 0});
     counter_register(env, (StrView){"section", 7},        (StrView){"chapter", 7});
@@ -984,7 +984,7 @@ static void macro_env_init(MacroEnv *env) {
     CounterDef *tocd = counter_register(env, (StrView){"tocdepth", 8}, (StrView){nullptr, 0});
     if (tocd) tocd->value = 3;
 
-    // Longitudes estándar de LaTeX2e (Cap. 14)
+    // Longitudes estándar de LaTeX2e
     double em = 11.0 * MM_PER_PT;
     length_register(env, (StrView){"parindent", 9},       measure_make(8.0,   UNIT_MM, em));
     length_register(env, (StrView){"parskip", 7},         measure_make(2.5,   UNIT_MM, em));
@@ -1299,7 +1299,7 @@ static void builtin_noop(Parser *p, [[maybe_unused]] bool starred, [[maybe_unuse
     (void)p;
 }
 
-// --- Contadores (Cap. 13) ---
+// --- Contadores ---
 
 static void builtin_newcounter(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     StrView parent = {0};
@@ -1359,7 +1359,7 @@ static void builtin_fnsymbol(Parser *p, [[maybe_unused]] bool starred, [[maybe_u
     emit_formatted_counter(p, args[0], 'f');
 }
 
-// --- Longitudes (Cap. 14) ---
+// --- Longitudes ---
 
 static void builtin_newlength(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     StrView name = {0};
@@ -1429,7 +1429,7 @@ static void builtin_settodepth(Parser *p, [[maybe_unused]] bool starred, [[maybe
     else ld->value = m;
 }
 
-// --- Símbolos dinámicos (\today, \rule) (Cap. 23) ---
+// --- Símbolos dinámicos (\today, \rule) ---
 
 static void builtin_today(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
     static const char *const meses[] = {
@@ -1463,7 +1463,7 @@ static void builtin_rule(Parser *p, [[maybe_unused]] bool starred, [[maybe_unuse
     sb_free(&bar);
 }
 
-// --- Escala de Tamaños de Fuente de LaTeX2e (Cap. 22) ---
+// --- Escala de Tamaños de Fuente de LaTeX2e ---
 
 typedef struct {
     const char *name;
@@ -1649,7 +1649,7 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
     }
 }
 
-// --- Estructura, Clases de Documento, Archivos y Geometría (Caps. 2, 3, 24) ---
+// --- Estructura, Clases de Documento, Archivos y Geometría ---
 
 static void builtin_documentclass(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
     StrView cls = sv_trim(args[0]);
@@ -1761,7 +1761,7 @@ static void builtin_include(Parser *p, bool starred, StrView opt[], size_t opt_c
     xml_close_para(p->gen);
 }
 
-// --- Metadatos, Portada (\maketitle), Seccionado y Clase Letter (Caps. 6, 26, 27) ---
+// --- Metadatos, Portada (\maketitle), Seccionado y Clase Letter ---
 
 static void builtin_title(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     StrView v = sv_trim(args[0]);
@@ -1817,7 +1817,7 @@ static void builtin_maketitle(Parser *p, [[maybe_unused]] bool starred, [[maybe_
     p->cmd_space_before = false;
 }
 
-// Seccionado nativo de LaTeX2e (Cap. 6): \part, \chapter, \section, \subsection, \subsubsection, \paragraph, \subparagraph
+// Seccionado nativo de LaTeX2e: \part, \chapter, \section, \subsection, \subsubsection, \paragraph, \subparagraph
 static void emit_section_heading(Parser *p, int level, const char *counter_name, bool starred, StrView title, const char *size_cmd, double before_mm, double after_mm, bool inline_runin) {
     CounterDef *secnum = counter_find_mut(p->env, (StrView){"secnumdepth", 11});
     int max_num_level = secnum ? secnum->value : 3;
@@ -1930,7 +1930,7 @@ static void builtin_backmatter(Parser *p, [[maybe_unused]] bool starred, [[maybe
     p->gen->matter_mode = 2;
 }
 
-// Comandos de la clase letter (Cap. 27)
+// Comandos de la clase letter
 static void builtin_address(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
     snprintf(p->gen->sender_address, sizeof(p->gen->sender_address), "%.*s", (int)args[0].len, args[0].data);
 }
@@ -2385,7 +2385,7 @@ static void builtin_oldstylenums(Parser *p, [[maybe_unused]] bool starred, [[may
 // ============================================================================
 
 static const BuiltinCommand BUILTIN_LIST[] = {
-    // Cap. 12: Definiciones de comandos y entornos
+    // Definiciones de comandos y entornos
     { "newcommand",       0, 0, true,  builtin_newcommand },
     { "renewcommand",     0, 0, true,  builtin_renewcommand },
     { "providecommand",   0, 0, true,  builtin_providecommand },
@@ -2402,7 +2402,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "ignorespaces",     0, 0, false, builtin_noop },
     { "protect",          0, 0, false, builtin_noop },
 
-    // Cap. 13: Contadores
+    // Contadores
     { "newcounter",       0, 1, false, builtin_newcounter },
     { "setcounter",       0, 2, false, builtin_setcounter },
     { "addtocounter",     0, 2, false, builtin_addtocounter },
@@ -2415,7 +2415,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "Alph",             0, 1, false, builtin_Alph },
     { "fnsymbol",         0, 1, false, builtin_fnsymbol },
 
-    // Cap. 14: Longitudes
+    // Longitudes
     { "newlength",        0, 0, false, builtin_newlength },
     { "setlength",        0, 0, false, builtin_setlength },
     { "addtolength",      0, 0, false, builtin_addtolength },
@@ -2423,11 +2423,11 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "settoheight",      0, 0, false, builtin_settoheight },
     { "settodepth",       0, 0, false, builtin_settodepth },
 
-    // Cap. 23: Inserciones especiales dinámicas
+    // Inserciones especiales dinámicas
     { "today",            0, 0, false, builtin_today },
     { "rule",             1, 2, false, builtin_rule },
 
-    // Caps. 2, 3, 24: Clases de documento, paquetes y archivos
+    // Clases de documento, paquetes y archivos
     { "begin",            0, 1, false, builtin_begin },
     { "end",              0, 1, false, builtin_end },
     { "documentclass",    1, 1, false, builtin_documentclass },
@@ -2440,7 +2440,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "include",          0, 1, false, builtin_include },
     { "includeonly",      0, 1, false, builtin_includeonly },
 
-    // Caps. 6, 26, 27: Metadatos, portada, seccionado y cartas
+    // Metadatos, portada, seccionado y cartas
     { "title",            0, 1, false, builtin_title },
     { "author",           0, 1, false, builtin_author },
     { "date",             0, 1, false, builtin_date },
@@ -2493,7 +2493,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "par",              0, 0, false, builtin_par },
     { "parbreak",         0, 0, false, builtin_par },
 
-    // Cap. 4: Fuentes, estilos tipográficos y NFSS
+    // Fuentes, estilos tipográficos y NFSS
     { "font",             0, 1, false, builtin_font },
     { "fontencoding",     0, 1, false, builtin_noop },
     { "fontfamily",       0, 1, false, builtin_fontfamily },
@@ -2539,7 +2539,7 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "textsubscript",    0, 1, false, builtin_textsubscript },
     { "oldstylenums",     0, 1, false, builtin_oldstylenums },
 
-    // Cap. 22: Tamaños estándar de fuente
+    // Tamaños estándar de fuente
     { "tiny",             0, 0, false, builtin_tiny },
     { "scriptsize",       0, 0, false, builtin_scriptsize },
     { "footnotesize",     0, 0, false, builtin_footnotesize },
@@ -2770,7 +2770,7 @@ static void parse_and_execute(Parser *p) {
                 continue;
             }
 
-            // 3. ¿Es un símbolo de texto o logo de LaTeX2e (Cap. 23)?
+            // 3. ¿Es un símbolo de texto o logo de LaTeX2e?
             const char *sym_utf8 = find_latex_text_symbol(cmd);
             if (sym_utf8) {
                 xml_emit_text(p->gen, (StrView){ sym_utf8, strlen(sym_utf8) }, space_pend);
@@ -2805,7 +2805,7 @@ static void parse_and_execute(Parser *p) {
                 continue;
             }
 
-            // 5. ¿Es \the<counter> (Cap. 13)?
+            // 5. ¿Es \the<counter>?
             if (cmd.len > 3 && strncmp(cmd.data, "the", 3) == 0) {
                 StrView cname = { cmd.data + 3, cmd.len - 3 };
                 if (counter_find_mut(p->env, cname) != nullptr) {

@@ -123,7 +123,7 @@ static const SymbolEntry LATEX_TEXT_SYMBOLS[] = {
     {"negthinspace", ""},
     {"space", " "},
 
-    // Logos (Cap. 23.6)
+    // Logos
     {"TeX", "TeX"},
     {"LaTeX", "LaTeX"},
     {"LaTeXe", "LaTeX2ε"},

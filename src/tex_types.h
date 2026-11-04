@@ -230,7 +230,6 @@ typedef struct {
   bool allow_at;
   char current_ref[64];
   char include_only[512];
-    char include_only[512];
 } MacroEnv;
 
 typedef struct {
@@ -251,31 +250,6 @@ typedef struct {
 
 typedef struct {
   FILE *file;
-
-    // Clase de documento, opciones y metadatos (Caps. 2, 6, 22, 26, 27)
-    char doc_class[32];
-    double base_font_pt;
-    double linespread_factor;
-    bool twocolumn;
-    bool twoside;
-    bool in_appendix;
-    int matter_mode; // 0=mainmatter, 1=frontmatter, 2=backmatter
-
-    char title[256];
-    char author[256];
-    char date[128];
-    char thanks[256];
-
-    // Metadatos de clase letter (Cap. 27)
-    char sender_name[128];
-    char sender_address[256];
-    char sender_signature[128];
-    char sender_location[128];
-    char sender_telephone[64];
-
-    // Estado NFSS pendiente para \selectfont (Cap. 4.2)
-    Measure pending_nfss_baselineskip;
-    bool has_pending_nfss_baselineskip;
 
   // Clase de documento, opciones y metadatos
   char doc_class[32];
