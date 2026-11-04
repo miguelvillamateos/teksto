@@ -30,6 +30,10 @@ constexpr size_t MAX_COUNTERS = 128;
 constexpr size_t MAX_LENGTHS = 128;
 constexpr size_t MAX_SAVEBOXES = 64;
 constexpr size_t MAX_TAB_COLS = 32;
+constexpr size_t MAX_LABELS = 256;
+constexpr size_t MAX_BIBITEMS = 128;
+constexpr size_t MAX_TOC_ENTRIES = 256;
+constexpr size_t MAX_INDEX_ENTRIES = 256;
 
 constexpr double MM_PER_CM = 10.0;
 constexpr double MM_PER_M = 1000.0;
@@ -156,6 +160,10 @@ typedef enum {
   TOKEN_LBRACE,
   TOKEN_RBRACE,
   TOKEN_AMP,
+  TOKEN_MATH_SHIFT,
+  TOKEN_DISPLAY_MATH,
+  TOKEN_SUP,
+  TOKEN_SUB,
   TOKEN_TEXT,
   TOKEN_PAR
 } TokenType;
@@ -220,6 +228,30 @@ typedef struct {
 } TabColSpec;
 
 typedef struct {
+  char key[64];
+  char ref_str[64];
+  int page_num;
+} LabelDef;
+
+typedef struct {
+  char key[64];
+  char label[64];
+} BibItemDef;
+
+typedef struct {
+  char kind[8];    // "toc", "lof", "lot"
+  char level[24];  // "part", "chapter", "section", "subsection", "subsubsection", "figure", "table"
+  char number[32];
+  char title[256];
+  int page_num;
+} TocEntryDef;
+
+typedef struct {
+  char entry[128];
+  int page_num;
+} IndexEntryDef;
+
+typedef struct {
   UserMacro items[MAX_MACROS];
   size_t count;
 
@@ -235,7 +267,20 @@ typedef struct {
   SaveBoxDef saveboxes[MAX_SAVEBOXES];
   size_t savebox_count;
 
+  LabelDef labels[MAX_LABELS];
+  size_t label_count;
+
+  BibItemDef bibitems[MAX_BIBITEMS];
+  size_t bibitem_count;
+
+  TocEntryDef toc_entries[MAX_TOC_ENTRIES];
+  size_t toc_count;
+
+  IndexEntryDef idx_entries[MAX_INDEX_ENTRIES];
+  size_t idx_count;
+
   bool allow_at;
+  bool is_prescan;
   char current_ref[64];
   char include_only[512];
 } MacroEnv;
@@ -352,6 +397,22 @@ typedef struct {
   char page_numbering[16];
   char left_mark[128];
   char right_mark[128];
+
+  // Estado de modo matemático y entorno de dibujo picture
+  bool in_math;
+  bool in_display_math;
+  bool math_bold;
+  bool eq_suppress_num;
+  bool in_eqnarray;
+
+  bool in_picture;
+  double pic_w_mm;
+  double pic_h_mm;
+  double pic_x0_mm;
+  double pic_y0_mm;
+  double pic_cur_x_mm;
+  double pic_cur_y_mm;
+  double pic_line_thick_mm;
 
   // Registros deduplicados para el bloque <definitions>
   FontFamilyDef fonts[MAX_FONT_FAMS];

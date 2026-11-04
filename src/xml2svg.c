@@ -73,7 +73,10 @@ typedef enum : unsigned char {
     RUN_LINE_BREAK,
     RUN_HSPACE,
     RUN_RULE,
-    RUN_BOX
+    RUN_BOX,
+    RUN_MFRAC,
+    RUN_MSQRT,
+    RUN_MOVER
 } RunKind;
 
 typedef enum : unsigned char {
@@ -87,12 +90,15 @@ typedef struct {
     RunKind kind;
     size_t style_idx;
     char *text;
+    char *aux_text;
     double w_mm;
     double h_mm;
     double raise_mm;
     double border_mm;
     double pad_mm;
     char box_align;
+    bool has_bar;
+    bool has_paren;
     HFillKind fill;
 } SpanRun;
 
@@ -134,12 +140,48 @@ typedef struct {
 } TableDef;
 
 typedef enum : unsigned char {
+    PIC_LINE = 0,
+    PIC_CIRCLE,
+    PIC_OVAL,
+    PIC_BEZIER,
+    PIC_BOX,
+    PIC_TEXT
+} PicElemKind;
+
+typedef struct {
+    PicElemKind kind;
+    double x1_mm, y1_mm;
+    double x2_mm, y2_mm;
+    double x3_mm, y3_mm;
+    double w_mm, h_mm;
+    double r_mm;
+    double thick_mm;
+    double dash_mm;
+    bool arrow;
+    bool fill;
+    char align[8];
+    char part[8];
+    size_t style_idx;
+    char *text;
+} PicElem;
+
+typedef struct {
+    double w_mm;
+    double h_mm;
+    ParaAlign align;
+    PicElem *elems;
+    size_t elem_count;
+    size_t elem_cap;
+} PictureDef;
+
+typedef enum : unsigned char {
     ITEM_PARA = 0,
     ITEM_PAGE_BREAK,
     ITEM_VSPACE,
     ITEM_TABLE,
     ITEM_FOOTNOTE,
-    ITEM_MARGINPAR
+    ITEM_MARGINPAR,
+    ITEM_PICTURE
 } StoryItemType;
 
 typedef struct {
@@ -151,6 +193,7 @@ typedef struct {
     bool vspace_starred;
     bool vspace_fill;
     TableDef *table;
+    PictureDef *picture;
     SpanRun *runs;
     size_t run_count;
     size_t run_cap;
@@ -210,6 +253,7 @@ typedef struct {
     RunKind kind;
     size_t char_style_idx;
     char *word;
+    char *aux_text;
     double word_w_mm;
     double space_w_mm;
     double h_mm;
@@ -217,6 +261,8 @@ typedef struct {
     double border_mm;
     double pad_mm;
     char box_align;
+    bool has_bar;
+    bool has_paren;
     HFillKind fill;
     bool space_after;
 } WordToken;
@@ -442,6 +488,14 @@ static void row_push_cell(TableRowItem *row, TableCell cell) {
     row->cells[row->cell_count++] = cell;
 }
 
+static void picture_push_elem(PictureDef *pic, PicElem el) {
+    if (pic->elem_count >= pic->elem_cap) {
+        pic->elem_cap = (pic->elem_cap == 0) ? 16 : pic->elem_cap * 2;
+        pic->elems = realloc(pic->elems, pic->elem_cap * sizeof(PicElem));
+    }
+    pic->elems[pic->elem_count++] = el;
+}
+
 static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
     memset(doc, 0, sizeof(*doc));
     doc->page_w_mm        = 210.0;
@@ -463,11 +517,15 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
     SpanRun pending_box  = {0};
     StoryItem current_para = {0};
 
-    TableDef *active_table   = nullptr;
-    TableRowItem current_row = {0};
-    TableCell current_cell   = {0};
+    TableDef *active_table     = nullptr;
+    TableRowItem current_row   = {0};
+    TableCell current_cell     = {0};
     bool in_trow = false;
     bool in_cell = false;
+
+    PictureDef *active_picture = nullptr;
+    PicElem pending_pelem      = {0};
+    bool in_pelem_text         = false;
 
     StrBuf span_buf;
     StrBuf box_buf;
@@ -478,17 +536,21 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
         size_t lt = r.pos;
         while (lt < r.len && r.src[lt] != '<') lt++;
 
-        if (lt > r.pos && in_para) {
-            if (in_box) {
+        if (lt > r.pos) {
+            if (in_pelem_text) {
                 xml_unescape_into(&box_buf, r.src + r.pos, lt - r.pos);
-            } else if (in_span) {
-                xml_unescape_into(&span_buf, r.src + r.pos, lt - r.pos);
-            } else {
-                StrBuf tmp;
-                sb_init(&tmp, lt - r.pos + 8);
-                xml_unescape_into(&tmp, r.src + r.pos, lt - r.pos);
-                para_push_run(&current_para, current_para.label_style_idx, tmp.data);
-                sb_free(&tmp);
+            } else if (in_para) {
+                if (in_box) {
+                    xml_unescape_into(&box_buf, r.src + r.pos, lt - r.pos);
+                } else if (in_span) {
+                    xml_unescape_into(&span_buf, r.src + r.pos, lt - r.pos);
+                } else {
+                    StrBuf tmp;
+                    sb_init(&tmp, lt - r.pos + 8);
+                    xml_unescape_into(&tmp, r.src + r.pos, lt - r.pos);
+                    para_push_run(&current_para, current_para.label_style_idx, tmp.data);
+                    sb_free(&tmp);
+                }
             }
         }
 
@@ -522,7 +584,21 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
             while (r.pos < r.len && r.src[r.pos] != '>') r.pos++;
             if (r.pos < r.len) r.pos++;
 
-            if (strcmp(tag, "box") == 0 && in_box) {
+            if ((strcmp(tag, "pbox") == 0 || strcmp(tag, "ptext") == 0) && in_pelem_text) {
+                pending_pelem.text = dup_cstr(box_buf.data);
+                if (active_picture) picture_push_elem(active_picture, pending_pelem);
+                else free(pending_pelem.text);
+                box_buf.len = 0;
+                box_buf.data[0] = '\0';
+                in_pelem_text = false;
+            } else if (strcmp(tag, "picture") == 0 && active_picture) {
+                StoryItem pitem = {
+                    .type    = ITEM_PICTURE,
+                    .picture = active_picture
+                };
+                doc_push_item(doc, pitem);
+                active_picture = nullptr;
+            } else if (strcmp(tag, "box") == 0 && in_box) {
                 pending_box.text = dup_cstr(box_buf.data);
                 para_push_special_run(&current_para, pending_box);
                 box_buf.len = 0;
@@ -870,6 +946,127 @@ static bool parse_ir_xml(const char *xml_src, size_t xml_len, IrDocument *doc) {
                 .h_mm      = h ? parse_mm(h) : 0.0,
                 .raise_mm  = rs ? parse_mm(rs) : 0.0
             });
+        } else if (strcmp(tag, "mfrac") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *br  = get_attr(attrs, attr_count, "bar");
+            const char *dl  = get_attr(attrs, attr_count, "delim");
+            const char *st  = get_attr(attrs, attr_count, "style");
+            const char *num = get_attr(attrs, attr_count, "num");
+            const char *den = get_attr(attrs, attr_count, "den");
+            para_push_special_run(&current_para, (SpanRun){
+                .kind      = RUN_MFRAC,
+                .style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx,
+                .text      = dup_cstr(num ? num : ""),
+                .aux_text  = dup_cstr(den ? den : ""),
+                .has_bar   = (!br || strcmp(br, "true") == 0),
+                .has_paren = (dl && strcmp(dl, "paren") == 0)
+            });
+        } else if (strcmp(tag, "msqrt") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *st  = get_attr(attrs, attr_count, "style");
+            const char *idx = get_attr(attrs, attr_count, "index");
+            const char *bdy = get_attr(attrs, attr_count, "body");
+            para_push_special_run(&current_para, (SpanRun){
+                .kind      = RUN_MSQRT,
+                .style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx,
+                .text      = dup_cstr(bdy ? bdy : ""),
+                .aux_text  = dup_cstr(idx ? idx : "")
+            });
+        } else if (strcmp(tag, "mover") == 0 && in_para) {
+            if (in_span && span_buf.len > 0) {
+                para_push_run(&current_para, active_cs_idx, span_buf.data);
+                span_buf.len = 0;
+                span_buf.data[0] = '\0';
+            }
+            const char *kd  = get_attr(attrs, attr_count, "kind");
+            const char *st  = get_attr(attrs, attr_count, "style");
+            const char *bdy = get_attr(attrs, attr_count, "body");
+            para_push_special_run(&current_para, (SpanRun){
+                .kind      = RUN_MOVER,
+                .style_idx = st ? find_char_style_idx(doc, st) : active_cs_idx,
+                .text      = dup_cstr(bdy ? bdy : ""),
+                .aux_text  = dup_cstr(kd ? kd : "line")
+            });
+        } else if (strcmp(tag, "picture") == 0 && !self_closing) {
+            active_picture = calloc(1, sizeof(PictureDef));
+            if (active_picture) {
+                const char *w  = get_attr(attrs, attr_count, "width");
+                const char *h  = get_attr(attrs, attr_count, "height");
+                const char *al = get_attr(attrs, attr_count, "align");
+                active_picture->w_mm  = w ? parse_mm(w) : 60.0;
+                active_picture->h_mm  = h ? parse_mm(h) : 30.0;
+                active_picture->align = ALIGN_LEFT;
+                if (al) {
+                    if (strcmp(al, "center") == 0)     active_picture->align = ALIGN_CENTER;
+                    else if (strcmp(al, "right") == 0) active_picture->align = ALIGN_RIGHT;
+                }
+            }
+        } else if (strcmp(tag, "pline") == 0 && active_picture) {
+            picture_push_elem(active_picture, (PicElem){
+                .kind     = PIC_LINE,
+                .x1_mm    = parse_mm(get_attr(attrs, attr_count, "x1")),
+                .y1_mm    = parse_mm(get_attr(attrs, attr_count, "y1")),
+                .x2_mm    = parse_mm(get_attr(attrs, attr_count, "x2")),
+                .y2_mm    = parse_mm(get_attr(attrs, attr_count, "y2")),
+                .thick_mm = parse_mm(get_attr(attrs, attr_count, "thick")),
+                .arrow    = (get_attr(attrs, attr_count, "arrow") && strcmp(get_attr(attrs, attr_count, "arrow"), "1") == 0)
+            });
+        } else if (strcmp(tag, "pcircle") == 0 && active_picture) {
+            picture_push_elem(active_picture, (PicElem){
+                .kind     = PIC_CIRCLE,
+                .x1_mm    = parse_mm(get_attr(attrs, attr_count, "cx")),
+                .y1_mm    = parse_mm(get_attr(attrs, attr_count, "cy")),
+                .r_mm     = parse_mm(get_attr(attrs, attr_count, "r")),
+                .thick_mm = parse_mm(get_attr(attrs, attr_count, "thick")),
+                .fill     = (get_attr(attrs, attr_count, "fill") && strcmp(get_attr(attrs, attr_count, "fill"), "1") == 0)
+            });
+        } else if (strcmp(tag, "poval") == 0 && active_picture) {
+            PicElem el = {
+                .kind     = PIC_OVAL,
+                .x1_mm    = parse_mm(get_attr(attrs, attr_count, "cx")),
+                .y1_mm    = parse_mm(get_attr(attrs, attr_count, "cy")),
+                .w_mm     = parse_mm(get_attr(attrs, attr_count, "width")),
+                .h_mm     = parse_mm(get_attr(attrs, attr_count, "height")),
+                .thick_mm = parse_mm(get_attr(attrs, attr_count, "thick"))
+            };
+            const char *pt = get_attr(attrs, attr_count, "part");
+            if (pt) snprintf(el.part, sizeof(el.part), "%.7s", pt);
+            picture_push_elem(active_picture, el);
+        } else if (strcmp(tag, "pbezier") == 0 && active_picture) {
+            picture_push_elem(active_picture, (PicElem){
+                .kind     = PIC_BEZIER,
+                .x1_mm    = parse_mm(get_attr(attrs, attr_count, "x1")),
+                .y1_mm    = parse_mm(get_attr(attrs, attr_count, "y1")),
+                .x2_mm    = parse_mm(get_attr(attrs, attr_count, "x2")),
+                .y2_mm    = parse_mm(get_attr(attrs, attr_count, "y2")),
+                .x3_mm    = parse_mm(get_attr(attrs, attr_count, "x3")),
+                .y3_mm    = parse_mm(get_attr(attrs, attr_count, "y3")),
+                .thick_mm = parse_mm(get_attr(attrs, attr_count, "thick"))
+            });
+        } else if ((strcmp(tag, "pbox") == 0 || strcmp(tag, "ptext") == 0) && active_picture && !self_closing) {
+            memset(&pending_pelem, 0, sizeof(pending_pelem));
+            pending_pelem.kind      = (strcmp(tag, "pbox") == 0) ? PIC_BOX : PIC_TEXT;
+            pending_pelem.x1_mm     = parse_mm(get_attr(attrs, attr_count, "x"));
+            pending_pelem.y1_mm     = parse_mm(get_attr(attrs, attr_count, "y"));
+            pending_pelem.w_mm      = parse_mm(get_attr(attrs, attr_count, "width"));
+            pending_pelem.h_mm      = parse_mm(get_attr(attrs, attr_count, "height"));
+            pending_pelem.thick_mm  = parse_mm(get_attr(attrs, attr_count, "border"));
+            pending_pelem.dash_mm   = parse_mm(get_attr(attrs, attr_count, "dash"));
+            const char *al = get_attr(attrs, attr_count, "align");
+            const char *st = get_attr(attrs, attr_count, "style");
+            snprintf(pending_pelem.align, sizeof(pending_pelem.align), "%.7s", al ? al : "c");
+            pending_pelem.style_idx = st ? find_char_style_idx(doc, st) : 0;
+            box_buf.len = 0;
+            box_buf.data[0] = '\0';
+            in_pelem_text = true;
         } else if (strcmp(tag, "vspace") == 0) {
             const char *h  = get_attr(attrs, attr_count, "height");
             const char *st = get_attr(attrs, attr_count, "starred");
@@ -899,6 +1096,7 @@ static void free_ir_document(IrDocument *doc) {
     for (size_t i = 0; i < doc->item_count; i++) {
         for (size_t j = 0; j < doc->items[i].run_count; j++) {
             free(doc->items[i].runs[j].text);
+            free(doc->items[i].runs[j].aux_text);
         }
         free(doc->items[i].runs);
         if (doc->items[i].table) {
@@ -907,6 +1105,7 @@ static void free_ir_document(IrDocument *doc) {
                 for (size_t c = 0; c < tbl->rows[r].cell_count; c++) {
                     for (size_t k = 0; k < tbl->rows[r].cells[c].run_count; k++) {
                         free(tbl->rows[r].cells[c].runs[k].text);
+                        free(tbl->rows[r].cells[c].runs[k].aux_text);
                     }
                     free(tbl->rows[r].cells[c].runs);
                 }
@@ -914,6 +1113,14 @@ static void free_ir_document(IrDocument *doc) {
             }
             free(tbl->rows);
             free(tbl);
+        }
+        if (doc->items[i].picture) {
+            PictureDef *pic = doc->items[i].picture;
+            for (size_t e = 0; e < pic->elem_count; e++) {
+                free(pic->elems[e].text);
+            }
+            free(pic->elems);
+            free(pic);
         }
     }
     free(doc->items);
@@ -1271,6 +1478,169 @@ static void emit_svg_line(
                 cur_x += words[i].space_w_mm;
             }
             i++;
+        } else if (words[i].kind == RUN_MFRAC) {
+            size_t cs_idx = (words[i].char_style_idx < doc->char_style_count) ? words[i].char_style_idx : 0;
+            const CharStyle *cs = &doc->char_styles[cs_idx];
+            double font_h = (cs->size_mm > 0.1) ? cs->size_mm : 3.88;
+            double frac_w = words[i].word_w_mm;
+            double pad_p  = words[i].has_paren ? 1.3 : 0.0;
+            double inner_w = fmax(1.0, frac_w - 2.0 * pad_p);
+            double mid_x  = cur_x + frac_w * 0.5;
+            double axis_y = abs_y - font_h * 0.30;
+
+            if (words[i].has_paren) {
+                double py_top = axis_y - font_h * 0.95;
+                double py_bot = axis_y + font_h * 0.95;
+                char psvg[512];
+                snprintf(psvg, sizeof(psvg),
+                         "        <path d=\"M %.3f %.3f Q %.3f %.3f %.3f %.3f M %.3f %.3f Q %.3f %.3f %.3f %.3f\" "
+                         "fill=\"none\" stroke=\"%s\" stroke-width=\"0.32\"/>\n",
+                         cur_x + 1.1, py_top, cur_x + 0.1, axis_y, cur_x + 1.1, py_bot,
+                         cur_x + frac_w - 1.1, py_top, cur_x + frac_w - 0.1, axis_y, cur_x + frac_w - 1.1, py_bot,
+                         cs->color);
+                sb_append_cstr(&frame->svg_content, psvg);
+            }
+
+            if (words[i].has_bar) {
+                char lsvg[256];
+                snprintf(lsvg, sizeof(lsvg),
+                         "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"%s\" stroke-width=\"0.30\"/>\n",
+                         cur_x + pad_p + 0.3, axis_y, cur_x + pad_p + inner_w - 0.3, axis_y, cs->color);
+                sb_append_cstr(&frame->svg_content, lsvg);
+            }
+
+            if (words[i].word && words[i].word[0] != '\0') {
+                char ntxt[256];
+                snprintf(ntxt, sizeof(ntxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\" text-anchor=\"middle\"><tspan class=\"cs-%s\" style=\"font-size:%.3fpx;\">",
+                         mid_x, axis_y - font_h * 0.22, cs->id, font_h * 0.82);
+                sb_append_cstr(&frame->svg_content, ntxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+            if (words[i].aux_text && words[i].aux_text[0] != '\0') {
+                char dtxt[256];
+                snprintf(dtxt, sizeof(dtxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\" text-anchor=\"middle\"><tspan class=\"cs-%s\" style=\"font-size:%.3fpx;\">",
+                         mid_x, axis_y + font_h * 0.82, cs->id, font_h * 0.82);
+                sb_append_cstr(&frame->svg_content, dtxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].aux_text);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+
+            cur_x += frac_w;
+            if (i + 1 < end_idx && words[i].space_after) cur_x += words[i].space_w_mm;
+            i++;
+        } else if (words[i].kind == RUN_MSQRT) {
+            size_t cs_idx = (words[i].char_style_idx < doc->char_style_count) ? words[i].char_style_idx : 0;
+            const CharStyle *cs = &doc->char_styles[cs_idx];
+            double font_h = (cs->size_mm > 0.1) ? cs->size_mm : 3.88;
+            double sqrt_w = words[i].word_w_mm;
+            double body_w = words[i].h_mm;
+            double idx_w  = words[i].raise_mm;
+            double hook_w = fmax(2.2, idx_w + 1.8);
+            double top_y  = abs_y - font_h * 0.92;
+            double bot_y  = abs_y + font_h * 0.12;
+            double mid_y  = abs_y - font_h * 0.35;
+
+            if (words[i].aux_text && words[i].aux_text[0] != '\0') {
+                char itxt[256];
+                snprintf(itxt, sizeof(itxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\"><tspan class=\"cs-%s\" style=\"font-size:%.3fpx;\">",
+                         cur_x + 0.2, mid_y - 0.25, cs->id, font_h * 0.62);
+                sb_append_cstr(&frame->svg_content, itxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].aux_text);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+
+            char rpath[384];
+            snprintf(rpath, sizeof(rpath),
+                     "        <path d=\"M %.3f %.3f L %.3f %.3f L %.3f %.3f L %.3f %.3f L %.3f %.3f\" "
+                     "fill=\"none\" stroke=\"%s\" stroke-width=\"0.30\" stroke-linejoin=\"round\"/>\n",
+                     cur_x + hook_w - 1.8, mid_y,
+                     cur_x + hook_w - 1.4, mid_y - 0.2,
+                     cur_x + hook_w - 0.8, bot_y,
+                     cur_x + hook_w, top_y,
+                     cur_x + hook_w + body_w + 0.6, top_y,
+                     cs->color);
+            sb_append_cstr(&frame->svg_content, rpath);
+
+            if (words[i].word && words[i].word[0] != '\0') {
+                char btxt[256];
+                snprintf(btxt, sizeof(btxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\"><tspan class=\"cs-%s\">",
+                         cur_x + hook_w + 0.3, abs_y, cs->id);
+                sb_append_cstr(&frame->svg_content, btxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+
+            cur_x += sqrt_w;
+            if (i + 1 < end_idx && words[i].space_after) cur_x += words[i].space_w_mm;
+            i++;
+        } else if (words[i].kind == RUN_MOVER) {
+            size_t cs_idx = (words[i].char_style_idx < doc->char_style_count) ? words[i].char_style_idx : 0;
+            const CharStyle *cs = &doc->char_styles[cs_idx];
+            double font_h = (cs->size_mm > 0.1) ? cs->size_mm : 3.88;
+            double mv_w   = words[i].word_w_mm;
+            const char *kd = words[i].aux_text ? words[i].aux_text : "line";
+
+            if (words[i].word && words[i].word[0] != '\0') {
+                char btxt[256];
+                snprintf(btxt, sizeof(btxt),
+                         "        <text x=\"%.3f\" y=\"%.3f\" xml:space=\"preserve\"><tspan class=\"cs-%s\">",
+                         cur_x + 0.2, abs_y, cs->id);
+                sb_append_cstr(&frame->svg_content, btxt);
+                sb_append_escaped_xml(&frame->svg_content, words[i].word);
+                sb_append_cstr(&frame->svg_content, "</tspan></text>\n");
+            }
+
+            double oy = abs_y - font_h * 0.88;
+            double x1 = cur_x + 0.2;
+            double x2 = cur_x + mv_w - 0.2;
+            double xm = 0.5 * (x1 + x2);
+            char osvg[384];
+            if (strcmp(kd, "hat") == 0) {
+                snprintf(osvg, sizeof(osvg),
+                         "        <path d=\"M %.3f %.3f L %.3f %.3f L %.3f %.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"0.28\"/>\n",
+                         x1, oy + 0.3, xm, oy - 0.45, x2, oy + 0.3, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else if (strcmp(kd, "tilde") == 0) {
+                snprintf(osvg, sizeof(osvg),
+                         "        <path d=\"M %.3f %.3f Q %.3f %.3f %.3f %.3f T %.3f %.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"0.28\"/>\n",
+                         x1, oy, 0.5 * (x1 + xm), oy - 0.5, xm, oy, x2, oy, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else if (strcmp(kd, "vec") == 0) {
+                snprintf(osvg, sizeof(osvg),
+                         "        <path d=\"M %.3f %.3f L %.3f %.3f M %.3f %.3f L %.3f %.3f L %.3f %.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"0.28\"/>\n",
+                         x1, oy, x2, oy, x2 - 0.65, oy - 0.35, x2, oy, x2 - 0.65, oy + 0.35, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else if (strcmp(kd, "dot") == 0) {
+                snprintf(osvg, sizeof(osvg),
+                         "        <circle cx=\"%.3f\" cy=\"%.3f\" r=\"0.24\" fill=\"%s\"/>\n",
+                         xm, oy, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else if (strcmp(kd, "ddot") == 0) {
+                snprintf(osvg, sizeof(osvg),
+                         "        <circle cx=\"%.3f\" cy=\"%.3f\" r=\"0.24\" fill=\"%s\"/><circle cx=\"%.3f\" cy=\"%.3f\" r=\"0.24\" fill=\"%s\"/>\n",
+                         xm - 0.45, oy, cs->color, xm + 0.45, oy, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else if (strcmp(kd, "ubrace") == 0) {
+                double uy = abs_y + font_h * 0.28;
+                snprintf(osvg, sizeof(osvg),
+                         "        <path d=\"M %.3f %.3f Q %.3f %.3f %.3f %.3f Q %.3f %.3f %.3f %.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"0.28\"/>\n",
+                         x1, uy, xm, uy + 0.65, xm, uy + 0.85, xm, uy + 0.65, x2, uy, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            } else {
+                snprintf(osvg, sizeof(osvg),
+                         "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"%s\" stroke-width=\"0.28\"/>\n",
+                         x1, oy, x2, oy, cs->color);
+                sb_append_cstr(&frame->svg_content, osvg);
+            }
+
+            cur_x += mv_w;
+            if (i + 1 < end_idx && words[i].space_after) cur_x += words[i].space_w_mm;
+            i++;
         } else {
             i++;
         }
@@ -1311,6 +1681,73 @@ static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size
                 .box_align      = run->box_align ? run->box_align : 'c',
                 .fill           = FILL_NONE,
                 .space_after    = false
+            };
+            continue;
+        }
+
+        if (run->kind == RUN_MFRAC) {
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            const char *nstr = run->text ? run->text : "";
+            const char *dstr = run->aux_text ? run->aux_text : "";
+            double nw = estimate_word_width_mm(nstr, cs, fv) * 0.85;
+            double dw = estimate_word_width_mm(dstr, cs, fv) * 0.85;
+            double fw = fmax(nw, dw) + 1.6 + (run->has_paren ? 2.6 : 0.0);
+            words[count++] = (WordToken){
+                .kind           = RUN_MFRAC,
+                .char_style_idx = cs_idx,
+                .word           = dup_cstr(nstr),
+                .aux_text       = dup_cstr(dstr),
+                .word_w_mm      = fw,
+                .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = nw,
+                .raise_mm       = dw,
+                .has_bar        = run->has_bar,
+                .has_paren      = run->has_paren
+            };
+            continue;
+        }
+
+        if (run->kind == RUN_MSQRT) {
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            const char *bstr = run->text ? run->text : "";
+            const char *istr = run->aux_text ? run->aux_text : "";
+            double bw = estimate_word_width_mm(bstr, cs, fv);
+            double iw = (istr[0] != '\0') ? estimate_word_width_mm(istr, cs, fv) * 0.65 : 0.0;
+            double sw = fmax(2.2, iw + 1.8) + bw + 0.8;
+            words[count++] = (WordToken){
+                .kind           = RUN_MSQRT,
+                .char_style_idx = cs_idx,
+                .word           = dup_cstr(bstr),
+                .aux_text       = dup_cstr(istr),
+                .word_w_mm      = sw,
+                .space_w_mm     = estimate_space_width_mm(cs, fv),
+                .h_mm           = bw,
+                .raise_mm       = iw
+            };
+            continue;
+        }
+
+        if (run->kind == RUN_MOVER) {
+            if (count >= cap) {
+                cap *= 2;
+                words = realloc(words, cap * sizeof(WordToken));
+            }
+            const char *bstr = run->text ? run->text : "";
+            const char *kstr = run->aux_text ? run->aux_text : "line";
+            double bw = estimate_word_width_mm(bstr, cs, fv);
+            words[count++] = (WordToken){
+                .kind           = RUN_MOVER,
+                .char_style_idx = cs_idx,
+                .word           = dup_cstr(bstr),
+                .aux_text       = dup_cstr(kstr),
+                .word_w_mm      = fmax(1.8, bw + 0.4),
+                .space_w_mm     = estimate_space_width_mm(cs, fv)
             };
             continue;
         }
@@ -1385,7 +1822,10 @@ static WordToken *tokenize_runs(const IrDocument *doc, const SpanRun *runs, size
 
 static void free_word_tokens(WordToken *words, size_t count) {
     if (!words) return;
-    for (size_t i = 0; i < count; i++) free(words[i].word);
+    for (size_t i = 0; i < count; i++) {
+        free(words[i].word);
+        free(words[i].aux_text);
+    }
     free(words);
 }
 
@@ -1450,12 +1890,19 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
         bool is_last    = (next_idx >= count) || forced_break;
 
         double max_font_mm = 0.0;
+        bool has_tall_math = false;
         for (size_t k = idx; k < line_end; k++) {
             double sz = doc->char_styles[words[k].char_style_idx].size_mm;
             if (sz > max_font_mm) max_font_mm = sz;
+            if (words[k].kind == RUN_MFRAC || words[k].kind == RUN_MSQRT) {
+                has_tall_math = true;
+            }
         }
         if (max_font_mm <= 0.1 && doc->char_style_count > 0) {
             max_font_mm = doc->char_styles[0].size_mm;
+        }
+        if (has_tall_math) {
+            ts->cursor_y_mm += 1.6;
         }
         double baseline_offset = fmax(max_font_mm * 0.82, line_h * 0.76);
 
@@ -1465,7 +1912,7 @@ static void typeset_paragraph(Typesetter *ts, const IrDocument *doc, const Story
                       words, idx, line_end, acc_w, indent,
                       ts->cursor_y_mm + baseline_offset, is_last);
 
-        ts->cursor_y_mm += line_h + brk_extra_mm;
+        ts->cursor_y_mm += line_h + brk_extra_mm + (has_tall_math ? 2.2 : 0.0);
         ts->at_frame_top = false;
         first_line       = false;
         idx              = next_idx;
@@ -1870,6 +2317,147 @@ static void typeset_marginpar(Typesetter *ts, const IrDocument *doc, const Story
     free_word_tokens(words, wcount);
 }
 
+static void typeset_picture(Typesetter *ts, const IrDocument *doc, const PictureDef *pic) {
+    if (!pic) return;
+    double pw = fmax(5.0, pic->w_mm);
+    double ph = fmax(5.0, pic->h_mm);
+
+    if (!ts->at_frame_top) {
+        ts->cursor_y_mm += 2.0;
+    }
+
+    FlowFrame *fr = &ts->frames[ts->cur_frame];
+    if (ts->cursor_y_mm + ph > fr->h_mm + 0.05 && !ts->at_frame_top) {
+        typesetter_advance_frame(ts, doc);
+        fr = &ts->frames[ts->cur_frame];
+    }
+
+    double ox = fr->x_mm;
+    if (pic->align == ALIGN_CENTER) {
+        ox += fmax(0.0, (fr->w_mm - pw) * 0.5);
+    } else if (pic->align == ALIGN_RIGHT) {
+        ox += fmax(0.0, fr->w_mm - pw);
+    }
+    double oy = fr->y_mm + ts->cursor_y_mm + ph;
+
+    for (size_t e = 0; e < pic->elem_count; e++) {
+        const PicElem *el = &pic->elems[e];
+        double lw = (el->thick_mm > 0.02) ? el->thick_mm : 0.18;
+
+        if (el->kind == PIC_LINE) {
+            double x1 = ox + el->x1_mm;
+            double y1 = oy - el->y1_mm;
+            double x2 = ox + el->x2_mm;
+            double y2 = oy - el->y2_mm;
+            char lbuf[512];
+            snprintf(lbuf, sizeof(lbuf),
+                     "        <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                     x1, y1, x2, y2, lw);
+            sb_append_cstr(&fr->svg_content, lbuf);
+
+            if (el->arrow) {
+                double dx = x2 - x1;
+                double dy = y2 - y1;
+                double len = hypot(dx, dy);
+                if (len > 0.1) {
+                    double ux = dx / len;
+                    double uy = dy / len;
+                    double ah_len = 1.85;
+                    double ah_w   = 0.72;
+                    double bx = x2 - ux * ah_len;
+                    double by = y2 - uy * ah_len;
+                    double px1 = bx - uy * ah_w;
+                    double py1 = by + ux * ah_w;
+                    double px2 = bx + uy * ah_w;
+                    double py2 = by - ux * ah_w;
+                    snprintf(lbuf, sizeof(lbuf),
+                             "        <polygon points=\"%.3f,%.3f %.3f,%.3f %.3f,%.3f\" fill=\"Black\"/>\n",
+                             x2, y2, px1, py1, px2, py2);
+                    sb_append_cstr(&fr->svg_content, lbuf);
+                }
+            }
+        } else if (el->kind == PIC_CIRCLE) {
+            double cx = ox + el->x1_mm;
+            double cy = oy - el->y1_mm;
+            char cbuf[256];
+            snprintf(cbuf, sizeof(cbuf),
+                     "        <circle cx=\"%.3f\" cy=\"%.3f\" r=\"%.3f\" fill=\"%s\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                     cx, cy, el->r_mm, el->fill ? "Black" : "none", lw);
+            sb_append_cstr(&fr->svg_content, cbuf);
+        } else if (el->kind == PIC_OVAL) {
+            double cx = ox + el->x1_mm;
+            double cy = oy - el->y1_mm;
+            double rx = fmin(el->w_mm, el->h_mm) * 0.28;
+            char obuf[256];
+            snprintf(obuf, sizeof(obuf),
+                     "        <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" rx=\"%.3f\" ry=\"%.3f\" fill=\"none\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                     cx - el->w_mm * 0.5, cy - el->h_mm * 0.5, el->w_mm, el->h_mm, rx, rx, lw);
+            sb_append_cstr(&fr->svg_content, obuf);
+        } else if (el->kind == PIC_BEZIER) {
+            double x1 = ox + el->x1_mm, y1 = oy - el->y1_mm;
+            double x2 = ox + el->x2_mm, y2 = oy - el->y2_mm;
+            double x3 = ox + el->x3_mm, y3 = oy - el->y3_mm;
+            char bbuf[256];
+            snprintf(bbuf, sizeof(bbuf),
+                     "        <path d=\"M %.3f %.3f Q %.3f %.3f %.3f %.3f\" fill=\"none\" stroke=\"Black\" stroke-width=\"%.3f\"/>\n",
+                     x1, y1, x2, y2, x3, y3, lw);
+            sb_append_cstr(&fr->svg_content, bbuf);
+        } else if (el->kind == PIC_BOX) {
+            double rx = ox + el->x1_mm;
+            double ry = oy - el->y1_mm - el->h_mm;
+            size_t cs_idx = (el->style_idx < doc->char_style_count) ? el->style_idx : 0;
+            const CharStyle *cs = &doc->char_styles[cs_idx];
+            if (el->thick_mm > 0.005) {
+                char rbuf[320];
+                if (el->dash_mm > 0.05) {
+                    snprintf(rbuf, sizeof(rbuf),
+                             "        <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"%.3f\" stroke-dasharray=\"%.2f, %.2f\"/>\n",
+                             rx, ry, el->w_mm, el->h_mm, cs->color, el->thick_mm, el->dash_mm, el->dash_mm * 0.8);
+                } else {
+                    snprintf(rbuf, sizeof(rbuf),
+                             "        <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" fill=\"none\" stroke=\"%s\" stroke-width=\"%.3f\"/>\n",
+                             rx, ry, el->w_mm, el->h_mm, cs->color, el->thick_mm);
+                }
+                sb_append_cstr(&fr->svg_content, rbuf);
+            }
+            if (el->text && el->text[0] != '\0') {
+                double tx = rx + el->w_mm * 0.5;
+                double ty = ry + el->h_mm * 0.5 + cs->size_mm * 0.32;
+                const char *anchor = "middle";
+                if (strchr(el->align, 'l')) { tx = rx + 1.2; anchor = "start"; }
+                else if (strchr(el->align, 'r')) { tx = rx + el->w_mm - 1.2; anchor = "end"; }
+                if (strchr(el->align, 't')) { ty = ry + cs->size_mm + 0.8; }
+                else if (strchr(el->align, 'b')) { ty = ry + el->h_mm - 1.0; }
+
+                char tbuf[256];
+                snprintf(tbuf, sizeof(tbuf),
+                         "        <text x=\"%.3f\" y=\"%.3f\" text-anchor=\"%s\"><tspan class=\"cs-%s\">",
+                         tx, ty, anchor, cs->id);
+                sb_append_cstr(&fr->svg_content, tbuf);
+                sb_append_escaped_xml(&fr->svg_content, el->text);
+                sb_append_cstr(&fr->svg_content, "</tspan></text>\n");
+            }
+        } else if (el->kind == PIC_TEXT) {
+            if (el->text && el->text[0] != '\0') {
+                size_t cs_idx = (el->style_idx < doc->char_style_count) ? el->style_idx : 0;
+                const CharStyle *cs = &doc->char_styles[cs_idx];
+                double tx = ox + el->x1_mm;
+                double ty = oy - el->y1_mm;
+                char tbuf[256];
+                snprintf(tbuf, sizeof(tbuf),
+                         "        <text x=\"%.3f\" y=\"%.3f\"><tspan class=\"cs-%s\">",
+                         tx, ty, cs->id);
+                sb_append_cstr(&fr->svg_content, tbuf);
+                sb_append_escaped_xml(&fr->svg_content, el->text);
+                sb_append_cstr(&fr->svg_content, "</tspan></text>\n");
+            }
+        }
+    }
+
+    ts->cursor_y_mm += ph + 2.2;
+    ts->at_frame_top = false;
+}
+
 static void format_page_num(size_t page_num, const char *numbering, char *out, size_t out_sz) {
     if (!numbering || strcmp(numbering, "arabic") == 0) {
         snprintf(out, out_sz, "%zu", page_num);
@@ -1968,9 +2556,9 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     }
     fprintf(out, "  ]]></style>\n\n");
 
-    // 2. Fondo continuo del escritorio para cubrir todo el recorrido del deslizamiento
+    // 2. Fondo continuo del escritorio para cubrir todo el recorrido del deslizamiento y zoom
     fprintf(out, "  <rect x=\"%.3f\" y=\"%.3f\" width=\"%.3f\" height=\"%.3f\" fill=\"#1e2430\"/>\n\n",
-            -view_w, -view_h, strip_w + 2.0 * view_w, view_h * 3.0);
+            -view_w * 2.0, -view_h * 2.0, strip_w + 4.0 * view_w, view_h * 5.0);
 
     // 3. Tira horizontal de páginas para el efecto ViewBox Sliding
     fprintf(out, "  <g id=\"pages-strip\">\n");
@@ -2028,8 +2616,8 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     }
     fprintf(out, "  </g>\n\n");
 
-    // 4. Barra HUD anclada dinámicamente al viewBox en curso
-    double hud_w = 68.0;
+    // 4. Barra HUD anclada dinámicamente al viewBox en curso (navegación + zoom)
+    double hud_w = 116.0;
     double hud_h = 10.5;
     double hud_x = (view_w - hud_w) * 0.5;
     double hud_y = view_h - hud_h - 6.5;
@@ -2041,51 +2629,135 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     // Botón Anterior
     fprintf(out, "    <g id=\"btn-prev\" class=\"hud-btn\" transform=\"translate(%.3f, %.3f)\">\n",
             hud_x + 2.2, hud_y + 1.55);
-    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"14\" height=\"7.4\" rx=\"3.7\"/>\n");
-    fprintf(out, "      <text class=\"hud-label\" x=\"7\" y=\"4.95\" text-anchor=\"middle\">&#x2190;</text>\n");
+    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"12\" height=\"7.4\" rx=\"3.7\"/>\n");
+    fprintf(out, "      <text class=\"hud-label\" x=\"6\" y=\"4.95\" text-anchor=\"middle\">&#x2190;</text>\n");
     fprintf(out, "    </g>\n");
 
-    // Indicador central
+    // Indicador central de página
     fprintf(out, "    <text id=\"hud-indicator\" class=\"hud-label\" x=\"%.3f\" y=\"%.3f\" text-anchor=\"middle\">P&#xE1;g. 1 / %zu</text>\n",
-            view_w * 0.5, hud_y + 6.5, ts->total_pages);
+            hud_x + 33.0, hud_y + 6.5, ts->total_pages);
 
     // Botón Siguiente
     fprintf(out, "    <g id=\"btn-next\" class=\"hud-btn\" transform=\"translate(%.3f, %.3f)\">\n",
-            hud_x + hud_w - 16.2, hud_y + 1.55);
-    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"14\" height=\"7.4\" rx=\"3.7\"/>\n");
-    fprintf(out, "      <text class=\"hud-label\" x=\"7\" y=\"4.95\" text-anchor=\"middle\">&#x2192;</text>\n");
+            hud_x + 51.8, hud_y + 1.55);
+    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"12\" height=\"7.4\" rx=\"3.7\"/>\n");
+    fprintf(out, "      <text class=\"hud-label\" x=\"6\" y=\"4.95\" text-anchor=\"middle\">&#x2192;</text>\n");
+    fprintf(out, "    </g>\n");
+
+    // Separador vertical
+    fprintf(out, "    <line x1=\"%.3f\" y1=\"%.3f\" x2=\"%.3f\" y2=\"%.3f\" stroke=\"#334155\" stroke-width=\"0.35\"/>\n",
+            hud_x + 66.2, hud_y + 2.0, hud_x + 66.2, hud_y + 8.5);
+
+    // Botón Zoom Out (-)
+    fprintf(out, "    <g id=\"btn-zoom-out\" class=\"hud-btn\" transform=\"translate(%.3f, %.3f)\">\n",
+            hud_x + 68.6, hud_y + 1.55);
+    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"10\" height=\"7.4\" rx=\"3.7\"/>\n");
+    fprintf(out, "      <text class=\"hud-label\" x=\"5\" y=\"4.95\" text-anchor=\"middle\">&#x2212;</text>\n");
+    fprintf(out, "    </g>\n");
+
+    // Botón/Indicador Reset Zoom (100%)
+    fprintf(out, "    <g id=\"btn-zoom-reset\" class=\"hud-btn\" transform=\"translate(%.3f, %.3f)\">\n",
+            hud_x + 80.0, hud_y + 1.55);
+    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"22\" height=\"7.4\" rx=\"3.7\"/>\n");
+    fprintf(out, "      <text id=\"hud-zoom-label\" class=\"hud-label\" x=\"11\" y=\"4.95\" text-anchor=\"middle\">100%%</text>\n");
+    fprintf(out, "    </g>\n");
+
+    // Botón Zoom In (+)
+    fprintf(out, "    <g id=\"btn-zoom-in\" class=\"hud-btn\" transform=\"translate(%.3f, %.3f)\">\n",
+            hud_x + 103.4, hud_y + 1.55);
+    fprintf(out, "      <rect x=\"0\" y=\"0\" width=\"10\" height=\"7.4\" rx=\"3.7\"/>\n");
+    fprintf(out, "      <text class=\"hud-label\" x=\"5\" y=\"4.95\" text-anchor=\"middle\">+</text>\n");
     fprintf(out, "    </g>\n");
     fprintf(out, "  </g>\n\n");
 
-    // 5. Controlador JavaScript embebido: ViewBox Sliding + Teclado + Rueda + Hash URL
+    // 5. Controlador JavaScript embebido: ViewBox Sliding + Zoom & Pan + Teclado + Rueda + Hash URL
     fprintf(out, "  <script><![CDATA[\n");
     fprintf(out, "  (() => {\n");
     fprintf(out, "    const svg = document.getElementById('doc-root');\n");
     fprintf(out, "    const hud = document.getElementById('hud');\n");
     fprintf(out, "    const indicator = document.getElementById('hud-indicator');\n");
+    fprintf(out, "    const zoomLabel = document.getElementById('hud-zoom-label');\n");
     fprintf(out, "    const btnPrev = document.getElementById('btn-prev');\n");
-    fprintf(out, "    const btnNext = document.getElementById('btn-next');\n\n");
+    fprintf(out, "    const btnNext = document.getElementById('btn-next');\n");
+    fprintf(out, "    const btnZoomOut = document.getElementById('btn-zoom-out');\n");
+    fprintf(out, "    const btnZoomReset = document.getElementById('btn-zoom-reset');\n");
+    fprintf(out, "    const btnZoomIn = document.getElementById('btn-zoom-in');\n\n");
     fprintf(out, "    const TOTAL_PAGES = %zu;\n", ts->total_pages);
     fprintf(out, "    const VIEW_W      = %.4f;\n", view_w);
     fprintf(out, "    const VIEW_H      = %.4f;\n", view_h);
     fprintf(out, "    const STRIDE_X    = %.4f;\n", stride_x);
-    fprintf(out, "    const DURATION_MS = 380;\n\n");
+    fprintf(out, "    const DURATION_MS = 380;\n");
+    fprintf(out, "    const MIN_ZOOM    = 0.5;\n");
+    fprintf(out, "    const MAX_ZOOM    = 4.0;\n");
+    fprintf(out, "    const ZOOM_STEP   = 0.25;\n\n");
     fprintf(out, "    let currentPage = 0;\n");
     fprintf(out, "    let currentX    = 0;\n");
+    fprintf(out, "    let zoom        = 1.0;\n");
+    fprintf(out, "    let panX        = 0.0;\n");
+    fprintf(out, "    let panY        = 0.0;\n");
     fprintf(out, "    let animId      = null;\n");
-    fprintf(out, "    let wheelLock   = false;\n\n");
+    fprintf(out, "    let wheelLock   = false;\n");
+    fprintf(out, "    let isDragging  = false;\n");
+    fprintf(out, "    let dragStartX  = 0.0;\n");
+    fprintf(out, "    let dragStartY  = 0.0;\n");
+    fprintf(out, "    let dragPanX0   = 0.0;\n");
+    fprintf(out, "    let dragPanY0   = 0.0;\n\n");
+    fprintf(out, "    function clampPan() {\n");
+    fprintf(out, "      if (zoom <= 1.0) {\n");
+    fprintf(out, "        panX = 0.0;\n");
+    fprintf(out, "        panY = 0.0;\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      const vw = VIEW_W / zoom;\n");
+    fprintf(out, "      const vh = VIEW_H / zoom;\n");
+    fprintf(out, "      const maxPanX = (VIEW_W - vw) * 0.5;\n");
+    fprintf(out, "      const maxPanY = (VIEW_H - vh) * 0.5;\n");
+    fprintf(out, "      panX = Math.max(-maxPanX, Math.min(maxPanX, panX));\n");
+    fprintf(out, "      panY = Math.max(-maxPanY, Math.min(maxPanY, panY));\n");
+    fprintf(out, "    }\n\n");
     fprintf(out, "    function applyViewport(x) {\n");
     fprintf(out, "      currentX = x;\n");
-    fprintf(out, "      svg.setAttribute('viewBox', `${x.toFixed(3)} 0 ${VIEW_W} ${VIEW_H}`);\n");
-    fprintf(out, "      hud.setAttribute('transform', `translate(${x.toFixed(3)}, 0)`);\n");
+    fprintf(out, "      clampPan();\n");
+    fprintf(out, "      const vw = VIEW_W / zoom;\n");
+    fprintf(out, "      const vh = VIEW_H / zoom;\n");
+    fprintf(out, "      const vx = x + (VIEW_W - vw) * 0.5 + panX;\n");
+    fprintf(out, "      const vy = (VIEW_H - vh) * 0.5 + panY;\n");
+    fprintf(out, "      svg.setAttribute('viewBox', `${vx.toFixed(3)} ${vy.toFixed(3)} ${vw.toFixed(3)} ${vh.toFixed(3)}`);\n");
+    fprintf(out, "      hud.setAttribute('transform', `translate(${vx.toFixed(3)}, ${vy.toFixed(3)}) scale(${(1 / zoom).toFixed(5)})`);\n");
     fprintf(out, "    }\n\n");
     fprintf(out, "    function syncHudState() {\n");
     fprintf(out, "      indicator.textContent = `P\\u00e1g. ${currentPage + 1} / ${TOTAL_PAGES}`;\n");
+    fprintf(out, "      zoomLabel.textContent = `${Math.round(zoom * 100)}%%`;\n");
     fprintf(out, "      btnPrev.classList.toggle('hud-btn-disabled', currentPage <= 0);\n");
     fprintf(out, "      btnNext.classList.toggle('hud-btn-disabled', currentPage >= TOTAL_PAGES - 1);\n");
+    fprintf(out, "      btnZoomOut.classList.toggle('hud-btn-disabled', zoom <= MIN_ZOOM + 0.001);\n");
+    fprintf(out, "      btnZoomIn.classList.toggle('hud-btn-disabled', zoom >= MAX_ZOOM - 0.001);\n");
+    fprintf(out, "      svg.style.cursor = zoom > 1.0 ? (isDragging ? 'grabbing' : 'grab') : 'default';\n");
+    fprintf(out, "    }\n\n");
+    fprintf(out, "    function setZoom(nextZoom, clientX = null, clientY = null) {\n");
+    fprintf(out, "      const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(nextZoom * 100) / 100));\n");
+    fprintf(out, "      if (Math.abs(clamped - zoom) < 0.001) return;\n");
+    fprintf(out, "      if (clientX !== null && clientY !== null) {\n");
+    fprintf(out, "        const rect = svg.getBoundingClientRect();\n");
+    fprintf(out, "        if (rect.width > 0 && rect.height > 0) {\n");
+    fprintf(out, "          const normX = ((clientX - rect.left) / rect.width) - 0.5;\n");
+    fprintf(out, "          const normY = ((clientY - rect.top) / rect.height) - 0.5;\n");
+    fprintf(out, "          const ptX = panX + normX * (VIEW_W / zoom);\n");
+    fprintf(out, "          const ptY = panY + normY * (VIEW_H / zoom);\n");
+    fprintf(out, "          panX = ptX - normX * (VIEW_W / clamped);\n");
+    fprintf(out, "          panY = ptY - normY * (VIEW_H / clamped);\n");
+    fprintf(out, "        }\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      zoom = clamped;\n");
+    fprintf(out, "      syncHudState();\n");
+    fprintf(out, "      applyViewport(currentX);\n");
     fprintf(out, "    }\n\n");
     fprintf(out, "    function goToPage(targetIdx, immediate = false) {\n");
     fprintf(out, "      const clamped = Math.max(0, Math.min(TOTAL_PAGES - 1, targetIdx));\n");
+    fprintf(out, "      if (clamped !== currentPage) {\n");
+    fprintf(out, "        panX = 0.0;\n");
+    fprintf(out, "        panY = 0.0;\n");
+    fprintf(out, "      }\n");
     fprintf(out, "      currentPage = clamped;\n");
     fprintf(out, "      const targetX = clamped * STRIDE_X;\n");
     fprintf(out, "      syncHudState();\n\n");
@@ -2115,9 +2787,51 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      animId = requestAnimationFrame(tick);\n");
     fprintf(out, "    }\n\n");
     fprintf(out, "    btnPrev.addEventListener('click', () => goToPage(currentPage - 1));\n");
-    fprintf(out, "    btnNext.addEventListener('click', () => goToPage(currentPage + 1));\n\n");
+    fprintf(out, "    btnNext.addEventListener('click', () => goToPage(currentPage + 1));\n");
+    fprintf(out, "    btnZoomOut.addEventListener('click', () => setZoom(zoom - ZOOM_STEP));\n");
+    fprintf(out, "    btnZoomReset.addEventListener('click', () => { panX = 0; panY = 0; setZoom(1.0); });\n");
+    fprintf(out, "    btnZoomIn.addEventListener('click', () => setZoom(zoom + ZOOM_STEP));\n\n");
+    fprintf(out, "    svg.addEventListener('mousedown', (ev) => {\n");
+    fprintf(out, "      if (zoom <= 1.0 || ev.button !== 0 || hud.contains(ev.target)) return;\n");
+    fprintf(out, "      isDragging = true;\n");
+    fprintf(out, "      dragStartX = ev.clientX;\n");
+    fprintf(out, "      dragStartY = ev.clientY;\n");
+    fprintf(out, "      dragPanX0  = panX;\n");
+    fprintf(out, "      dragPanY0  = panY;\n");
+    fprintf(out, "      syncHudState();\n");
+    fprintf(out, "    });\n\n");
+    fprintf(out, "    window.addEventListener('mousemove', (ev) => {\n");
+    fprintf(out, "      if (!isDragging) return;\n");
+    fprintf(out, "      const rect = svg.getBoundingClientRect();\n");
+    fprintf(out, "      if (rect.width <= 0 || rect.height <= 0) return;\n");
+    fprintf(out, "      const scaleX = (VIEW_W / zoom) / rect.width;\n");
+    fprintf(out, "      const scaleY = (VIEW_H / zoom) / rect.height;\n");
+    fprintf(out, "      const scale  = Math.max(scaleX, scaleY);\n");
+    fprintf(out, "      panX = dragPanX0 - (ev.clientX - dragStartX) * scale;\n");
+    fprintf(out, "      panY = dragPanY0 - (ev.clientY - dragStartY) * scale;\n");
+    fprintf(out, "      applyViewport(currentX);\n");
+    fprintf(out, "    });\n\n");
+    fprintf(out, "    window.addEventListener('mouseup', () => {\n");
+    fprintf(out, "      if (isDragging) {\n");
+    fprintf(out, "        isDragging = false;\n");
+    fprintf(out, "        syncHudState();\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "    });\n\n");
     fprintf(out, "    window.addEventListener('keydown', (ev) => {\n");
-    fprintf(out, "      if (ev.key === 'ArrowRight' || ev.key === 'PageDown' || ev.key === ' ') {\n");
+    fprintf(out, "      if (ev.key === '+' || ev.key === '=') {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        setZoom(zoom + ZOOM_STEP);\n");
+    fprintf(out, "      } else if (ev.key === '-' || ev.key === '_') {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        setZoom(zoom - ZOOM_STEP);\n");
+    fprintf(out, "      } else if (ev.key === '0') {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        panX = 0; panY = 0; setZoom(1.0);\n");
+    fprintf(out, "      } else if (zoom > 1.0 && (ev.key === 'ArrowUp' || ev.key === 'ArrowDown')) {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        panY += (ev.key === 'ArrowDown' ? 18 : -18) / zoom;\n");
+    fprintf(out, "        applyViewport(currentX);\n");
+    fprintf(out, "      } else if (ev.key === 'ArrowRight' || ev.key === 'PageDown' || ev.key === ' ') {\n");
     fprintf(out, "        ev.preventDefault();\n");
     fprintf(out, "        goToPage(currentPage + 1);\n");
     fprintf(out, "      } else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') {\n");
@@ -2132,13 +2846,26 @@ static bool write_standalone_svg(const char *svg_path, const IrDocument *doc, co
     fprintf(out, "      }\n");
     fprintf(out, "    });\n\n");
     fprintf(out, "    window.addEventListener('wheel', (ev) => {\n");
+    fprintf(out, "      if (ev.ctrlKey || ev.metaKey) {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        const step = ev.deltaY < 0 ? 0.15 : -0.15;\n");
+    fprintf(out, "        setZoom(zoom + step, ev.clientX, ev.clientY);\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
+    fprintf(out, "      if (zoom > 1.0) {\n");
+    fprintf(out, "        ev.preventDefault();\n");
+    fprintf(out, "        panX += (ev.deltaX * 0.25) / zoom;\n");
+    fprintf(out, "        panY += (ev.deltaY * 0.25) / zoom;\n");
+    fprintf(out, "        applyViewport(currentX);\n");
+    fprintf(out, "        return;\n");
+    fprintf(out, "      }\n");
     fprintf(out, "      if (wheelLock) return;\n");
     fprintf(out, "      const delta = Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY;\n");
     fprintf(out, "      if (Math.abs(delta) < 18) return;\n");
     fprintf(out, "      wheelLock = true;\n");
     fprintf(out, "      goToPage(currentPage + (delta > 0 ? 1 : -1));\n");
     fprintf(out, "      setTimeout(() => { wheelLock = false; }, 320);\n");
-    fprintf(out, "    }, { passive: true });\n\n");
+    fprintf(out, "    }, { passive: false });\n\n");
     fprintf(out, "    const match = /^#page=(\\d+)$/.exec(window.location.hash);\n");
     fprintf(out, "    const initial = match ? parseInt(match[1], 10) - 1 : 0;\n");
     fprintf(out, "    goToPage(isNaN(initial) ? 0 : initial, true);\n");
@@ -2216,6 +2943,8 @@ int main(int argc, char **argv) {
             }
         } else if (doc.items[i].type == ITEM_TABLE) {
             typeset_table(&ts, &doc, doc.items[i].table);
+        } else if (doc.items[i].type == ITEM_PICTURE) {
+            typeset_picture(&ts, &doc, doc.items[i].picture);
         } else if (doc.items[i].type == ITEM_FOOTNOTE) {
             typeset_footnote(&ts, &doc, &doc.items[i]);
         } else if (doc.items[i].type == ITEM_MARGINPAR) {

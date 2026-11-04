@@ -23,36 +23,40 @@
     .cs-cs7 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: normal; }
     .cs-cs8 { font-family: "Liberation Serif"; font-size: 3.528px; fill: Black; font-weight: normal; font-style: normal; font-variant: small-caps; }
     .cs-cs9 { font-family: "DejaVu Sans"; font-size: 5.080px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs10 { font-family: "DejaVu Sans"; font-size: 4.233px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs11 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: Navy; font-weight: bold; font-style: normal; }
-    .cs-cs12 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs13 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs14 { font-family: "Liberation Mono"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs15 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs16 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: italic; }
-    .cs-cs17 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; font-variant: small-caps; }
-    .cs-cs18 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; text-decoration: underline; }
-    .cs-cs19 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: sub; }
-    .cs-cs20 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: super; }
-    .cs-cs21 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: bold; font-style: italic; }
-    .cs-cs22 { font-family: "Liberation Serif"; font-size: 2.117px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs23 { font-family: "Liberation Serif"; font-size: 2.822px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs24 { font-family: "Liberation Serif"; font-size: 5.080px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs25 { font-family: "Liberation Serif"; font-size: 6.096px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs26 { font-family: "Liberation Serif"; font-size: 7.317px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs27 { font-family: "DejaVu Sans"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs28 { font-family: "Liberation Serif"; font-size: 2.794px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: super; }
-    .cs-cs29 { font-family: "Liberation Serif"; font-size: 2.999px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs30 { font-family: "DejaVu Sans"; font-size: 2.822px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
-    .cs-cs31 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
-    .cs-cs32 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
-    .cs-cs33 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: italic; }
-    .cs-cs34 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
-    .cs-cs35 { font-family: "Liberation Mono"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
-    .cs-cs36 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: bold; font-style: normal; }
+    .cs-cs10 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs11 { font-family: "Liberation Mono"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs12 { font-family: "DejaVu Sans"; font-size: 4.233px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs13 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: Navy; font-weight: bold; font-style: normal; }
+    .cs-cs14 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs15 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs16 { font-family: "Liberation Mono"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs17 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs18 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: italic; }
+    .cs-cs19 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; font-variant: small-caps; }
+    .cs-cs20 { font-family: "Liberation Serif"; font-size: 3.704px; fill: Black; font-weight: normal; font-style: normal; text-decoration: underline; }
+    .cs-cs21 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: sub; }
+    .cs-cs22 { font-family: "Liberation Serif"; font-size: 2.667px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: super; }
+    .cs-cs23 { font-family: "DejaVu Sans"; font-size: 3.704px; fill: Black; font-weight: bold; font-style: italic; }
+    .cs-cs24 { font-family: "Liberation Serif"; font-size: 2.117px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs25 { font-family: "Liberation Serif"; font-size: 2.822px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs26 { font-family: "Liberation Serif"; font-size: 5.080px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs27 { font-family: "Liberation Serif"; font-size: 6.096px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs28 { font-family: "Liberation Serif"; font-size: 7.317px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs29 { font-family: "DejaVu Sans"; font-size: 3.881px; fill: Black; font-weight: bold; font-style: normal; }
+    .cs-cs30 { font-family: "Liberation Serif"; font-size: 2.794px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: super; }
+    .cs-cs31 { font-family: "Liberation Serif"; font-size: 2.999px; fill: Black; font-weight: normal; font-style: normal; }
+    .cs-cs32 { font-family: "DejaVu Sans"; font-size: 2.822px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
+    .cs-cs33 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: bold; font-style: normal; }
+    .cs-cs34 { font-family: "DejaVu Sans"; font-size: 3.528px; fill: DarkSlateGray; font-weight: normal; font-style: italic; }
+    .cs-cs35 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: normal; font-style: italic; }
+    .cs-cs36 { font-family: "Liberation Serif"; font-size: 3.881px; fill: Black; font-weight: normal; font-style: italic; }
+    .cs-cs37 { font-family: "Liberation Serif"; font-size: 2.794px; fill: Black; font-weight: normal; font-style: italic; baseline-shift: sub; }
+    .cs-cs38 { font-family: "Liberation Serif"; font-size: 2.794px; fill: Black; font-weight: normal; font-style: normal; baseline-shift: sub; }
+    .cs-cs39 { font-family: "Liberation Serif"; font-size: 2.794px; fill: Black; font-weight: normal; font-style: italic; baseline-shift: super; }
+    .cs-cs40 { font-family: "Liberation Mono"; font-size: 3.351px; fill: Teal; font-weight: bold; font-style: normal; }
   ]]></style>
 
-  <rect x="-242.000" y="-337.000" width="1318.000" height="1011.000" fill="#1e2430"/>
+  <rect x="-484.000" y="-674.000" width="2080.000" height="1685.000" fill="#1e2430"/>
 
   <g id="pages-strip">
     <g id="page-1" transform="translate(16.000, 14.000)">
@@ -68,194 +72,336 @@
         <text x="32.000" y="68.590" xml:space="preserve" style="word-spacing:0.874px;"><tspan class="cs-cs6">modelo de procesamiento de TeX y LaTeX2ε: expansión de macros (</tspan><tspan class="cs-cs7">\newcommand</tspan><tspan class="cs-cs6">, </tspan><tspan class="cs-cs7">\def</tspan><tspan class="cs-cs6">,</tspan></text>
         <text x="32.000" y="73.090" xml:space="preserve" style="word-spacing:0.183px;"><tspan class="cs-cs7">\newenvironment</tspan><tspan class="cs-cs6">), agrupamiento léxico con pila de estados, contadores jerárquicos, registros</tspan></text>
         <text x="32.000" y="77.590" xml:space="preserve" style="word-spacing:0.443px;"><tspan class="cs-cs6">de longitud, selección de fuentes NFSS, versalitas (</tspan><tspan class="cs-cs8">Small Caps</tspan><tspan class="cs-cs6">), superíndices y subíndices,</tspan></text>
-        <text x="32.000" y="82.090" xml:space="preserve" style="word-spacing:0.002px;"><tspan class="cs-cs6">seccionado automático, listas anidadas, entornos literales (</tspan><tspan class="cs-cs7">verbatim</tspan><tspan class="cs-cs6">) y primitivas de espaciado</tspan></text>
-        <text x="32.000" y="86.590" xml:space="preserve"><tspan class="cs-cs6">elástico horizontal y vertical.</tspan></text>
-        <text x="20.000" y="99.995" xml:space="preserve"><tspan class="cs-cs9">1. Motor Léxico TeX, Símbolos y Tipografía</tspan></text>
-        <text x="20.000" y="108.230" xml:space="preserve" style="word-spacing:3.269px;"><tspan class="cs-cs3">Este fichero (</tspan><tspan class="cs-cs7">capitulo1.tex</tspan><tspan class="cs-cs3">) se incorpora dinámicamente desde </tspan><tspan class="cs-cs7">input.tex </tspan><tspan class="cs-cs3">mediante</tspan></text>
-        <text x="20.000" y="113.730" xml:space="preserve" style="word-spacing:0.748px;"><tspan class="cs-cs7">\input{capitulo1}</tspan><tspan class="cs-cs3">. En LaTeX2ε, un salto de línea simple equivale a un espacio, una línea en</tspan></text>
-        <text x="20.000" y="119.230" xml:space="preserve" style="word-spacing:0.584px;"><tspan class="cs-cs3">blanco emite </tspan><tspan class="cs-cs7">\par</tspan><tspan class="cs-cs3">, y los comentarios con </tspan><tspan class="cs-cs7">% </tspan><tspan class="cs-cs3">descartan el resto de la línea junto con los espacios</tspan></text>
-        <text x="20.000" y="124.730" xml:space="preserve"><tspan class="cs-cs3">iniciales de la siguiente—tal como define el motor de Knuth—evitando espacios indeseados.</tspan></text>
-        <text x="20.000" y="136.054" xml:space="preserve"><tspan class="cs-cs10">1.1 Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
-        <text x="20.000" y="143.330" xml:space="preserve" style="word-spacing:0.059px;"><tspan class="cs-cs3">El analizador soporta acentos con o sin llaves en cualquier vocal o consonante: á, è, î, ü, ñ, ō, ż, ğ, š,</tspan></text>
-        <text x="20.000" y="148.830" xml:space="preserve"><tspan class="cs-cs3">ő, ç, ą, å, ḇ, ạ, oo͡, además de letras europeas como å, Å, æ, Æ, œ, Œ, ø, Ø, ł, Ł, ß y sin punto (ı, ȷ).</tspan></text>
-        <text x="28.000" y="156.730" xml:space="preserve" style="word-spacing:0.223px;"><tspan class="cs-cs3">Las ligaduras se transforman automáticamente: “comillas dobles inglesas”, `comillas simples&apos;,</tspan></text>
-        <text x="20.000" y="162.230" xml:space="preserve" style="word-spacing:0.187px;"><tspan class="cs-cs3">intervalos numéricos con guión medio (págs. 15–30), incisos con raya larga—sin espacios—y signos de</tspan></text>
-        <text x="20.000" y="167.730" xml:space="preserve"><tspan class="cs-cs3">apertura ¿Cómo opera el lexer? ¡Con precisión tipográfica!</tspan></text>
-        <text x="26.000" y="175.750" xml:space="preserve"><tspan class="cs-cs11">Caracteres reservados: </tspan><tspan class="cs-cs12"># $ % &amp; _ { } ~ ^ \ | &lt; &gt;</tspan></text>
-        <text x="26.000" y="182.250" xml:space="preserve"><tspan class="cs-cs11">Símbolos editoriales: </tspan><tspan class="cs-cs12">† ‡ § ¶ © ® ™ £ € … •</tspan></text>
-        <text x="26.000" y="188.750" xml:space="preserve"><tspan class="cs-cs11">Logotipos y fecha: </tspan><tspan class="cs-cs12">TeX, LaTeX, LaTeX2ε — Compilado el 4 de noviembre de 2026</tspan></text>
-        <text x="20.000" y="198.554" xml:space="preserve"><tspan class="cs-cs10">1.2 Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
-        <text x="26.000" y="205.950" xml:space="preserve"><tspan class="cs-cs11">Familias y series: </tspan><tspan class="cs-cs12">Roman Serif, </tspan><tspan class="cs-cs13">Sans Serif</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs14">Typewriter Mono</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs15">Negrita</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs16">Cursiva</tspan><tspan class="cs-cs12">, </tspan><tspan class="cs-cs17">Versalitas</tspan><tspan class="cs-cs12">,</tspan></text>
-        <text x="26.000" y="210.950" xml:space="preserve"><tspan class="cs-cs18">Subrayado</tspan></text>
-        <text x="26.000" y="217.450" xml:space="preserve"><tspan class="cs-cs11">Super y subíndices: </tspan><tspan class="cs-cs12">Fórmula química H</tspan><tspan class="cs-cs19">2</tspan><tspan class="cs-cs12">SO</tspan><tspan class="cs-cs19">4</tspan><tspan class="cs-cs12">, energía E=mc</tspan><tspan class="cs-cs20">2</tspan><tspan class="cs-cs12">, sección 1.</tspan><tspan class="cs-cs20">a</tspan></text>
-        <text x="26.000" y="223.950" xml:space="preserve"><tspan class="cs-cs11">Primitivas NFSS: </tspan><tspan class="cs-cs21">Fuente activada con \usefont{OT1}{cmss}{bx}{it}</tspan></text>
-        <text x="26.000" y="232.650" xml:space="preserve"><tspan class="cs-cs11">Escala estándar: </tspan><tspan class="cs-cs22">tiny </tspan><tspan class="cs-cs23">scriptsize </tspan><tspan class="cs-cs4">footnotesize </tspan><tspan class="cs-cs6">small </tspan><tspan class="cs-cs3">normalsize </tspan><tspan class="cs-cs2">large </tspan><tspan class="cs-cs24">Large </tspan><tspan class="cs-cs25">LARGE </tspan><tspan class="cs-cs26">huge</tspan></text>
-        <text x="20.000" y="238.912" xml:space="preserve"><tspan class="cs-cs27">1.2.1 Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
-        <text x="20.000" y="245.480" xml:space="preserve" style="word-spacing:0.312px;"><tspan class="cs-cs27">Párrafo con título (\paragraph) </tspan><tspan class="cs-cs3">El comando </tspan><tspan class="cs-cs7">\paragraph </tspan><tspan class="cs-cs3">compone su título en negrita en la misma</tspan></text>
-        <text x="20.000" y="250.980" xml:space="preserve"><tspan class="cs-cs3">línea de inicio del párrafo, seguido de un espacio horizontal </tspan><tspan class="cs-cs7">\quad</tspan><tspan class="cs-cs28">1</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="192.500" y="257.400" xml:space="preserve"><tspan class="cs-cs30">Nota al</tspan></text>
-        <text x="192.500" y="260.900" xml:space="preserve"><tspan class="cs-cs30">margen con</tspan></text>
-        <text x="192.500" y="264.400" xml:space="preserve"><tspan class="cs-cs30">\marginpar</tspan></text>
-        <text x="28.000" y="260.880" xml:space="preserve"><tspan class="cs-cs31">Nota de Arquitectura — </tspan><tspan class="cs-cs32">El fichero intermedio generado por la primera etapa lleva ahora la extensión</tspan></text>
-        <line x1="20.000" y1="265.200" x2="84.600" y2="265.200" stroke="#334155" stroke-width="0.28"/>
-        <text x="22.300" y="269.500" text-anchor="end"><tspan class="cs-cs29">1</tspan></text>
-        <text x="24.500" y="269.500" xml:space="preserve" style="word-spacing:0.316px;"><tspan class="cs-cs29">Las notas al pie (\footnote) se numeran automáticamente, reservan espacio en el borde inferior del marco activo y se separan</tspan></text>
-        <text x="24.500" y="273.300" xml:space="preserve"><tspan class="cs-cs29">mediante una fileta horizontal.</tspan></text>
+        <text x="32.000" y="82.090" xml:space="preserve" style="word-spacing:1.202px;"><tspan class="cs-cs6">seccionado automático, listas anidadas, entornos literales (</tspan><tspan class="cs-cs7">verbatim</tspan><tspan class="cs-cs6">), modo matemático,</tspan></text>
+        <text x="32.000" y="86.590" xml:space="preserve"><tspan class="cs-cs6">gráficos vectoriales (</tspan><tspan class="cs-cs7">picture</tspan><tspan class="cs-cs6">), referencias cruzadas y bibliografía.</tspan></text>
+        <text x="20.000" y="99.995" xml:space="preserve"><tspan class="cs-cs9">Índice general</tspan></text>
+        <text x="20.000" y="108.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="24.557" y="108.730" xml:space="preserve"><tspan class="cs-cs10">Motor Léxico TeX, Símbolos y Tipografía</tspan></text>
+        <line x1="99.536" y1="108.380" x2="187.143" y2="108.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="108.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="26.000" y="115.230" xml:space="preserve"><tspan class="cs-cs3">1.1</tspan></text>
+        <text x="33.545" y="115.230" xml:space="preserve"><tspan class="cs-cs3">Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
+        <line x1="130.000" y1="114.880" x2="187.260" y2="114.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="115.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="26.000" y="121.730" xml:space="preserve"><tspan class="cs-cs3">1.2</tspan></text>
+        <text x="33.545" y="121.730" xml:space="preserve"><tspan class="cs-cs3">Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
+        <line x1="117.971" y1="121.380" x2="187.260" y2="121.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="121.730" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="32.000" y="128.230" xml:space="preserve"><tspan class="cs-cs3">1.2.1</tspan></text>
+        <text x="42.649" y="128.230" xml:space="preserve"><tspan class="cs-cs3">Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
+        <line x1="122.030" y1="127.880" x2="187.260" y2="127.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="128.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="20.000" y="134.730" xml:space="preserve"><tspan class="cs-cs10">2</tspan></text>
+        <text x="24.557" y="134.730" xml:space="preserve"><tspan class="cs-cs10">Listas Anidadas, Texto Literal y Espaciado</tspan></text>
+        <line x1="101.346" y1="134.380" x2="187.143" y2="134.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="134.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="26.000" y="141.230" xml:space="preserve"><tspan class="cs-cs3">2.1</tspan></text>
+        <text x="33.545" y="141.230" xml:space="preserve"><tspan class="cs-cs3">Entornos de Listas</tspan></text>
+        <line x1="65.467" y1="140.880" x2="187.260" y2="140.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="141.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="26.000" y="147.730" xml:space="preserve"><tspan class="cs-cs3">2.2</tspan></text>
+        <text x="33.545" y="147.730" xml:space="preserve"><tspan class="cs-cs3">Modo Literal (</tspan><tspan class="cs-cs11"> verbatim)\dotfill 1\par}</tspan></text>
+        <text x="26.000" y="154.230" xml:space="preserve"><tspan class="cs-cs3">2.3</tspan></text>
+        <text x="33.545" y="154.230" xml:space="preserve"><tspan class="cs-cs3">Saltos, Rellenos Elásticos y Reglas</tspan></text>
+        <line x1="93.950" y1="153.880" x2="187.260" y2="153.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="154.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="20.000" y="160.730" xml:space="preserve"><tspan class="cs-cs10">3</tspan></text>
+        <text x="24.557" y="160.730" xml:space="preserve"><tspan class="cs-cs10">Contadores, Longitudes y Apéndices</tspan></text>
+        <line x1="89.131" y1="160.380" x2="187.143" y2="160.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="160.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="26.000" y="167.230" xml:space="preserve"><tspan class="cs-cs3">3.1</tspan></text>
+        <text x="33.545" y="167.230" xml:space="preserve"><tspan class="cs-cs3">Aritmética de Longitudes y Grupos</tspan></text>
+        <line x1="91.466" y1="166.880" x2="187.260" y2="166.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="167.230" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="20.000" y="173.730" xml:space="preserve"><tspan class="cs-cs10">4</tspan></text>
+        <text x="24.557" y="173.730" xml:space="preserve"><tspan class="cs-cs10">Cajas LR, Tablas y Elementos Flotantes</tspan></text>
+        <line x1="96.574" y1="173.380" x2="187.143" y2="173.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="173.730" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="20.000" y="180.230" xml:space="preserve"><tspan class="cs-cs10">5</tspan></text>
+        <text x="24.557" y="180.230" xml:space="preserve"><tspan class="cs-cs10">Modo Matemático, Gráficos Vectoriales y Referencias</tspan></text>
+        <line x1="119.280" y1="179.880" x2="187.143" y2="179.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="180.230" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="26.000" y="186.730" xml:space="preserve"><tspan class="cs-cs3">5.1</tspan></text>
+        <text x="33.545" y="186.730" xml:space="preserve"><tspan class="cs-cs3">Diagrama Vectorial con el Entornopicture</tspan></text>
+        <line x1="101.866" y1="186.380" x2="187.260" y2="186.380" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="188.060" y="186.730" xml:space="preserve"><tspan class="cs-cs3">1</tspan></text>
+        <text x="20.000" y="193.230" xml:space="preserve"><tspan class="cs-cs10">A</tspan></text>
+        <text x="25.133" y="193.230" xml:space="preserve"><tspan class="cs-cs10">Especificación del Fichero Intermedio.tks</tspan></text>
+        <line x1="99.003" y1="192.880" x2="187.143" y2="192.880" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="187.943" y="193.230" xml:space="preserve"><tspan class="cs-cs10">1</tspan></text>
+        <text x="20.000" y="207.975" xml:space="preserve"><tspan class="cs-cs9">1. Motor Léxico TeX, Símbolos y Tipografía</tspan></text>
+        <text x="26.000" y="216.710" xml:space="preserve" style="word-spacing:2.519px;"><tspan class="cs-cs3">Este fichero (</tspan><tspan class="cs-cs7">capitulo1.tex</tspan><tspan class="cs-cs3">) se incorpora dinámicamente desde </tspan><tspan class="cs-cs7">input.tex </tspan><tspan class="cs-cs3">mediante</tspan></text>
+        <text x="26.000" y="222.210" xml:space="preserve" style="word-spacing:0.320px;"><tspan class="cs-cs7">\input{capitulo1}</tspan><tspan class="cs-cs3">. En LaTeX2ε, un salto de línea simple equivale a un espacio, una línea en</tspan></text>
+        <text x="26.000" y="227.710" xml:space="preserve" style="word-spacing:0.231px;"><tspan class="cs-cs3">blanco emite </tspan><tspan class="cs-cs7">\par</tspan><tspan class="cs-cs3">, y los comentarios con </tspan><tspan class="cs-cs7">% </tspan><tspan class="cs-cs3">descartan el resto de la línea junto con los espacios</tspan></text>
+        <text x="26.000" y="233.210" xml:space="preserve"><tspan class="cs-cs3">iniciales de la siguiente—tal como define el motor de Knuth—evitando espacios indeseados.</tspan></text>
+        <text x="20.000" y="242.634" xml:space="preserve"><tspan class="cs-cs12">1.1 Acentos Componibles, Ligaduras y Caracteres Especiales</tspan></text>
+        <text x="26.000" y="250.410" xml:space="preserve" style="word-spacing:0.194px;"><tspan class="cs-cs3">El analizador soporta acentos con o sin llaves en cualquier vocal o consonante: á, è, î, ü, ñ, ō, ż,</tspan></text>
+        <text x="26.000" y="255.910" xml:space="preserve" style="word-spacing:0.376px;"><tspan class="cs-cs3">ğ, š, ő, ç, ą, å, ḇ, ạ, oo͡, además de letras europeas como å, Å, æ, Æ, œ, Œ, ø, Ø, ł, Ł, ß y sin</tspan></text>
+        <text x="26.000" y="261.410" xml:space="preserve"><tspan class="cs-cs3">punto (ı, ȷ).</tspan></text>
+        <text x="34.000" y="267.910" xml:space="preserve" style="word-spacing:1.572px;"><tspan class="cs-cs3">Las ligaduras se transforman automáticamente: “comillas dobles inglesas”, `comillas</tspan></text>
+        <text x="26.000" y="273.410" xml:space="preserve" style="word-spacing:1.627px;"><tspan class="cs-cs3">simples&apos;, intervalos numéricos con guión medio (págs. 15–30), incisos con raya larga—sin</tspan></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Arquitectura TeX -&gt; .tks -&gt; .svg</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">1</text>
       <line x1="20.000" y1="15.240" x2="190.000" y2="15.240" stroke="#cbd5e1" stroke-width="0.25"/>
-      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">1 / 3</text>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">1 / 4</text>
     </g>
     <g id="page-2" transform="translate(294.000, 14.000)">
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-2"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-2)">
-        <text x="28.000" y="26.180" xml:space="preserve"><tspan class="cs-cs33">.tks </tspan><tspan class="cs-cs32">(formato estructurado XML de Teksto), a partir del cual </tspan><tspan class="cs-cs33">xml2svg </tspan><tspan class="cs-cs32">produce el documento</tspan></text>
-        <text x="28.000" y="31.680" xml:space="preserve"><tspan class="cs-cs32">interactivo </tspan><tspan class="cs-cs33">.svg</tspan><tspan class="cs-cs32">.</tspan></text>
-        <text x="20.000" y="44.925" xml:space="preserve"><tspan class="cs-cs9">2. Listas Anidadas, Texto Literal y Espaciado</tspan></text>
-        <text x="20.000" y="53.160" xml:space="preserve" style="word-spacing:0.847px;"><tspan class="cs-cs3">En esta segunda página (página actual: 1), maquetada a dos columnas mediante </tspan><tspan class="cs-cs7">\twocolumn</tspan><tspan class="cs-cs3">, se</tspan></text>
-        <text x="20.000" y="58.660" xml:space="preserve"><tspan class="cs-cs3">verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</tspan></text>
-        <text x="20.000" y="69.984" xml:space="preserve"><tspan class="cs-cs10">2.1 Entornos de Listas</tspan></text>
-        <text x="25.800" y="78.060" text-anchor="end"><tspan class="cs-cs3">1.</tspan></text>
-        <text x="28.000" y="78.060" xml:space="preserve"><tspan class="cs-cs3">Primer elemento numerado del nivel principal (</tspan><tspan class="cs-cs7">enumi</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="25.800" y="85.560" text-anchor="end"><tspan class="cs-cs3">2.</tspan></text>
-        <text x="28.000" y="85.560" xml:space="preserve"><tspan class="cs-cs3">Segundo elemento con sublista anidada:</tspan></text>
-        <text x="32.300" y="93.060" text-anchor="end"><tspan class="cs-cs3">(a)</tspan></text>
-        <text x="34.500" y="93.060" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento alfabético de nivel 2 (</tspan><tspan class="cs-cs7">enumii</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="32.300" y="100.560" text-anchor="end"><tspan class="cs-cs3">(b)</tspan></text>
-        <text x="34.500" y="100.560" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento con lista de viñetas interna:</tspan></text>
-        <text x="40.300" y="108.060" text-anchor="end"><tspan class="cs-cs3">•</tspan></text>
-        <text x="42.500" y="108.060" xml:space="preserve"><tspan class="cs-cs3">Viñeta estándar definida por </tspan><tspan class="cs-cs7">\labelitemi</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="40.300" y="115.560" text-anchor="end"><tspan class="cs-cs3">‡</tspan></text>
-        <text x="42.500" y="115.560" xml:space="preserve"><tspan class="cs-cs3">Viñeta personalizada con argumento opcional </tspan><tspan class="cs-cs7">\item[\ddag]</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="25.800" y="123.060" text-anchor="end"><tspan class="cs-cs3">3.</tspan></text>
-        <text x="28.000" y="123.060" xml:space="preserve"><tspan class="cs-cs3">Tercer elemento del nivel principal.</tspan></text>
-        <text x="24.000" y="130.760" xml:space="preserve"><tspan class="cs-cs34">Entrada (.tex):</tspan></text>
-        <text x="50.859" y="130.760" xml:space="preserve"><tspan class="cs-cs3">Código fuente en sintaxis estándar LaTeX2ε.</tspan></text>
-        <text x="24.000" y="138.660" xml:space="preserve"><tspan class="cs-cs34">Intermedio (.tks):</tspan></text>
-        <text x="56.041" y="138.660" xml:space="preserve"><tspan class="cs-cs3">Representación estructurada XML de estilos, marcos y flujo.</tspan></text>
-        <text x="24.000" y="146.560" xml:space="preserve"><tspan class="cs-cs34">Salida (.svg):</tspan></text>
-        <text x="49.625" y="146.560" xml:space="preserve"><tspan class="cs-cs3">Documento vectorial multipágina interactivo.</tspan></text>
-        <text x="20.000" y="156.884" xml:space="preserve"><tspan class="cs-cs10">2.2 Modo Literal (\verb y verbatim)</tspan></text>
-        <text x="20.000" y="164.160" xml:space="preserve" style="word-spacing:0.562px;"><tspan class="cs-cs3">El comando en línea </tspan><tspan class="cs-cs35">\newcommand{\cmd}[2][def]{#1-#2} </tspan><tspan class="cs-cs3">conserva intactos los caracteres</tspan></text>
-        <text x="20.000" y="169.660" xml:space="preserve"><tspan class="cs-cs3">especiales, mientras que </tspan><tspan class="cs-cs35">\verb*␣muestra␣espacios </tspan><tspan class="cs-cs3">visibiliza cada espacio con </tspan><tspan class="cs-cs35">␣</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="24.000" y="177.560" xml:space="preserve"><tspan class="cs-cs35">% Bloque literal verbatim:</tspan></text>
-        <text x="24.000" y="183.060" xml:space="preserve"><tspan class="cs-cs35">\def\identidad#1{#1}</tspan></text>
-        <text x="24.000" y="188.560" xml:space="preserve"><tspan class="cs-cs35">  Sangría y   espacios   preservados.</tspan></text>
-        <text x="20.000" y="199.884" xml:space="preserve"><tspan class="cs-cs10">2.3 Saltos, Rellenos Elásticos y Reglas</tspan></text>
-        <text x="20.000" y="207.160" xml:space="preserve"><tspan class="cs-cs3">Salto de línea manual con </tspan><tspan class="cs-cs7">\\</tspan><tspan class="cs-cs3">:</tspan></text>
-        <text x="20.000" y="212.660" xml:space="preserve"><tspan class="cs-cs3">Segunda línea sin justificación forzada.</tspan></text>
-        <text x="20.000" y="220.660" xml:space="preserve"><tspan class="cs-cs3">Tercera línea tras un espacio adicional de </tspan><tspan class="cs-cs7">2.5mm</tspan><tspan class="cs-cs3">.</tspan></text>
-        <text x="20.000" y="230.677" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de rellenos horizontales y reglas (</tspan><tspan class="cs-cs7">\hfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\dotfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\hrulefill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\rule</tspan><tspan class="cs-cs3">):</tspan></text>
-        <text x="20.000" y="236.177" xml:space="preserve"><tspan class="cs-cs3">Extremo izquierdo</tspan></text>
-        <text x="162.409" y="236.177" xml:space="preserve"><tspan class="cs-cs3">Extremo derecho</tspan></text>
-        <text x="20.000" y="241.677" xml:space="preserve"><tspan class="cs-cs3">Sección 1</tspan></text>
-        <line x1="37.215" y1="241.327" x2="178.606" y2="241.327" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="179.406" y="241.677" xml:space="preserve"><tspan class="cs-cs3">Pág. 1</tspan></text>
-        <text x="20.000" y="247.177" xml:space="preserve"><tspan class="cs-cs3">Sección 2</tspan></text>
-        <line x1="37.215" y1="246.827" x2="178.606" y2="246.827" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
-        <text x="179.406" y="247.177" xml:space="preserve"><tspan class="cs-cs3">Pág. 2</tspan></text>
-        <text x="20.000" y="252.677" xml:space="preserve"><tspan class="cs-cs3">Firma autorizada:</tspan></text>
-        <line x1="49.543" y1="252.327" x2="178.552" y2="252.327" stroke="Black" stroke-width="0.35"/>
-        <rect x="178.952" y="250.877" width="10.000" height="1.800" fill="Black"/>
-        <text x="20.000" y="270.555" xml:space="preserve"><tspan class="cs-cs9">3. Contadores, Longitudes y Apéndices</tspan></text>
+        <text x="26.000" y="26.180" xml:space="preserve"><tspan class="cs-cs3">espacios—y signos de apertura ¿Cómo opera el lexer? ¡Con precisión tipográfica!</tspan></text>
+        <text x="26.000" y="32.300" xml:space="preserve"><tspan class="cs-cs13">Caracteres reservados: </tspan><tspan class="cs-cs14"># $ % &amp; _ { } ~ ^ \ | &lt; &gt;</tspan></text>
+        <text x="26.000" y="38.800" xml:space="preserve"><tspan class="cs-cs13">Símbolos editoriales: </tspan><tspan class="cs-cs14">† ‡ § ¶ © ® ™ £ € … •</tspan></text>
+        <text x="26.000" y="45.300" xml:space="preserve"><tspan class="cs-cs13">Logotipos y fecha: </tspan><tspan class="cs-cs14">TeX, LaTeX, LaTeX2ε — Compilado el 4 de noviembre de 2026</tspan></text>
+        <text x="20.000" y="55.104" xml:space="preserve"><tspan class="cs-cs12">1.2 Selección de Fuentes NFSS y Escala de Tamaños</tspan></text>
+        <text x="26.000" y="62.500" xml:space="preserve"><tspan class="cs-cs13">Familias y series: </tspan><tspan class="cs-cs14">Roman Serif, </tspan><tspan class="cs-cs15">Sans Serif</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs16">Typewriter Mono</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs17">Negrita</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs18">Cursiva</tspan><tspan class="cs-cs14">, </tspan><tspan class="cs-cs19">Versalitas</tspan><tspan class="cs-cs14">,</tspan></text>
+        <text x="26.000" y="67.500" xml:space="preserve"><tspan class="cs-cs20">Subrayado</tspan></text>
+        <text x="26.000" y="74.000" xml:space="preserve"><tspan class="cs-cs13">Super y subíndices: </tspan><tspan class="cs-cs14">Fórmula química H</tspan><tspan class="cs-cs21">2</tspan><tspan class="cs-cs14">SO</tspan><tspan class="cs-cs21">4</tspan><tspan class="cs-cs14">, energía E=mc</tspan><tspan class="cs-cs22">2</tspan><tspan class="cs-cs14">, sección 1.</tspan><tspan class="cs-cs22">a</tspan></text>
+        <text x="26.000" y="80.500" xml:space="preserve"><tspan class="cs-cs13">Primitivas NFSS: </tspan><tspan class="cs-cs23">Fuente activada con \usefont{OT1}{cmss}{bx}{it}</tspan></text>
+        <text x="26.000" y="89.200" xml:space="preserve"><tspan class="cs-cs13">Escala estándar: </tspan><tspan class="cs-cs24">tiny </tspan><tspan class="cs-cs25">scriptsize </tspan><tspan class="cs-cs4">footnotesize </tspan><tspan class="cs-cs6">small </tspan><tspan class="cs-cs3">normalsize </tspan><tspan class="cs-cs2">large </tspan><tspan class="cs-cs26">Large </tspan><tspan class="cs-cs27">LARGE </tspan><tspan class="cs-cs28">huge</tspan></text>
+        <text x="20.000" y="95.462" xml:space="preserve"><tspan class="cs-cs29">1.2.1 Subsección de Tercer Nivel y Títulos en Línea</tspan></text>
+        <text x="26.000" y="102.530" xml:space="preserve" style="word-spacing:0.821px;"><tspan class="cs-cs29">Párrafo con título (\paragraph) </tspan><tspan class="cs-cs3">El comando </tspan><tspan class="cs-cs7">\paragraph </tspan><tspan class="cs-cs3">compone su título en negrita en la</tspan></text>
+        <text x="26.000" y="108.030" xml:space="preserve"><tspan class="cs-cs3">misma línea de inicio del párrafo, seguido de un espacio horizontal </tspan><tspan class="cs-cs7">\quad</tspan><tspan class="cs-cs30">1</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="192.500" y="112.550" xml:space="preserve"><tspan class="cs-cs32">Nota al</tspan></text>
+        <text x="192.500" y="116.050" xml:space="preserve"><tspan class="cs-cs32">margen con</tspan></text>
+        <text x="192.500" y="119.550" xml:space="preserve"><tspan class="cs-cs32">\marginpar</tspan></text>
+        <text x="28.000" y="116.030" xml:space="preserve"><tspan class="cs-cs33">Nota de Arquitectura — </tspan><tspan class="cs-cs34">El fichero intermedio generado por la primera etapa lleva ahora la extensión</tspan></text>
+        <text x="28.000" y="121.530" xml:space="preserve"><tspan class="cs-cs35">.tks </tspan><tspan class="cs-cs34">(formato estructurado XML de Teksto), a partir del cual </tspan><tspan class="cs-cs35">xml2svg </tspan><tspan class="cs-cs34">produce el documento</tspan></text>
+        <text x="28.000" y="127.030" xml:space="preserve"><tspan class="cs-cs34">interactivo </tspan><tspan class="cs-cs35">.svg</tspan><tspan class="cs-cs34">.</tspan></text>
+        <text x="20.000" y="140.275" xml:space="preserve"><tspan class="cs-cs9">2. Listas Anidadas, Texto Literal y Espaciado</tspan></text>
+        <text x="26.000" y="149.010" xml:space="preserve" style="word-spacing:0.385px;"><tspan class="cs-cs3">En esta segunda página (página actual: 1), maquetada a dos columnas mediante </tspan><tspan class="cs-cs7">\twocolumn</tspan><tspan class="cs-cs3">, se</tspan></text>
+        <text x="26.000" y="154.510" xml:space="preserve"><tspan class="cs-cs3">verifican los entornos de listas de hasta cuatro niveles, el modo literal y los rellenos elásticos.</tspan></text>
+        <text x="20.000" y="163.934" xml:space="preserve"><tspan class="cs-cs12">2.1 Entornos de Listas</tspan></text>
+        <text x="31.800" y="172.010" text-anchor="end"><tspan class="cs-cs3">1.</tspan></text>
+        <text x="34.000" y="172.010" xml:space="preserve"><tspan class="cs-cs3">Primer elemento numerado del nivel principal (</tspan><tspan class="cs-cs7">enumi</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="31.800" y="179.510" text-anchor="end"><tspan class="cs-cs3">2.</tspan></text>
+        <text x="34.000" y="179.510" xml:space="preserve"><tspan class="cs-cs3">Segundo elemento con sublista anidada:</tspan></text>
+        <text x="38.300" y="187.010" text-anchor="end"><tspan class="cs-cs3">(a)</tspan></text>
+        <text x="40.500" y="187.010" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento alfabético de nivel 2 (</tspan><tspan class="cs-cs7">enumii</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="38.300" y="194.510" text-anchor="end"><tspan class="cs-cs3">(b)</tspan></text>
+        <text x="40.500" y="194.510" xml:space="preserve"><tspan class="cs-cs3">Sub-elemento con lista de viñetas interna:</tspan></text>
+        <text x="46.300" y="202.010" text-anchor="end"><tspan class="cs-cs3">•</tspan></text>
+        <text x="48.500" y="202.010" xml:space="preserve"><tspan class="cs-cs3">Viñeta estándar definida por </tspan><tspan class="cs-cs7">\labelitemi</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="46.300" y="209.510" text-anchor="end"><tspan class="cs-cs3">‡</tspan></text>
+        <text x="48.500" y="209.510" xml:space="preserve"><tspan class="cs-cs3">Viñeta personalizada con argumento opcional </tspan><tspan class="cs-cs7">\item[\ddag]</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="31.800" y="217.010" text-anchor="end"><tspan class="cs-cs3">3.</tspan></text>
+        <text x="34.000" y="217.010" xml:space="preserve"><tspan class="cs-cs3">Tercer elemento del nivel principal.</tspan></text>
+        <text x="30.000" y="224.710" xml:space="preserve"><tspan class="cs-cs10">Entrada (.tex):</tspan></text>
+        <text x="56.859" y="224.710" xml:space="preserve"><tspan class="cs-cs3">Código fuente en sintaxis estándar LaTeX2ε.</tspan></text>
+        <text x="30.000" y="232.610" xml:space="preserve"><tspan class="cs-cs10">Intermedio (.tks):</tspan></text>
+        <text x="62.041" y="232.610" xml:space="preserve"><tspan class="cs-cs3">Representación estructurada XML de estilos, marcos y flujo.</tspan></text>
+        <text x="30.000" y="240.510" xml:space="preserve"><tspan class="cs-cs10">Salida (.svg):</tspan></text>
+        <text x="55.625" y="240.510" xml:space="preserve"><tspan class="cs-cs3">Documento vectorial multipágina interactivo.</tspan></text>
+        <text x="20.000" y="250.834" xml:space="preserve"><tspan class="cs-cs12">2.2 Modo Literal (\verb y verbatim)</tspan></text>
+        <text x="26.000" y="258.610" xml:space="preserve" style="word-spacing:2.374px;"><tspan class="cs-cs3">El comando en línea </tspan><tspan class="cs-cs11">\newcommand{\cmd}[2][def]{#1-#2} </tspan><tspan class="cs-cs3">conserva intactos los</tspan></text>
+        <line x1="20.000" y1="265.200" x2="84.600" y2="265.200" stroke="#334155" stroke-width="0.28"/>
+        <text x="22.300" y="269.500" text-anchor="end"><tspan class="cs-cs31">1</tspan></text>
+        <text x="24.500" y="269.500" xml:space="preserve" style="word-spacing:0.316px;"><tspan class="cs-cs31">Las notas al pie (\footnote) se numeran automáticamente, reservan espacio en el borde inferior del marco activo y se separan</tspan></text>
+        <text x="24.500" y="273.300" xml:space="preserve"><tspan class="cs-cs31">mediante una fileta horizontal.</tspan></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Manual de LaTeX2ε en Teksto</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">2</text>
       <line x1="20.000" y1="15.240" x2="190.000" y2="15.240" stroke="#cbd5e1" stroke-width="0.25"/>
-      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">2 / 3</text>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">2 / 4</text>
     </g>
     <g id="page-3" transform="translate(572.000, 14.000)">
       <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
       <clipPath id="clip-page-3"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
       <g clip-path="url(#clip-page-3)">
-        <text x="20.000" y="26.180" xml:space="preserve" style="word-spacing:0.213px;"><tspan class="cs-cs3">El contador de usuario </tspan><tspan class="cs-cs7">experimento </tspan><tspan class="cs-cs3">(dependiente de </tspan><tspan class="cs-cs7">section</tspan><tspan class="cs-cs3">) vale ahora 3 en arábigo, iii en romano</tspan></text>
-        <text x="20.000" y="31.680" xml:space="preserve"><tspan class="cs-cs3">minúscula, III en romano mayúscula y C en alfabético.</tspan></text>
-        <text x="20.000" y="43.004" xml:space="preserve"><tspan class="cs-cs10">3.1 Aritmética de Longitudes y Grupos</tspan></text>
-        <text x="20.000" y="50.280" xml:space="preserve" style="word-spacing:0.213px;"><tspan class="cs-cs3">Este párrafo modifica localmente </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">sumando unidades relativas (</tspan><tspan class="cs-cs7">1.2em</tspan><tspan class="cs-cs3">) y absolutas (</tspan><tspan class="cs-cs7">4pt</tspan><tspan class="cs-cs3">).</tspan></text>
-        <text x="20.000" y="55.780" xml:space="preserve"><tspan class="cs-cs3">Al cerrarse el grupo de llaves, el valor original de </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">se restaura automáticamente.</tspan></text>
-        <text x="20.000" y="69.425" xml:space="preserve"><tspan class="cs-cs9">Sección sin Numerar (\section*)</tspan></text>
-        <text x="20.000" y="77.660" xml:space="preserve" style="word-spacing:0.149px;"><tspan class="cs-cs3">La variante con estrella </tspan><tspan class="cs-cs7">\section* </tspan><tspan class="cs-cs3">aplica el estilo tipográfico de sección sin incrementar ni imprimir</tspan></text>
-        <text x="20.000" y="83.160" xml:space="preserve"><tspan class="cs-cs3">el contador.</tspan></text>
-        <text x="20.000" y="96.805" xml:space="preserve"><tspan class="cs-cs9">4. Cajas LR, Tablas y Elementos Flotantes</tspan></text>
-        <text x="20.000" y="105.040" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de cajas horizontales:</tspan></text>
-        <text x="74.017" y="105.040" xml:space="preserve"><tspan class="cs-cs3">irrompible</tspan></text>
-        <text x="90.704" y="105.040" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <rect x="92.986" y="100.722" width="18.052" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
-        <text x="94.115" y="105.040" xml:space="preserve"><tspan class="cs-cs3">con borde</tspan></text>
-        <text x="111.108" y="105.040" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
-        <rect x="113.391" y="100.722" width="26.258" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
-        <text x="119.116" y="105.040" xml:space="preserve"><tspan class="cs-cs34">centrada</tspan></text>
-        <text x="139.719" y="105.040" xml:space="preserve"><tspan class="cs-cs3">, desplazamiento vertical con</tspan></text>
-        <text x="20.000" y="109.340" xml:space="preserve"><tspan class="cs-cs6">arriba</tspan></text>
-        <text x="29.419" y="110.540" xml:space="preserve"><tspan class="cs-cs3">y</tspan></text>
-        <text x="32.407" y="111.540" xml:space="preserve"><tspan class="cs-cs6">abajo</tspan></text>
-        <text x="40.521" y="110.540" xml:space="preserve"><tspan class="cs-cs3">, y caja prealmacenada:</tspan></text>
-        <text x="80.801" y="110.540" xml:space="preserve"><tspan class="cs-cs3">VALIDADO</tspan></text>
-        <text x="99.350" y="110.540" xml:space="preserve"><tspan class="cs-cs3">.</tspan></text>
-        <line x1="71.086" y1="118.960" x2="138.914" y2="118.960" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.086" y1="119.810" x2="138.914" y2="119.810" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="119.810" x2="70.686" y2="126.010" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="119.810" x2="71.486" y2="126.010" stroke="Black" stroke-width="0.141"/>
-        <line x1="138.514" y1="119.810" x2="138.514" y2="126.010" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="119.810" x2="139.314" y2="126.010" stroke="Black" stroke-width="0.141"/>
-        <text x="76.743" y="124.106" xml:space="preserve"><tspan class="cs-cs34">Resumen del Pipeline de Teksto</tspan></text>
-        <line x1="71.086" y1="126.010" x2="138.914" y2="126.010" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="126.010" x2="70.686" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="126.010" x2="71.486" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="126.010" x2="97.788" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="130.306" xml:space="preserve"><tspan class="cs-cs34">Etapa</tspan></text>
-        <line x1="116.583" y1="126.010" x2="116.583" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <text x="99.905" y="130.306" xml:space="preserve"><tspan class="cs-cs34">Formato</tspan></text>
-        <line x1="138.514" y1="126.010" x2="138.514" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="126.010" x2="139.314" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <text x="125.526" y="130.306" xml:space="preserve"><tspan class="cs-cs34">Salida</tspan></text>
-        <line x1="97.788" y1="132.210" x2="138.914" y2="132.210" stroke="Black" stroke-width="0.141"/>
-        <line x1="70.686" y1="132.210" x2="70.686" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="132.210" x2="71.486" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="132.210" x2="97.788" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="136.506" xml:space="preserve"><tspan class="cs-cs3">Frontend TeX</tspan></text>
-        <line x1="116.583" y1="132.210" x2="116.583" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <text x="103.164" y="136.506" xml:space="preserve"><tspan class="cs-cs7">.tex</tspan></text>
-        <line x1="138.514" y1="132.210" x2="138.514" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="132.210" x2="139.314" y2="138.410" stroke="Black" stroke-width="0.141"/>
-        <text x="118.699" y="136.506" xml:space="preserve"><tspan class="cs-cs7">input.tks</tspan></text>
-        <line x1="70.686" y1="138.410" x2="70.686" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.486" y1="138.410" x2="71.486" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <line x1="97.788" y1="138.410" x2="97.788" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <text x="73.203" y="142.706" xml:space="preserve"><tspan class="cs-cs3">Motor Gráfico</tspan></text>
-        <line x1="116.583" y1="138.410" x2="116.583" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <text x="103.164" y="142.706" xml:space="preserve"><tspan class="cs-cs7">.tks</tspan></text>
-        <line x1="138.514" y1="138.410" x2="138.514" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <line x1="139.314" y1="138.410" x2="139.314" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <text x="118.699" y="142.706" xml:space="preserve"><tspan class="cs-cs7">input.svg</tspan></text>
-        <line x1="71.086" y1="144.610" x2="138.914" y2="144.610" stroke="Black" stroke-width="0.141"/>
-        <line x1="71.086" y1="145.460" x2="138.914" y2="145.460" stroke="Black" stroke-width="0.141"/>
-        <text x="60.584" y="151.080" xml:space="preserve"><tspan class="cs-cs5">Cuadro 1: </tspan><tspan class="cs-cs6">Tabla con bordes dobles, \multicolumn y \cline.</tspan></text>
-        <text x="20.000" y="166.985" xml:space="preserve"><tspan class="cs-cs9">A. Especificación del Fichero Intermedio </tspan><tspan class="cs-cs36">.tks</tspan></text>
-        <text x="20.000" y="175.220" xml:space="preserve" style="word-spacing:1.212px;"><tspan class="cs-cs3">Tras ejecutar </tspan><tspan class="cs-cs7">\appendix</tspan><tspan class="cs-cs3">, las secciones principales se numeran alfabéticamente (A). El fichero</tspan></text>
-        <text x="20.000" y="180.720" xml:space="preserve" style="word-spacing:1.096px;"><tspan class="cs-cs7">input.tks </tspan><tspan class="cs-cs3">contiene la representación XML intermedia con las definiciones de página, familias</tspan></text>
-        <text x="20.000" y="186.220" xml:space="preserve" style="word-spacing:0.267px;"><tspan class="cs-cs3">tipográficas, estilos deduplicados (</tspan><tspan class="cs-cs7">&lt;para-style&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;char-style&gt;</tspan><tspan class="cs-cs3">) y primitivas de flujo (</tspan><tspan class="cs-cs7">&lt;p&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;span&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
-        <text x="20.000" y="191.720" xml:space="preserve"><tspan class="cs-cs7">&lt;br/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;hspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;vspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;rule/&gt;</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="26.000" y="26.180" xml:space="preserve" style="word-spacing:0.326px;"><tspan class="cs-cs3">caracteres especiales, mientras que </tspan><tspan class="cs-cs11">\verb*␣muestra␣espacios </tspan><tspan class="cs-cs3">visibiliza cada espacio con</tspan></text>
+        <text x="26.000" y="31.680" xml:space="preserve"><tspan class="cs-cs11">␣</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="30.000" y="38.180" xml:space="preserve"><tspan class="cs-cs11">% Bloque literal verbatim:</tspan></text>
+        <text x="30.000" y="43.680" xml:space="preserve"><tspan class="cs-cs11">\def\identidad#1{#1}</tspan></text>
+        <text x="30.000" y="49.180" xml:space="preserve"><tspan class="cs-cs11">  Sangría y   espacios   preservados.</tspan></text>
+        <text x="20.000" y="58.604" xml:space="preserve"><tspan class="cs-cs12">2.3 Saltos, Rellenos Elásticos y Reglas</tspan></text>
+        <text x="26.000" y="66.380" xml:space="preserve"><tspan class="cs-cs3">Salto de línea manual con </tspan><tspan class="cs-cs7">\\</tspan><tspan class="cs-cs3">:</tspan></text>
+        <text x="26.000" y="71.880" xml:space="preserve"><tspan class="cs-cs3">Segunda línea sin justificación forzada.</tspan></text>
+        <text x="26.000" y="79.880" xml:space="preserve"><tspan class="cs-cs3">Tercera línea tras un espacio adicional de </tspan><tspan class="cs-cs7">2.5mm</tspan><tspan class="cs-cs3">.</tspan></text>
+        <text x="26.000" y="88.497" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de rellenos horizontales y reglas (</tspan><tspan class="cs-cs7">\hfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\dotfill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\hrulefill</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">\rule</tspan><tspan class="cs-cs3">):</tspan></text>
+        <text x="26.000" y="93.997" xml:space="preserve"><tspan class="cs-cs3">Extremo izquierdo</tspan></text>
+        <text x="162.409" y="93.997" xml:space="preserve"><tspan class="cs-cs3">Extremo derecho</tspan></text>
+        <text x="26.000" y="99.497" xml:space="preserve"><tspan class="cs-cs3">Sección 1</tspan></text>
+        <line x1="43.215" y1="99.147" x2="178.606" y2="99.147" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="179.406" y="99.497" xml:space="preserve"><tspan class="cs-cs3">Pág. 1</tspan></text>
+        <text x="26.000" y="104.997" xml:space="preserve"><tspan class="cs-cs3">Sección 2</tspan></text>
+        <line x1="43.215" y1="104.647" x2="178.606" y2="104.647" stroke="Black" stroke-width="0.45" stroke-dasharray="0.5, 1.8" stroke-linecap="round"/>
+        <text x="179.406" y="104.997" xml:space="preserve"><tspan class="cs-cs3">Pág. 2</tspan></text>
+        <text x="26.000" y="110.497" xml:space="preserve"><tspan class="cs-cs3">Firma autorizada:</tspan></text>
+        <line x1="55.543" y1="110.147" x2="178.552" y2="110.147" stroke="Black" stroke-width="0.35"/>
+        <rect x="178.952" y="108.697" width="10.000" height="1.800" fill="Black"/>
+        <text x="20.000" y="126.475" xml:space="preserve"><tspan class="cs-cs9">3. Contadores, Longitudes y Apéndices</tspan></text>
+        <text x="26.000" y="135.210" xml:space="preserve" style="word-spacing:0.734px;"><tspan class="cs-cs3">El contador de usuario </tspan><tspan class="cs-cs7">experimento </tspan><tspan class="cs-cs3">(dependiente de </tspan><tspan class="cs-cs7">section</tspan><tspan class="cs-cs3">) vale ahora 3 en arábigo, iii en</tspan></text>
+        <text x="26.000" y="140.710" xml:space="preserve"><tspan class="cs-cs3">romano minúscula, III en romano mayúscula y C en alfabético.</tspan></text>
+        <text x="20.000" y="150.134" xml:space="preserve"><tspan class="cs-cs12">3.1 Aritmética de Longitudes y Grupos</tspan></text>
+        <text x="26.000" y="157.910" xml:space="preserve" style="word-spacing:0.427px;"><tspan class="cs-cs3">Este párrafo modifica localmente </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">sumando unidades relativas (</tspan><tspan class="cs-cs7">1.2em</tspan><tspan class="cs-cs3">) y absolutas (</tspan></text>
+        <text x="26.000" y="163.410" xml:space="preserve"><tspan class="cs-cs7">4pt</tspan><tspan class="cs-cs3">). Al cerrarse el grupo de llaves, el valor original de </tspan><tspan class="cs-cs7">\parindent </tspan><tspan class="cs-cs3">se restaura automáticamente.</tspan></text>
+        <text x="20.000" y="175.155" xml:space="preserve"><tspan class="cs-cs9">Sección sin Numerar (\section*)</tspan></text>
+        <text x="26.000" y="183.890" xml:space="preserve" style="word-spacing:0.854px;"><tspan class="cs-cs3">La variante con estrella </tspan><tspan class="cs-cs7">\section* </tspan><tspan class="cs-cs3">aplica el estilo tipográfico de sección sin incrementar ni</tspan></text>
+        <text x="26.000" y="189.390" xml:space="preserve"><tspan class="cs-cs3">imprimir el contador.</tspan></text>
+        <text x="20.000" y="201.135" xml:space="preserve"><tspan class="cs-cs9">4. Cajas LR, Tablas y Elementos Flotantes</tspan></text>
+        <text x="26.000" y="209.870" xml:space="preserve"><tspan class="cs-cs3">Ejemplos de cajas horizontales:</tspan></text>
+        <text x="80.017" y="209.870" xml:space="preserve"><tspan class="cs-cs3">irrompible</tspan></text>
+        <text x="96.704" y="209.870" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <rect x="98.986" y="205.552" width="18.052" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
+        <text x="100.115" y="209.870" xml:space="preserve"><tspan class="cs-cs3">con borde</tspan></text>
+        <text x="117.108" y="209.870" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <rect x="119.391" y="205.552" width="26.258" height="6.579" fill="none" stroke="Black" stroke-width="0.141"/>
+        <text x="125.116" y="209.870" xml:space="preserve"><tspan class="cs-cs10">centrada</tspan></text>
+        <text x="145.719" y="209.870" xml:space="preserve"><tspan class="cs-cs3">, desplazamiento vertical</tspan></text>
+        <text x="26.000" y="215.370" xml:space="preserve"><tspan class="cs-cs3">con</tspan></text>
+        <text x="32.869" y="214.170" xml:space="preserve"><tspan class="cs-cs6">arriba</tspan></text>
+        <text x="42.288" y="215.370" xml:space="preserve"><tspan class="cs-cs3">y</tspan></text>
+        <text x="45.276" y="216.370" xml:space="preserve"><tspan class="cs-cs6">abajo</tspan></text>
+        <text x="53.390" y="215.370" xml:space="preserve"><tspan class="cs-cs3">, y caja prealmacenada:</tspan></text>
+        <text x="93.670" y="215.370" xml:space="preserve"><tspan class="cs-cs3">VALIDADO</tspan></text>
+        <text x="112.219" y="215.370" xml:space="preserve"><tspan class="cs-cs3">.</tspan></text>
+        <line x1="71.086" y1="221.890" x2="138.914" y2="221.890" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.086" y1="222.740" x2="138.914" y2="222.740" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="222.740" x2="70.686" y2="228.940" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="222.740" x2="71.486" y2="228.940" stroke="Black" stroke-width="0.141"/>
+        <line x1="138.514" y1="222.740" x2="138.514" y2="228.940" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="222.740" x2="139.314" y2="228.940" stroke="Black" stroke-width="0.141"/>
+        <text x="76.743" y="227.036" xml:space="preserve"><tspan class="cs-cs10">Resumen del Pipeline de Teksto</tspan></text>
+        <line x1="71.086" y1="228.940" x2="138.914" y2="228.940" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="228.940" x2="70.686" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="228.940" x2="71.486" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="228.940" x2="97.788" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Etapa</tspan></text>
+        <line x1="116.583" y1="228.940" x2="116.583" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <text x="99.905" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Formato</tspan></text>
+        <line x1="138.514" y1="228.940" x2="138.514" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="228.940" x2="139.314" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <text x="125.526" y="233.236" xml:space="preserve"><tspan class="cs-cs10">Salida</tspan></text>
+        <line x1="97.788" y1="235.140" x2="138.914" y2="235.140" stroke="Black" stroke-width="0.141"/>
+        <line x1="70.686" y1="235.140" x2="70.686" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="235.140" x2="71.486" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="235.140" x2="97.788" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="239.436" xml:space="preserve"><tspan class="cs-cs3">Frontend TeX</tspan></text>
+        <line x1="116.583" y1="235.140" x2="116.583" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <text x="103.164" y="239.436" xml:space="preserve"><tspan class="cs-cs7">.tex</tspan></text>
+        <line x1="138.514" y1="235.140" x2="138.514" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="235.140" x2="139.314" y2="241.340" stroke="Black" stroke-width="0.141"/>
+        <text x="118.699" y="239.436" xml:space="preserve"><tspan class="cs-cs7">input.tks</tspan></text>
+        <line x1="70.686" y1="241.340" x2="70.686" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.486" y1="241.340" x2="71.486" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <line x1="97.788" y1="241.340" x2="97.788" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <text x="73.203" y="245.636" xml:space="preserve"><tspan class="cs-cs3">Motor Gráfico</tspan></text>
+        <line x1="116.583" y1="241.340" x2="116.583" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <text x="103.164" y="245.636" xml:space="preserve"><tspan class="cs-cs7">.tks</tspan></text>
+        <line x1="138.514" y1="241.340" x2="138.514" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <line x1="139.314" y1="241.340" x2="139.314" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <text x="118.699" y="245.636" xml:space="preserve"><tspan class="cs-cs7">input.svg</tspan></text>
+        <line x1="71.086" y1="247.540" x2="138.914" y2="247.540" stroke="Black" stroke-width="0.141"/>
+        <line x1="71.086" y1="248.390" x2="138.914" y2="248.390" stroke="Black" stroke-width="0.141"/>
+        <text x="63.584" y="254.510" xml:space="preserve"><tspan class="cs-cs5">Cuadro 1: </tspan><tspan class="cs-cs6">Tabla con bordes dobles, \multicolumn y \cline.</tspan></text>
+        <text x="20.000" y="268.515" xml:space="preserve"><tspan class="cs-cs9">5. Modo Matemático, Gráficos Vectoriales y Referencias</tspan></text>
       </g>
       <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Arquitectura TeX -&gt; .tks -&gt; .svg</text>
       <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">3</text>
       <line x1="20.000" y1="15.240" x2="190.000" y2="15.240" stroke="#cbd5e1" stroke-width="0.25"/>
-      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">3 / 3</text>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">3 / 4</text>
+    </g>
+    <g id="page-4" transform="translate(850.000, 14.000)">
+      <rect class="page-sheet" x="0" y="0" width="210.000" height="297.000" filter="url(#page-shadow)"/>
+      <clipPath id="clip-page-4"><rect x="0" y="0" width="210.000" height="297.000"/></clipPath>
+      <g clip-path="url(#clip-page-4)">
+        <text x="26.000" y="26.180" xml:space="preserve" style="word-spacing:0.808px;"><tspan class="cs-cs3">Como se detalló en la Sección 1 (página 1) y se resumió en el Cuadro 1, el motor procesa el</tspan></text>
+        <text x="26.000" y="31.680" xml:space="preserve"><tspan class="cs-cs3">documento en dos pasadas para resolver referencias cruzadas y citas bibliográficas como [1, 2].</tspan></text>
+        <text x="34.000" y="38.180" xml:space="preserve" style="word-spacing:0.034px;"><tspan class="cs-cs3">En modo matemático en línea se componen expresiones como </tspan><tspan class="cs-cs36">E </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">mc</tspan><tspan class="cs-cs30">2</tspan><tspan class="cs-cs3">, desigualdades </tspan><tspan class="cs-cs36">α </tspan><tspan class="cs-cs3">+ </tspan><tspan class="cs-cs36">β </tspan><tspan class="cs-cs3">≥</tspan></text>
+        <text x="26.000" y="43.680" xml:space="preserve"><tspan class="cs-cs36">γ</tspan><tspan class="cs-cs3">, vectores</tspan></text>
+        <text x="45.448" y="43.680" xml:space="preserve"><tspan class="cs-cs36">v</tspan></text>
+        <path d="M 45.448 40.265 L 47.388 40.265 M 46.738 39.915 L 47.388 40.265 L 46.738 40.615" fill="none" stroke="Black" stroke-width="0.28"/>
+        <text x="48.636" y="43.680" xml:space="preserve"><tspan class="cs-cs3">·</tspan></text>
+        <text x="51.901" y="43.680" xml:space="preserve"><tspan class="cs-cs36">w</tspan></text>
+        <line x1="51.901" y1="40.265" x2="55.006" y2="40.265" stroke="Black" stroke-width="0.28"/>
+        <text x="56.253" y="43.680" xml:space="preserve"><tspan class="cs-cs3">= 0 y límites lim</tspan><tspan class="cs-cs37">n </tspan><tspan class="cs-cs38">→ ∞ </tspan><tspan class="cs-cs3">(1 + 1/</tspan><tspan class="cs-cs36">n</tspan><tspan class="cs-cs3">)</tspan><tspan class="cs-cs39">n </tspan><tspan class="cs-cs3">= </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs3">. A continuación se muestra la ecuación</tspan></text>
+        <text x="26.000" y="49.180" xml:space="preserve"><tspan class="cs-cs3">numerada (1) con fracciones, radicales, coeficientes binomiales y operadores:</tspan></text>
+        <text x="54.687" y="58.980" xml:space="preserve"><tspan class="cs-cs3">∫</tspan><tspan class="cs-cs38">-∞</tspan><tspan class="cs-cs30">∞ </tspan><tspan class="cs-cs36">e</tspan><tspan class="cs-cs30">-</tspan><tspan class="cs-cs39">x</tspan><tspan class="cs-cs30">2</tspan></text>
+        <text x="68.533" y="58.980" xml:space="preserve"><tspan class="cs-cs36">dx </tspan><tspan class="cs-cs3">=</tspan></text>
+        <path d="M 76.849 57.622 L 77.249 57.422 L 77.849 59.446 L 78.649 55.410 L 81.267 55.410" fill="none" stroke="Black" stroke-width="0.30" stroke-linejoin="round"/>
+        <text x="78.949" y="58.980" xml:space="preserve"><tspan class="cs-cs36">π</tspan></text>
+        <text x="81.467" y="58.980" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <path d="M 92.509 54.129 Q 91.509 57.816 92.509 61.502 M 96.158 54.129 Q 97.158 57.816 96.158 61.502" fill="none" stroke="Black" stroke-width="0.32"/>
+        <text x="94.334" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n</tspan></text>
+        <text x="94.334" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k</tspan></text>
+        <text x="98.306" y="58.980" xml:space="preserve"><tspan class="cs-cs3">=</tspan></text>
+        <line x1="101.594" y1="57.816" x2="113.149" y2="57.816" stroke="Black" stroke-width="0.30"/>
+        <text x="107.372" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">n!</tspan></text>
+        <text x="107.372" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">k!(n-k)!</tspan></text>
+        <text x="113.449" y="58.980" xml:space="preserve"><tspan class="cs-cs3">,</tspan></text>
+        <text x="123.591" y="58.980" xml:space="preserve"><tspan class="cs-cs36">f</tspan></text>
+        <path d="M 123.591 55.865 L 124.291 55.115 L 124.991 55.865" fill="none" stroke="Black" stroke-width="0.28"/>
+        <text x="125.191" y="58.980" xml:space="preserve"><tspan class="cs-cs3">(</tspan><tspan class="cs-cs36">ξ</tspan><tspan class="cs-cs3">) = ∑</tspan><tspan class="cs-cs37">k</tspan><tspan class="cs-cs38">=0</tspan><tspan class="cs-cs39">N</tspan></text>
+        <line x1="142.625" y1="57.816" x2="155.697" y2="57.816" stroke="Black" stroke-width="0.30"/>
+        <text x="149.161" y="56.962" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">√(ak + 1)</tspan></text>
+        <text x="149.161" y="60.998" text-anchor="middle"><tspan class="cs-cs36" style="font-size:3.182px;">2k</tspan></text>
+        <text x="157.045" y="58.980" xml:space="preserve"><tspan class="cs-cs3">(1)</tspan></text>
+        <text x="20.000" y="72.304" xml:space="preserve"><tspan class="cs-cs12">5.1 Diagrama Vectorial con el Entorno </tspan><tspan class="cs-cs40">picture</tspan></text>
+        <rect x="54.000" y="81.400" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="66.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.tex</tspan></text>
+        <line x1="78.000" y1="86.400" x2="92.000" y2="86.400" stroke="Black" stroke-width="0.140"/>
+        <polygon points="92.000,86.400 90.150,87.120 90.150,85.680" fill="Black"/>
+        <rect x="92.000" y="81.400" width="26.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140" stroke-dasharray="1.50, 1.20"/>
+        <text x="105.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.tks (XML)</tspan></text>
+        <line x1="118.000" y1="86.400" x2="132.000" y2="86.400" stroke="Black" stroke-width="0.140"/>
+        <polygon points="132.000,86.400 130.150,87.120 130.150,85.680" fill="Black"/>
+        <rect x="132.000" y="81.400" width="24.000" height="10.000" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="144.000" y="87.642" text-anchor="middle"><tspan class="cs-cs10">.svg</tspan></text>
+        <rect x="57.000" y="95.400" width="96.000" height="8.000" rx="2.240" ry="2.240" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="105.000" y="100.416" text-anchor="middle"><tspan class="cs-cs4">Pipeline vectorial nativo de Teksto</tspan></text>
+        <circle cx="60.000" cy="99.400" r="1.250" fill="Black" stroke="Black" stroke-width="0.140"/>
+        <circle cx="150.000" cy="99.400" r="1.750" fill="none" stroke="Black" stroke-width="0.140"/>
+        <path d="M 66.000 91.400 Q 105.000 105.400 144.000 91.400" fill="none" stroke="Black" stroke-width="0.140"/>
+        <text x="20.000" y="117.525" xml:space="preserve"><tspan class="cs-cs9">A. Especificación del Fichero Intermedio </tspan><tspan class="cs-cs40">.tks</tspan></text>
+        <text x="26.000" y="126.260" xml:space="preserve" style="word-spacing:0.666px;"><tspan class="cs-cs3">Tras ejecutar </tspan><tspan class="cs-cs7">\appendix</tspan><tspan class="cs-cs3">, las secciones principales se numeran alfabéticamente (A). El fichero</tspan></text>
+        <text x="26.000" y="131.760" xml:space="preserve" style="word-spacing:0.550px;"><tspan class="cs-cs7">input.tks </tspan><tspan class="cs-cs3">contiene la representación XML intermedia con las definiciones de página, familias</tspan></text>
+        <text x="26.000" y="137.260" xml:space="preserve" style="word-spacing:1.216px;"><tspan class="cs-cs3">tipográficas, estilos deduplicados (</tspan><tspan class="cs-cs7">&lt;para-style&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;char-style&gt;</tspan><tspan class="cs-cs3">) y primitivas de flujo (</tspan><tspan class="cs-cs7">&lt;p&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
+        <text x="26.000" y="142.760" xml:space="preserve" style="word-spacing:1.302px;"><tspan class="cs-cs7">&lt;span&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;br/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;hspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;vspace/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;rule/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mfrac/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;msqrt/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;mover/&gt;</tspan><tspan class="cs-cs3">, </tspan><tspan class="cs-cs7">&lt;table&gt;</tspan><tspan class="cs-cs3">,</tspan></text>
+        <text x="26.000" y="148.260" xml:space="preserve"><tspan class="cs-cs7">&lt;picture&gt;</tspan><tspan class="cs-cs3">).</tspan></text>
+        <text x="20.000" y="160.005" xml:space="preserve"><tspan class="cs-cs9">Referencias</tspan></text>
+        <text x="31.800" y="169.040" text-anchor="end"><tspan class="cs-cs3">[1]</tspan></text>
+        <text x="34.000" y="169.040" xml:space="preserve"><tspan class="cs-cs3">Donald E. Knuth, </tspan><tspan class="cs-cs36">The TeXbook</tspan><tspan class="cs-cs3">, Addison-Wesley, 1984.</tspan></text>
+        <text x="31.800" y="176.540" text-anchor="end"><tspan class="cs-cs3">[2]</tspan></text>
+        <text x="34.000" y="176.540" xml:space="preserve"><tspan class="cs-cs3">Leslie Lamport, </tspan><tspan class="cs-cs36">LaTeX: A Document Preparation System</tspan><tspan class="cs-cs3">, 2.</tspan><tspan class="cs-cs30">a </tspan><tspan class="cs-cs3">ed., Addison-Wesley, 1994.</tspan></text>
+        <text x="20.000" y="188.985" xml:space="preserve"><tspan class="cs-cs9">Índice alfabético</tspan></text>
+        <text x="26.000" y="197.620" xml:space="preserve"><tspan class="cs-cs10">cajas LR</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <text x="26.000" y="204.120" xml:space="preserve"><tspan class="cs-cs10">entorno picture</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <text x="26.000" y="210.620" xml:space="preserve"><tspan class="cs-cs10">lexer TeX</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <text x="26.000" y="217.120" xml:space="preserve"><tspan class="cs-cs10">modo matematico</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <text x="26.000" y="223.620" xml:space="preserve"><tspan class="cs-cs10">tablas tabular</tspan><tspan class="cs-cs3">, 1</tspan></text>
+        <text x="26.000" y="230.120" xml:space="preserve"><tspan class="cs-cs10">tipografia digital</tspan><tspan class="cs-cs3">, 1</tspan></text>
+      </g>
+      <text class="page-num-footer" style="font-style:italic;" x="20.000" y="13.640" text-anchor="start">Manual de LaTeX2ε en Teksto</text>
+      <text class="page-num-footer" x="190.000" y="13.640" text-anchor="end">4</text>
+      <line x1="20.000" y1="15.240" x2="190.000" y2="15.240" stroke="#cbd5e1" stroke-width="0.25"/>
+      <text class="page-num-footer" x="105.000" y="291.000" text-anchor="middle">4 / 4</text>
     </g>
   </g>
 
   <g id="hud" transform="translate(0, 0)">
-    <rect class="hud-pill" x="87.000" y="320.000" width="68.000" height="10.500" rx="5.25"/>
-    <g id="btn-prev" class="hud-btn" transform="translate(89.200, 321.550)">
-      <rect x="0" y="0" width="14" height="7.4" rx="3.7"/>
-      <text class="hud-label" x="7" y="4.95" text-anchor="middle">&#x2190;</text>
+    <rect class="hud-pill" x="63.000" y="320.000" width="116.000" height="10.500" rx="5.25"/>
+    <g id="btn-prev" class="hud-btn" transform="translate(65.200, 321.550)">
+      <rect x="0" y="0" width="12" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="6" y="4.95" text-anchor="middle">&#x2190;</text>
     </g>
-    <text id="hud-indicator" class="hud-label" x="121.000" y="326.500" text-anchor="middle">P&#xE1;g. 1 / 3</text>
-    <g id="btn-next" class="hud-btn" transform="translate(138.800, 321.550)">
-      <rect x="0" y="0" width="14" height="7.4" rx="3.7"/>
-      <text class="hud-label" x="7" y="4.95" text-anchor="middle">&#x2192;</text>
+    <text id="hud-indicator" class="hud-label" x="96.000" y="326.500" text-anchor="middle">P&#xE1;g. 1 / 4</text>
+    <g id="btn-next" class="hud-btn" transform="translate(114.800, 321.550)">
+      <rect x="0" y="0" width="12" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="6" y="4.95" text-anchor="middle">&#x2192;</text>
+    </g>
+    <line x1="129.200" y1="322.000" x2="129.200" y2="328.500" stroke="#334155" stroke-width="0.35"/>
+    <g id="btn-zoom-out" class="hud-btn" transform="translate(131.600, 321.550)">
+      <rect x="0" y="0" width="10" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="5" y="4.95" text-anchor="middle">&#x2212;</text>
+    </g>
+    <g id="btn-zoom-reset" class="hud-btn" transform="translate(143.000, 321.550)">
+      <rect x="0" y="0" width="22" height="7.4" rx="3.7"/>
+      <text id="hud-zoom-label" class="hud-label" x="11" y="4.95" text-anchor="middle">100%</text>
+    </g>
+    <g id="btn-zoom-in" class="hud-btn" transform="translate(166.400, 321.550)">
+      <rect x="0" y="0" width="10" height="7.4" rx="3.7"/>
+      <text class="hud-label" x="5" y="4.95" text-anchor="middle">+</text>
     </g>
   </g>
 
@@ -264,34 +410,95 @@
     const svg = document.getElementById('doc-root');
     const hud = document.getElementById('hud');
     const indicator = document.getElementById('hud-indicator');
+    const zoomLabel = document.getElementById('hud-zoom-label');
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
 
-    const TOTAL_PAGES = 3;
+    const TOTAL_PAGES = 4;
     const VIEW_W      = 242.0000;
     const VIEW_H      = 337.0000;
     const STRIDE_X    = 278.0000;
     const DURATION_MS = 380;
+    const MIN_ZOOM    = 0.5;
+    const MAX_ZOOM    = 4.0;
+    const ZOOM_STEP   = 0.25;
 
     let currentPage = 0;
     let currentX    = 0;
+    let zoom        = 1.0;
+    let panX        = 0.0;
+    let panY        = 0.0;
     let animId      = null;
     let wheelLock   = false;
+    let isDragging  = false;
+    let dragStartX  = 0.0;
+    let dragStartY  = 0.0;
+    let dragPanX0   = 0.0;
+    let dragPanY0   = 0.0;
+
+    function clampPan() {
+      if (zoom <= 1.0) {
+        panX = 0.0;
+        panY = 0.0;
+        return;
+      }
+      const vw = VIEW_W / zoom;
+      const vh = VIEW_H / zoom;
+      const maxPanX = (VIEW_W - vw) * 0.5;
+      const maxPanY = (VIEW_H - vh) * 0.5;
+      panX = Math.max(-maxPanX, Math.min(maxPanX, panX));
+      panY = Math.max(-maxPanY, Math.min(maxPanY, panY));
+    }
 
     function applyViewport(x) {
       currentX = x;
-      svg.setAttribute('viewBox', `${x.toFixed(3)} 0 ${VIEW_W} ${VIEW_H}`);
-      hud.setAttribute('transform', `translate(${x.toFixed(3)}, 0)`);
+      clampPan();
+      const vw = VIEW_W / zoom;
+      const vh = VIEW_H / zoom;
+      const vx = x + (VIEW_W - vw) * 0.5 + panX;
+      const vy = (VIEW_H - vh) * 0.5 + panY;
+      svg.setAttribute('viewBox', `${vx.toFixed(3)} ${vy.toFixed(3)} ${vw.toFixed(3)} ${vh.toFixed(3)}`);
+      hud.setAttribute('transform', `translate(${vx.toFixed(3)}, ${vy.toFixed(3)}) scale(${(1 / zoom).toFixed(5)})`);
     }
 
     function syncHudState() {
       indicator.textContent = `P\u00e1g. ${currentPage + 1} / ${TOTAL_PAGES}`;
+      zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
       btnPrev.classList.toggle('hud-btn-disabled', currentPage <= 0);
       btnNext.classList.toggle('hud-btn-disabled', currentPage >= TOTAL_PAGES - 1);
+      btnZoomOut.classList.toggle('hud-btn-disabled', zoom <= MIN_ZOOM + 0.001);
+      btnZoomIn.classList.toggle('hud-btn-disabled', zoom >= MAX_ZOOM - 0.001);
+      svg.style.cursor = zoom > 1.0 ? (isDragging ? 'grabbing' : 'grab') : 'default';
+    }
+
+    function setZoom(nextZoom, clientX = null, clientY = null) {
+      const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(nextZoom * 100) / 100));
+      if (Math.abs(clamped - zoom) < 0.001) return;
+      if (clientX !== null && clientY !== null) {
+        const rect = svg.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const normX = ((clientX - rect.left) / rect.width) - 0.5;
+          const normY = ((clientY - rect.top) / rect.height) - 0.5;
+          const ptX = panX + normX * (VIEW_W / zoom);
+          const ptY = panY + normY * (VIEW_H / zoom);
+          panX = ptX - normX * (VIEW_W / clamped);
+          panY = ptY - normY * (VIEW_H / clamped);
+        }
+      }
+      zoom = clamped;
+      syncHudState();
+      applyViewport(currentX);
     }
 
     function goToPage(targetIdx, immediate = false) {
       const clamped = Math.max(0, Math.min(TOTAL_PAGES - 1, targetIdx));
+      if (clamped !== currentPage) {
+        panX = 0.0;
+        panY = 0.0;
+      }
       currentPage = clamped;
       const targetX = clamped * STRIDE_X;
       syncHudState();
@@ -328,9 +535,54 @@
 
     btnPrev.addEventListener('click', () => goToPage(currentPage - 1));
     btnNext.addEventListener('click', () => goToPage(currentPage + 1));
+    btnZoomOut.addEventListener('click', () => setZoom(zoom - ZOOM_STEP));
+    btnZoomReset.addEventListener('click', () => { panX = 0; panY = 0; setZoom(1.0); });
+    btnZoomIn.addEventListener('click', () => setZoom(zoom + ZOOM_STEP));
+
+    svg.addEventListener('mousedown', (ev) => {
+      if (zoom <= 1.0 || ev.button !== 0 || hud.contains(ev.target)) return;
+      isDragging = true;
+      dragStartX = ev.clientX;
+      dragStartY = ev.clientY;
+      dragPanX0  = panX;
+      dragPanY0  = panY;
+      syncHudState();
+    });
+
+    window.addEventListener('mousemove', (ev) => {
+      if (!isDragging) return;
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const scaleX = (VIEW_W / zoom) / rect.width;
+      const scaleY = (VIEW_H / zoom) / rect.height;
+      const scale  = Math.max(scaleX, scaleY);
+      panX = dragPanX0 - (ev.clientX - dragStartX) * scale;
+      panY = dragPanY0 - (ev.clientY - dragStartY) * scale;
+      applyViewport(currentX);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        syncHudState();
+      }
+    });
 
     window.addEventListener('keydown', (ev) => {
-      if (ev.key === 'ArrowRight' || ev.key === 'PageDown' || ev.key === ' ') {
+      if (ev.key === '+' || ev.key === '=') {
+        ev.preventDefault();
+        setZoom(zoom + ZOOM_STEP);
+      } else if (ev.key === '-' || ev.key === '_') {
+        ev.preventDefault();
+        setZoom(zoom - ZOOM_STEP);
+      } else if (ev.key === '0') {
+        ev.preventDefault();
+        panX = 0; panY = 0; setZoom(1.0);
+      } else if (zoom > 1.0 && (ev.key === 'ArrowUp' || ev.key === 'ArrowDown')) {
+        ev.preventDefault();
+        panY += (ev.key === 'ArrowDown' ? 18 : -18) / zoom;
+        applyViewport(currentX);
+      } else if (ev.key === 'ArrowRight' || ev.key === 'PageDown' || ev.key === ' ') {
         ev.preventDefault();
         goToPage(currentPage + 1);
       } else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') {
@@ -346,13 +598,26 @@
     });
 
     window.addEventListener('wheel', (ev) => {
+      if (ev.ctrlKey || ev.metaKey) {
+        ev.preventDefault();
+        const step = ev.deltaY < 0 ? 0.15 : -0.15;
+        setZoom(zoom + step, ev.clientX, ev.clientY);
+        return;
+      }
+      if (zoom > 1.0) {
+        ev.preventDefault();
+        panX += (ev.deltaX * 0.25) / zoom;
+        panY += (ev.deltaY * 0.25) / zoom;
+        applyViewport(currentX);
+        return;
+      }
       if (wheelLock) return;
       const delta = Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY;
       if (Math.abs(delta) < 18) return;
       wheelLock = true;
       goToPage(currentPage + (delta > 0 ? 1 : -1));
       setTimeout(() => { wheelLock = false; }, 320);
-    }, { passive: true });
+    }, { passive: false });
 
     const match = /^#page=(\d+)$/.exec(window.location.hash);
     const initial = match ? parseInt(match[1], 10) - 1 : 0;

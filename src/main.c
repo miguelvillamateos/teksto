@@ -428,16 +428,20 @@ static void sync_page_dimensions_to_orientation(XmlGenerator *gen) {
 static bool xml_gen_init(XmlGenerator *gen, const char *xml_path) {
     memset(gen, 0, sizeof(*gen));
 
-    gen->file = fopen(xml_path, "w");
-    if (!gen->file) return false;
+    if (xml_path) {
+        gen->file = fopen(xml_path, "w");
+        if (!gen->file) return false;
+    } else {
+        gen->file = nullptr;
+    }
 
     if (!sb_init(&gen->story, 8192)) {
-        fclose(gen->file);
+        if (gen->file) fclose(gen->file);
         return false;
     }
     if (!sb_init(&gen->pending_footnotes, 512)) {
         sb_free(&gen->story);
-        fclose(gen->file);
+        if (gen->file) fclose(gen->file);
         return false;
     }
 
@@ -721,6 +725,13 @@ static void xml_activate_current_char_style(XmlGenerator *gen) {
     }
 }
 
+static bool is_math_upright_ascii(char c) {
+    return isdigit((unsigned char)c) ||
+           c == '+' || c == '-' || c == '=' || c == '<' || c == '>' ||
+           c == '(' || c == ')' || c == '[' || c == ']' || c == '|' ||
+           c == ',' || c == ';' || c == ':' || c == '!' || c == '/' || c == '*';
+}
+
 static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
     if (text.len == 0) return;
 
@@ -736,7 +747,52 @@ static void xml_emit_text(XmlGenerator *gen, StrView text, bool space_before) {
         return;
     }
 
+    if (gen->in_picture) {
+        size_t cs_id = xml_intern_char_style(gen, &gen->char_state);
+        double px = gen->pic_cur_x_mm - gen->pic_x0_mm;
+        double py = gen->pic_h_mm - (gen->pic_cur_y_mm - gen->pic_y0_mm);
+        sb_appendf(&gen->story, "        <ptext x=\"%.2fmm\" y=\"%.2fmm\" style=\"cs%zu\">",
+                   px, py, cs_id + 1);
+        sb_append_escaped_xml(&gen->story, text.data, text.len);
+        sb_append_cstr(&gen->story, "</ptext>\n");
+        return;
+    }
+
     xml_ensure_para_open(gen);
+
+    if (gen->in_math && gen->char_state.slant == SLANT_ITALIC) {
+        if (space_before && gen->para_has_content) {
+            xml_activate_current_char_style(gen);
+            sb_append_cstr(&gen->story, " ");
+        }
+        size_t i = 0;
+        while (i < text.len) {
+            bool up = is_math_upright_ascii(text.data[i]);
+            size_t start = i;
+            while (i < text.len && is_math_upright_ascii(text.data[i]) == up) {
+                i++;
+            }
+            FontSlant saved_slant = gen->char_state.slant;
+            if (up) gen->char_state.slant = SLANT_NORMAL;
+            xml_activate_current_char_style(gen);
+            for (size_t k = start; k < i; k++) {
+                char c = text.data[k];
+                if ((c == '+' || c == '=' || c == '<' || c == '>') && gen->char_state.shift == SHIFT_NORMAL) {
+                    sb_append_cstr(&gen->story, " ");
+                    sb_append_escaped_xml(&gen->story, &c, 1);
+                    sb_append_cstr(&gen->story, " ");
+                } else if (c == '-' && gen->char_state.shift == SHIFT_NORMAL) {
+                    sb_append_cstr(&gen->story, " − ");
+                } else {
+                    sb_append_escaped_xml(&gen->story, &c, 1);
+                }
+            }
+            gen->char_state.slant = saved_slant;
+        }
+        gen->para_has_content = true;
+        return;
+    }
+
     xml_activate_current_char_style(gen);
 
     if (space_before && gen->para_has_content) {
@@ -834,6 +890,74 @@ static void xml_emit_box(XmlGenerator *gen, Measure width, char align, Measure b
     gen->para_has_content = true;
 }
 
+static void xml_emit_mfrac(XmlGenerator *gen, StrView num, StrView den, bool has_bar, bool has_paren, const CharState *cs, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) sb_append_cstr(gen->capture_plain_buf, " ");
+        sb_append_cstr(gen->capture_plain_buf, "(");
+        sb_append_mem(gen->capture_plain_buf, num.data, num.len);
+        sb_append_cstr(gen->capture_plain_buf, ")/(");
+        sb_append_mem(gen->capture_plain_buf, den.data, den.len);
+        sb_append_cstr(gen->capture_plain_buf, ")");
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, cs ? cs : &gen->char_state);
+    sb_appendf(&gen->story, "<mfrac bar=\"%s\" delim=\"%s\" style=\"cs%zu\" num=\"",
+               has_bar ? "true" : "false", has_paren ? "paren" : "none", cs_id + 1);
+    sb_append_escaped_xml(&gen->story, num.data, num.len);
+    sb_append_cstr(&gen->story, "\" den=\"");
+    sb_append_escaped_xml(&gen->story, den.data, den.len);
+    sb_append_cstr(&gen->story, "\"/>");
+    gen->para_has_content = true;
+}
+
+static void xml_emit_msqrt(XmlGenerator *gen, StrView index_sv, StrView body, const CharState *cs, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) sb_append_cstr(gen->capture_plain_buf, " ");
+        sb_append_cstr(gen->capture_plain_buf, "√(");
+        sb_append_mem(gen->capture_plain_buf, body.data, body.len);
+        sb_append_cstr(gen->capture_plain_buf, ")");
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, cs ? cs : &gen->char_state);
+    sb_appendf(&gen->story, "<msqrt style=\"cs%zu\" index=\"", cs_id + 1);
+    sb_append_escaped_xml(&gen->story, index_sv.data, index_sv.len);
+    sb_append_cstr(&gen->story, "\" body=\"");
+    sb_append_escaped_xml(&gen->story, body.data, body.len);
+    sb_append_cstr(&gen->story, "\"/>");
+    gen->para_has_content = true;
+}
+
+static void xml_emit_mover(XmlGenerator *gen, const char *kind, StrView body, const CharState *cs, bool space_before) {
+    if (gen->capture_plain_buf) {
+        if (space_before && gen->capture_plain_buf->len > 0) sb_append_cstr(gen->capture_plain_buf, " ");
+        sb_append_mem(gen->capture_plain_buf, body.data, body.len);
+        return;
+    }
+    xml_ensure_para_open(gen);
+    if (space_before && gen->para_has_content) {
+        xml_activate_current_char_style(gen);
+        sb_append_cstr(&gen->story, " ");
+    }
+    xml_close_active_span(gen);
+    size_t cs_id = xml_intern_char_style(gen, cs ? cs : &gen->char_state);
+    sb_appendf(&gen->story, "<mover kind=\"%s\" style=\"cs%zu\" body=\"", kind, cs_id + 1);
+    sb_append_escaped_xml(&gen->story, body.data, body.len);
+    sb_append_cstr(&gen->story, "\"/>");
+    gen->para_has_content = true;
+}
+
 static void xml_emit_vspace(XmlGenerator *gen, Measure height, bool starred, bool fill) {
     if (gen->capture_plain_buf) return;
     xml_close_para(gen);
@@ -858,6 +982,11 @@ static void xml_emit_page_break(XmlGenerator *gen) {
 
 static void xml_gen_finalize(XmlGenerator *gen) {
     xml_close_para(gen);
+    if (!gen->file) {
+        sb_free(&gen->story);
+        sb_free(&gen->pending_footnotes);
+        return;
+    }
 
     char b1[32], b2[32], b3[32], b4[32], b5[32], b6[32];
 
@@ -983,7 +1112,7 @@ static void xml_gen_finalize(XmlGenerator *gen) {
 }
 
 // ============================================================================
-// 8. Entorno de Macros, Entornos de Usuario, Contadores y Longitudes (Cap. 12-14)
+// 8. Entorno de Macros, Entornos de Usuario, Contadores y Longitudes
 // ============================================================================
 
 static CounterDef *counter_find_mut(MacroEnv *env, StrView name) {
@@ -1290,6 +1419,45 @@ static void macro_env_init(MacroEnv *env) {
 
     macro_env_define(env, (StrView){"figurename", 10},   0, false, (StrView){0}, (StrView){"Figura", 6}, true);
     macro_env_define(env, (StrView){"tablename", 9},     0, false, (StrView){0}, (StrView){"Cuadro", 6}, true);
+    macro_env_define(env, (StrView){"contentsname", 12}, 0, false, (StrView){0}, (StrView){"Índice general", 15}, true);
+    macro_env_define(env, (StrView){"listfigurename", 14}, 0, false, (StrView){0}, (StrView){"Índice de figuras", 18}, true);
+    macro_env_define(env, (StrView){"listtablename", 13}, 0, false, (StrView){0}, (StrView){"Índice de cuadros", 18}, true);
+    macro_env_define(env, (StrView){"refname", 7},       0, false, (StrView){0}, (StrView){"Referencias", 11}, true);
+    macro_env_define(env, (StrView){"bibname", 7},       0, false, (StrView){0}, (StrView){"Bibliografía", 13}, true);
+    macro_env_define(env, (StrView){"indexname", 9},     0, false, (StrView){0}, (StrView){"Índice alfabético", 19}, true);
+}
+
+static void macro_env_free(MacroEnv *env);
+
+static void macro_env_reset_for_pass2(MacroEnv *env) {
+    size_t saved_lbl_c = env->label_count;
+    size_t saved_bib_c = env->bibitem_count;
+    size_t saved_toc_c = env->toc_count;
+    size_t saved_idx_c = env->idx_count;
+
+    LabelDef *lbls = malloc(saved_lbl_c * sizeof(LabelDef));
+    BibItemDef *bibs = malloc(saved_bib_c * sizeof(BibItemDef));
+    TocEntryDef *tocs = malloc(saved_toc_c * sizeof(TocEntryDef));
+    IndexEntryDef *idxs = malloc(saved_idx_c * sizeof(IndexEntryDef));
+
+    if (lbls && saved_lbl_c > 0) memcpy(lbls, env->labels, saved_lbl_c * sizeof(LabelDef));
+    if (bibs && saved_bib_c > 0) memcpy(bibs, env->bibitems, saved_bib_c * sizeof(BibItemDef));
+    if (tocs && saved_toc_c > 0) memcpy(tocs, env->toc_entries, saved_toc_c * sizeof(TocEntryDef));
+    if (idxs && saved_idx_c > 0) memcpy(idxs, env->idx_entries, saved_idx_c * sizeof(IndexEntryDef));
+
+    macro_env_free(env);
+    macro_env_init(env);
+
+    if (lbls && saved_lbl_c > 0) { memcpy(env->labels, lbls, saved_lbl_c * sizeof(LabelDef)); env->label_count = saved_lbl_c; }
+    if (bibs && saved_bib_c > 0) { memcpy(env->bibitems, bibs, saved_bib_c * sizeof(BibItemDef)); env->bibitem_count = saved_bib_c; }
+    if (tocs && saved_toc_c > 0) { memcpy(env->toc_entries, tocs, saved_toc_c * sizeof(TocEntryDef)); env->toc_count = saved_toc_c; }
+    if (idxs && saved_idx_c > 0) { memcpy(env->idx_entries, idxs, saved_idx_c * sizeof(IndexEntryDef)); env->idx_count = saved_idx_c; }
+
+    free(lbls);
+    free(bibs);
+    free(tocs);
+    free(idxs);
+    env->is_prescan = false;
 }
 
 static void macro_env_free(MacroEnv *env) {
@@ -1500,6 +1668,73 @@ static SaveBoxDef *savebox_register(MacroEnv *env, StrView name) {
     memset(sb, 0, sizeof(*sb));
     snprintf(sb->name, sizeof(sb->name), "%.*s", (int)name.len, name.data);
     return sb;
+}
+
+static void label_register(MacroEnv *env, StrView key, const char *ref_str, int page_num) {
+    key = sv_trim(key);
+    if (key.len == 0 || key.len >= sizeof(env->labels[0].key)) return;
+    for (size_t i = 0; i < env->label_count; i++) {
+        if (sv_equals(key, env->labels[i].key)) {
+            snprintf(env->labels[i].ref_str, sizeof(env->labels[i].ref_str), "%s", ref_str ? ref_str : "");
+            env->labels[i].page_num = page_num;
+            return;
+        }
+    }
+    if (env->label_count >= MAX_LABELS) return;
+    LabelDef *ld = &env->labels[env->label_count++];
+    snprintf(ld->key, sizeof(ld->key), "%.*s", (int)key.len, key.data);
+    snprintf(ld->ref_str, sizeof(ld->ref_str), "%s", ref_str ? ref_str : "");
+    ld->page_num = page_num;
+}
+
+static const LabelDef *label_find(const MacroEnv *env, StrView key) {
+    key = sv_trim(key);
+    for (size_t i = 0; i < env->label_count; i++) {
+        if (sv_equals(key, env->labels[i].key)) return &env->labels[i];
+    }
+    return nullptr;
+}
+
+static void bibitem_register(MacroEnv *env, StrView key, const char *label) {
+    key = sv_trim(key);
+    if (key.len == 0 || key.len >= sizeof(env->bibitems[0].key)) return;
+    for (size_t i = 0; i < env->bibitem_count; i++) {
+        if (sv_equals(key, env->bibitems[i].key)) {
+            snprintf(env->bibitems[i].label, sizeof(env->bibitems[i].label), "%s", label ? label : "");
+            return;
+        }
+    }
+    if (env->bibitem_count >= MAX_BIBITEMS) return;
+    BibItemDef *bd = &env->bibitems[env->bibitem_count++];
+    snprintf(bd->key, sizeof(bd->key), "%.*s", (int)key.len, key.data);
+    snprintf(bd->label, sizeof(bd->label), "%s", label ? label : "");
+}
+
+static const BibItemDef *bibitem_find(const MacroEnv *env, StrView key) {
+    key = sv_trim(key);
+    for (size_t i = 0; i < env->bibitem_count; i++) {
+        if (sv_equals(key, env->bibitems[i].key)) return &env->bibitems[i];
+    }
+    return nullptr;
+}
+
+static void toc_record_entry(MacroEnv *env, const char *kind, const char *level, const char *number, const char *title, int page_num) {
+    if (!env->is_prescan || env->toc_count >= MAX_TOC_ENTRIES) return;
+    TocEntryDef *te = &env->toc_entries[env->toc_count++];
+    snprintf(te->kind,   sizeof(te->kind),   "%.7s",   kind   ? kind   : "toc");
+    snprintf(te->level,  sizeof(te->level),  "%.23s",  level  ? level  : "section");
+    snprintf(te->number, sizeof(te->number), "%.31s",  number ? number : "");
+    snprintf(te->title,  sizeof(te->title),  "%.255s", title  ? title  : "");
+    te->page_num = page_num;
+}
+
+static void index_record_entry(MacroEnv *env, StrView entry, int page_num) {
+    if (!env->is_prescan || env->idx_count >= MAX_INDEX_ENTRIES) return;
+    entry = sv_trim(entry);
+    if (entry.len == 0) return;
+    IndexEntryDef *ie = &env->idx_entries[env->idx_count++];
+    snprintf(ie->entry, sizeof(ie->entry), "%.*s", (int)entry.len, entry.data);
+    ie->page_num = page_num;
 }
 
 static void expand_user_macro(Parser *p, const UserMacro *m, StrView args[]) {
@@ -1984,6 +2219,44 @@ static void parse_tabular_cols(Parser *p, StrView spec) {
     }
 }
 
+static double get_unitlength_mm(Parser *p) {
+    LengthDef *ul = length_find_mut(p->env, (StrView){"unitlength", 10});
+    return (ul && ul->value.mm > 0.0) ? ul->value.mm : MM_PER_PT;
+}
+
+// Parsea coordenadas (x,y) del entorno picture de LaTeX2e
+static bool parse_pic_coords(Parser *p, double *out_x, double *out_y) {
+    if (p->current.type != TOKEN_TEXT || p->current.text.len == 0) return false;
+    const char *cur = p->current.text.data;
+    const char *tok_end = p->current.text.data + p->current.text.len;
+    while (cur < tok_end && (*cur == ' ' || *cur == '\t')) cur++;
+    if (cur >= tok_end || *cur != '(') return false;
+
+    const char *start = cur + 1;
+    const char *src_end = p->lexer.src + p->lexer.len;
+    const char *close_paren = start;
+    while (close_paren < src_end && *close_paren != ')') {
+        close_paren++;
+    }
+    if (close_paren >= src_end) return false;
+
+    char buf[128];
+    size_t len = (size_t)(close_paren - start);
+    if (len >= sizeof(buf)) len = sizeof(buf) - 1;
+    memcpy(buf, start, len);
+    buf[len] = '\0';
+
+    char *comma = strchr(buf, ',');
+    if (!comma) return false;
+    *comma = '\0';
+    *out_x = strtod(buf, nullptr);
+    *out_y = strtod(comma + 1, nullptr);
+
+    p->lexer.cursor = (size_t)((close_paren + 1) - p->lexer.src);
+    parser_advance(p);
+    return true;
+}
+
 static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, StrView args[]) {
     StrView env_name = sv_trim(args[0]);
 
@@ -2235,7 +2508,7 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
             double rem_right = fmax(0.0, usable_w - p->gen->para_state.indent_left.mm - mp_w.mm);
             p->gen->para_state.indent_right = measure_make(rem_right, UNIT_MM, 1.0);
             p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
-        } else if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*")) {
+        } else if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*") || sv_equals(env_name, "array")) {
             xml_close_para(p->gen);
             if (sv_equals(env_name, "tabular*")) {
                 StrView tw_sv = {0};
@@ -2255,7 +2528,7 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
             p->gen->tab_base_char_state = p->gen->char_state;
             p->gen->tab_has_mc_override = false;
 
-            LengthDef *tcs = length_find_mut(p->env, (StrView){"tabcolsep", 9});
+            LengthDef *tcs = length_find_mut(p->env, sv_equals(env_name, "array") ? (StrView){"arraycolsep", 11} : (StrView){"tabcolsep", 9});
             LengthDef *arw = length_find_mut(p->env, (StrView){"arrayrulewidth", 14});
             char btcs[32] = "6pt", barw[32] = "0.4pt";
             if (tcs) measure_format(tcs->value, btcs, sizeof(btcs));
@@ -2263,6 +2536,80 @@ static void builtin_begin(Parser *p, [[maybe_unused]] bool starred, [[maybe_unus
 
             sb_appendf(&p->gen->story, "      <table cols=\"%zu\" align=\"%s\" tabcolsep=\"%s\" rulewidth=\"%s\">\n",
                        p->gen->tab_col_count, align_to_str(p->gen->para_state.align), btcs, barw);
+        } else if (sv_equals(env_name, "math")) {
+            p->gen->in_math          = true;
+            p->gen->char_state.slant = SLANT_ITALIC;
+        } else if (sv_equals(env_name, "displaymath") || sv_equals(env_name, "equation") ||
+                   sv_equals(env_name, "equation*")   || sv_equals(env_name, "eqnarray") ||
+                   sv_equals(env_name, "eqnarray*")) {
+            xml_close_para(p->gen);
+            p->gen->para_state.align        = ALIGN_CENTER;
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(2.2, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(2.2, UNIT_MM, 1.0);
+            p->gen->in_math                 = true;
+            p->gen->in_display_math         = true;
+            p->gen->eq_suppress_num         = (sv_equals(env_name, "displaymath") ||
+                                               sv_equals(env_name, "equation*") ||
+                                               sv_equals(env_name, "eqnarray*"));
+            p->gen->in_eqnarray             = (sv_equals(env_name, "eqnarray") || sv_equals(env_name, "eqnarray*"));
+            p->gen->char_state.slant        = SLANT_ITALIC;
+            if (!p->gen->eq_suppress_num) {
+                counter_step(p->env, (StrView){"equation", 8});
+                format_the_counter(p->env, p->gen, (StrView){"equation", 8}, p->env->current_ref, sizeof(p->env->current_ref));
+            }
+        } else if (sv_equals(env_name, "thebibliography")) {
+            xml_close_para(p->gen);
+            StrView widest = {0};
+            parse_arg(p, &widest);
+            const char *bib_hdr = (strcmp(p->gen->doc_class, "article") == 0 || strcmp(p->gen->doc_class, "slides") == 0)
+                                  ? "\\section*{\\refname}"
+                                  : "\\chapter*{\\bibname}";
+            execute_tex_fragment(p, (StrView){ bib_hdr, strlen(bib_hdr) }, false);
+
+            CounterDef *c = counter_find_mut(p->env, (StrView){"enumiv", 6});
+            if (c) c->value = 0;
+            if (p->gen->list_depth < 8) {
+                ListLevelState *ls = &p->gen->list_stack[p->gen->list_depth++];
+                memset(ls, 0, sizeof(*ls));
+                ls->kind  = LIST_ENUMERATE;
+                ls->level = 4;
+                snprintf(ls->counter_name, sizeof(ls->counter_name), "enumiv");
+            }
+            p->gen->para_state.indent_left  = measure_make(p->gen->para_state.indent_left.mm + 8.0, UNIT_MM, 1.0);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(0.8, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(1.2, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "theindex")) {
+            xml_close_para(p->gen);
+            const char *idx_hdr = "\\section*{\\indexname}";
+            execute_tex_fragment(p, (StrView){ idx_hdr, strlen(idx_hdr) }, false);
+            p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+            p->gen->para_state.space_before = measure_make(0.4, UNIT_MM, 1.0);
+            p->gen->para_state.space_after  = measure_make(0.6, UNIT_MM, 1.0);
+        } else if (sv_equals(env_name, "picture")) {
+            xml_close_para(p->gen);
+            double ul = get_unitlength_mm(p);
+            double w_u = 100.0, h_u = 45.0, x0_u = 0.0, y0_u = 0.0;
+            parse_pic_coords(p, &w_u, &h_u);
+            parse_pic_coords(p, &x0_u, &y0_u);
+
+            p->gen->in_picture        = true;
+            p->gen->pic_w_mm          = w_u * ul;
+            p->gen->pic_h_mm          = h_u * ul;
+            p->gen->pic_x0_mm         = x0_u * ul;
+            p->gen->pic_y0_mm         = y0_u * ul;
+            p->gen->pic_cur_x_mm      = 0.0;
+            p->gen->pic_cur_y_mm      = 0.0;
+            p->gen->pic_line_thick_mm = 0.4 * MM_PER_PT;
+
+            if (!p->gen->capture_plain_buf) {
+                char bw[32], bh[32];
+                measure_format(measure_make(p->gen->pic_w_mm, UNIT_MM, 1.0), bw, sizeof(bw));
+                measure_format(measure_make(p->gen->pic_h_mm, UNIT_MM, 1.0), bh, sizeof(bh));
+                sb_appendf(&p->gen->story, "      <picture width=\"%s\" height=\"%s\" align=\"%s\">\n",
+                           bw, bh, align_to_str(p->gen->para_state.align));
+            }
         } else if (sv_equals(env_name, "figure") || sv_equals(env_name, "figure*") ||
                    sv_equals(env_name, "table")  || sv_equals(env_name, "table*")) {
             xml_close_para(p->gen);
@@ -2324,7 +2671,7 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
             execute_tex_fragment(p, (StrView){ ef.end_expansion, strlen(ef.end_expansion) }, false);
             free(ef.end_expansion);
         }
-        if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*")) {
+        if (sv_equals(env_name, "tabular") || sv_equals(env_name, "tabular*") || sv_equals(env_name, "array")) {
             if (p->gen->tab_row_open) {
                 if (p->gen->para_has_content || p->gen->tab_cur_col > 0) {
                     xml_table_end_row(p->gen, measure_make(0.0, UNIT_MM, 1.0));
@@ -2342,6 +2689,32 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
             sb_append_cstr(&p->gen->story, "      </table>\n");
             p->gen->in_tabular = false;
             p->gen->para_open  = false;
+        } else if (sv_equals(env_name, "math")) {
+            p->gen->in_math = false;
+        } else if (sv_equals(env_name, "displaymath") || sv_equals(env_name, "equation") ||
+                   sv_equals(env_name, "equation*")   || sv_equals(env_name, "eqnarray") ||
+                   sv_equals(env_name, "eqnarray*")) {
+            if ((sv_equals(env_name, "equation") || sv_equals(env_name, "eqnarray")) && !p->gen->eq_suppress_num) {
+                char eq_num[80];
+                snprintf(eq_num, sizeof(eq_num), "   (%s)", p->env->current_ref);
+                CharState saved_cs = p->gen->char_state;
+                bool saved_math    = p->gen->in_math;
+                p->gen->in_math          = false;
+                p->gen->char_state.slant = SLANT_NORMAL;
+                xml_emit_text(p->gen, (StrView){ eq_num, strlen(eq_num) }, false);
+                p->gen->char_state = saved_cs;
+                p->gen->in_math    = saved_math;
+            }
+            xml_close_para(p->gen);
+            p->gen->in_math         = false;
+            p->gen->in_display_math = false;
+            p->gen->in_eqnarray     = false;
+            p->gen->eq_suppress_num = false;
+        } else if (sv_equals(env_name, "picture")) {
+            if (!p->gen->capture_plain_buf) {
+                sb_append_cstr(&p->gen->story, "      </picture>\n");
+            }
+            p->gen->in_picture = false;
         } else if (sv_equals(env_name, "figure") || sv_equals(env_name, "figure*") ||
                    sv_equals(env_name, "table")  || sv_equals(env_name, "table*")) {
             xml_close_para(p->gen);
@@ -2353,7 +2726,8 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
                    sv_equals(env_name, "abstract") || sv_equals(env_name, "letter") ||
                    sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
                    sv_equals(env_name, "description") || sv_equals(env_name, "list") ||
-                   sv_equals(env_name, "minipage")) {
+                   sv_equals(env_name, "minipage") || sv_equals(env_name, "thebibliography") ||
+                   sv_equals(env_name, "theindex")) {
             xml_close_para(p->gen);
         } else if (sv_equals(env_name, "titlepage")) {
             xml_close_para(p->gen);
@@ -2361,13 +2735,14 @@ static void builtin_end(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused
         }
 
         if (sv_equals(env_name, "itemize") || sv_equals(env_name, "enumerate") ||
-            sv_equals(env_name, "description") || sv_equals(env_name, "list")) {
+            sv_equals(env_name, "description") || sv_equals(env_name, "list") ||
+            sv_equals(env_name, "thebibliography")) {
             p->gen->has_pending_item_label = false;
             if (p->gen->list_depth > 0) {
                 ListLevelState ls = p->gen->list_stack[--p->gen->list_depth];
                 if (ls.kind == LIST_ITEMIZE && p->gen->itemize_depth > 0) {
                     p->gen->itemize_depth--;
-                } else if (ls.kind == LIST_ENUMERATE && p->gen->enumerate_depth > 0) {
+                } else if (ls.kind == LIST_ENUMERATE && p->gen->enumerate_depth > 0 && !sv_equals(env_name, "thebibliography")) {
                     p->gen->enumerate_depth--;
                 }
             }
@@ -2662,17 +3037,29 @@ static void emit_section_heading(Parser *p, int level, const char *counter_name,
         }
     }
 
-    if (level <= 1 && !starred) {
+    if (level <= 3 && !starred) {
         char plain_title[128];
         eval_tex_to_plain(p, title, plain_title, sizeof(plain_title));
-        if (level <= 0) {
-            snprintf(p->gen->left_mark, sizeof(p->gen->left_mark), "%s%s", num_prefix, plain_title);
-        } else {
-            snprintf(p->gen->right_mark, sizeof(p->gen->right_mark), "%s%s", num_prefix, plain_title);
-            if (p->gen->left_mark[0] == '\0') {
+        if (level <= 1) {
+            if (level <= 0) {
                 snprintf(p->gen->left_mark, sizeof(p->gen->left_mark), "%s%s", num_prefix, plain_title);
+            } else {
+                snprintf(p->gen->right_mark, sizeof(p->gen->right_mark), "%s%s", num_prefix, plain_title);
+                if (p->gen->left_mark[0] == '\0') {
+                    snprintf(p->gen->left_mark, sizeof(p->gen->left_mark), "%s%s", num_prefix, plain_title);
+                }
             }
         }
+        const char *lvl_name = "section";
+        if (level == -1)      lvl_name = "part";
+        else if (level == 0)  lvl_name = "chapter";
+        else if (level == 1)  lvl_name = "section";
+        else if (level == 2)  lvl_name = "subsection";
+        else if (level == 3)  lvl_name = "subsubsection";
+
+        CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+        int pnum = pc ? pc->value : (int)p->gen->page_count;
+        toc_record_entry(p->env, "toc", lvl_name, p->env->current_ref, plain_title, pnum);
     }
 
     StrBuf hbuf;
@@ -3341,18 +3728,63 @@ static void builtin_mbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unuse
     p->cmd_space_before = false;
 }
 
-static void builtin_makebox(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
-    Measure w = (opt_c >= 1) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+static void emit_pic_box_helper(Parser *p, double pw_u, double ph_u, double border_mm, double dash_mm) {
+    StrView pos_opt = {0}, body = {0};
+    parse_opt_arg(p, &pos_opt);
+    parse_arg(p, &body);
+
+    if (p->gen->capture_plain_buf) return;
+
+    double ul = get_unitlength_mm(p);
+    double w_mm = pw_u * ul;
+    double h_mm = ph_u * ul;
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, body, plain, sizeof(plain), &box_cs);
+    size_t cs_id = xml_intern_char_style(p->gen, &box_cs);
+
+    char bx[32], by[32], bw[32], bh[32], bb[32], bd[32], bal[8] = "c";
+    if (pos_opt.len > 0) {
+        StrView tr = sv_trim(pos_opt);
+        snprintf(bal, sizeof(bal), "%.*s", (int)(tr.len < 6 ? tr.len : 6), tr.data);
+    }
+    measure_format(measure_make(p->gen->pic_cur_x_mm, UNIT_MM, 1.0), bx, sizeof(bx));
+    measure_format(measure_make(p->gen->pic_cur_y_mm, UNIT_MM, 1.0), by, sizeof(by));
+    measure_format(measure_make(w_mm, UNIT_MM, 1.0), bw, sizeof(bw));
+    measure_format(measure_make(h_mm, UNIT_MM, 1.0), bh, sizeof(bh));
+    measure_format(measure_make(border_mm, UNIT_MM, 1.0), bb, sizeof(bb));
+    measure_format(measure_make(dash_mm, UNIT_MM, 1.0), bd, sizeof(bd));
+
+    sb_appendf(&p->gen->story,
+               "        <pbox x=\"%s\" y=\"%s\" width=\"%s\" height=\"%s\" border=\"%s\" dash=\"%s\" align=\"%s\" style=\"cs%zu\">",
+               bx, by, bw, bh, bb, bd, bal, cs_id + 1);
+    sb_append_escaped_xml(&p->gen->story, plain, strlen(plain));
+    sb_append_cstr(&p->gen->story, "</pbox>\n");
+}
+
+static void builtin_makebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    double pw = 0.0, ph = 0.0;
+    if (p->gen->in_picture && parse_pic_coords(p, &pw, &ph)) {
+        emit_pic_box_helper(p, pw, ph, 0.0, 0.0);
+        p->cmd_space_before = false;
+        return;
+    }
+    StrView o1 = {0}, o2 = {0}, body = {0};
+    bool has_o1 = parse_opt_arg(p, &o1);
+    bool has_o2 = has_o1 ? parse_opt_arg(p, &o2) : false;
+    if (!parse_arg(p, &body)) return;
+
+    Measure w = has_o1 ? measure_parse(p, o1, UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
     char align = 'c';
-    if (opt_c >= 2) {
-        StrView al = sv_trim(opt[1]);
+    if (has_o2) {
+        StrView al = sv_trim(o2);
         if (al.len > 0 && (al.data[0] == 'l' || al.data[0] == 'r' || al.data[0] == 'c' || al.data[0] == 's')) {
             align = al.data[0];
         }
     }
     char plain[512];
     CharState box_cs = p->gen->char_state;
-    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    eval_tex_box(p, body, plain, sizeof(plain), &box_cs);
     Measure zero = measure_make(0.0, UNIT_MM, 1.0);
     xml_emit_box(p->gen, w, align, zero, zero, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
     p->cmd_space_before = false;
@@ -3372,15 +3804,26 @@ static void builtin_fbox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unuse
     p->cmd_space_before = false;
 }
 
-static void builtin_framebox(Parser *p, [[maybe_unused]] bool starred, StrView opt[], size_t opt_c, StrView args[]) {
+static void builtin_framebox(Parser *p, [[maybe_unused]] bool starred, [[maybe_unused]] StrView opt[], [[maybe_unused]] size_t opt_c, [[maybe_unused]] StrView args[]) {
+    double pw = 0.0, ph = 0.0;
+    if (p->gen->in_picture && parse_pic_coords(p, &pw, &ph)) {
+        emit_pic_box_helper(p, pw, ph, p->gen->pic_line_thick_mm, 0.0);
+        p->cmd_space_before = false;
+        return;
+    }
+    StrView o1 = {0}, o2 = {0}, body = {0};
+    bool has_o1 = parse_opt_arg(p, &o1);
+    bool has_o2 = has_o1 ? parse_opt_arg(p, &o2) : false;
+    if (!parse_arg(p, &body)) return;
+
     LengthDef *r_def = length_find_mut(p->env, (StrView){"fboxrule", 8});
     LengthDef *s_def = length_find_mut(p->env, (StrView){"fboxsep", 7});
     Measure border = r_def ? r_def->value : measure_make(0.4, UNIT_PT, 1.0);
     Measure pad    = s_def ? s_def->value : measure_make(3.0, UNIT_PT, 1.0);
-    Measure w      = (opt_c >= 1) ? measure_parse(p, opt[0], UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
+    Measure w      = has_o1 ? measure_parse(p, o1, UNIT_MM) : measure_make(0.0, UNIT_MM, 1.0);
     char align     = 'c';
-    if (opt_c >= 2) {
-        StrView al = sv_trim(opt[1]);
+    if (has_o2) {
+        StrView al = sv_trim(o2);
         if (al.len > 0 && (al.data[0] == 'l' || al.data[0] == 'r' || al.data[0] == 'c' || al.data[0] == 's')) {
             align = al.data[0];
         }
@@ -3388,7 +3831,7 @@ static void builtin_framebox(Parser *p, [[maybe_unused]] bool starred, StrView o
     Measure zero = measure_make(0.0, UNIT_MM, 1.0);
     char plain[512];
     CharState box_cs = p->gen->char_state;
-    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    eval_tex_box(p, body, plain, sizeof(plain), &box_cs);
     xml_emit_box(p->gen, w, align, border, pad, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
     p->cmd_space_before = false;
 }
@@ -3547,6 +3990,13 @@ static void builtin_caption(Parser *p, bool starred, [[maybe_unused]] StrView op
     } else {
         counter_step(p->env, (StrView){ cname, strlen(cname) });
         format_the_counter(p->env, p->gen, (StrView){ cname, strlen(cname) }, p->env->current_ref, sizeof(p->env->current_ref));
+
+        char plain_cap[256];
+        eval_tex_to_plain(p, args[0], plain_cap, sizeof(plain_cap));
+        CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+        int pnum = pc ? pc->value : (int)p->gen->page_count;
+        toc_record_entry(p->env, is_tbl ? "lot" : "lof", cname, p->env->current_ref, plain_cap, pnum);
+
         sb_appendf(&cbuf, "\\par{\\centering\\small\\textbf{%s~\\the%s:} %.*s\\par}",
                    mname, cname, (int)args[0].len, args[0].data);
     }
@@ -3688,6 +4138,663 @@ static void builtin_markright(Parser *p, [[maybe_unused]] bool s, [[maybe_unused
     emit_page_style_update(p->gen);
 }
 
+// --- Fase 5: Modo Matemático, Referencias Cruzadas, TOC/LOF/LOT, Bibliografía, Índice y Picture ---
+
+static void builtin_math_open_inline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_push_group(p->gen);
+    p->gen->in_math          = true;
+    p->gen->char_state.slant = SLANT_ITALIC;
+    if (p->gen->math_bold) p->gen->char_state.weight = WEIGHT_BOLD;
+}
+
+static void builtin_math_close_inline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->in_math      = false;
+    p->cmd_space_before  = false;
+    xml_pop_group(p->gen);
+}
+
+static void builtin_math_open_display(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_close_para(p->gen);
+    xml_push_group(p->gen);
+    p->gen->para_state.align        = ALIGN_CENTER;
+    p->gen->para_state.indent_first = measure_make(0.0, UNIT_MM, 1.0);
+    p->gen->para_state.space_before = measure_make(2.2, UNIT_MM, 1.0);
+    p->gen->para_state.space_after  = measure_make(2.2, UNIT_MM, 1.0);
+    p->gen->in_math                 = true;
+    p->gen->in_display_math         = true;
+    p->gen->eq_suppress_num         = true;
+    p->gen->char_state.slant        = SLANT_ITALIC;
+    p->cmd_space_before             = false;
+}
+
+static void builtin_math_close_display(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    xml_close_para(p->gen);
+    p->gen->in_math         = false;
+    p->gen->in_display_math = false;
+    p->gen->eq_suppress_num = false;
+    p->cmd_space_before     = false;
+    xml_pop_group(p->gen);
+}
+
+static void builtin_ensuremath(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    if (p->gen->in_math) {
+        execute_tex_fragment(p, args[0], p->cmd_space_before);
+    } else {
+        CharState next = p->gen->char_state;
+        next.slant = SLANT_ITALIC;
+        p->gen->in_math = true;
+        parse_inline_scoped(p, args[0], next);
+        p->gen->in_math = false;
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_nonumber(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->eq_suppress_num = true;
+    p->cmd_space_before     = false;
+}
+
+static void builtin_frac(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char num[256], den[256];
+    eval_tex_to_plain(p, args[0], num, sizeof(num));
+    eval_tex_to_plain(p, args[1], den, sizeof(den));
+    xml_emit_mfrac(p->gen, (StrView){ num, strlen(num) }, (StrView){ den, strlen(den) },
+                   true, false, &p->gen->char_state, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_binom(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char num[256], den[256];
+    eval_tex_to_plain(p, args[0], num, sizeof(num));
+    eval_tex_to_plain(p, args[1], den, sizeof(den));
+    xml_emit_mfrac(p->gen, (StrView){ num, strlen(num) }, (StrView){ den, strlen(den) },
+                   false, true, &p->gen->char_state, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_stackrel(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char top[256], bot[256];
+    eval_tex_to_plain(p, args[0], top, sizeof(top));
+    eval_tex_to_plain(p, args[1], bot, sizeof(bot));
+    xml_emit_mfrac(p->gen, (StrView){ top, strlen(top) }, (StrView){ bot, strlen(bot) },
+                   false, false, &p->gen->char_state, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_sqrt(Parser *p, [[maybe_unused]] bool s, StrView opt[], size_t opt_c, StrView args[]) {
+    char idx[64] = {0}, body[256] = {0};
+    if (opt_c > 0) eval_tex_to_plain(p, opt[0], idx, sizeof(idx));
+    eval_tex_to_plain(p, args[0], body, sizeof(body));
+    xml_emit_msqrt(p->gen, (StrView){ idx, strlen(idx) }, (StrView){ body, strlen(body) },
+                   &p->gen->char_state, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void emit_math_mover_helper(Parser *p, const char *kind, StrView arg) {
+    char body[256];
+    eval_tex_to_plain(p, arg, body, sizeof(body));
+    xml_emit_mover(p->gen, kind, (StrView){ body, strlen(body) }, &p->gen->char_state, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_overline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "line", args[0]); }
+static void builtin_bar(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "line", args[0]); }
+static void builtin_widehat(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "hat", args[0]); }
+static void builtin_hat(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "hat", args[0]); }
+static void builtin_widetilde(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "tilde", args[0]); }
+static void builtin_tilde(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "tilde", args[0]); }
+static void builtin_overbrace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "brace", args[0]); }
+static void builtin_underbrace(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "ubrace", args[0]); }
+static void builtin_vec(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "vec", args[0]); }
+static void builtin_dot(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "dot", args[0]); }
+static void builtin_ddot(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_mover_helper(p, "ddot", args[0]); }
+
+static void emit_math_accent_char(Parser *p, char accent_ch, StrView arg) {
+    char utf8_buf[32];
+    compose_latex_accent(accent_ch, arg, utf8_buf, sizeof(utf8_buf));
+    xml_emit_text(p->gen, (StrView){ utf8_buf, strlen(utf8_buf) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_acute(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_accent_char(p, '\'', args[0]); }
+static void builtin_grave(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_accent_char(p, '`', args[0]); }
+static void builtin_check(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_accent_char(p, 'v', args[0]); }
+static void builtin_breve(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) { emit_math_accent_char(p, 'u', args[0]); }
+
+static void consume_and_emit_math_delim(Parser *p) {
+    if (p->current.type == TOKEN_TEXT && p->current.text.len > 0) {
+        char d = p->current.text.data[0];
+        if (p->current.text.len == 1) {
+            parser_advance(p);
+        } else {
+            p->current.text.data++;
+            p->current.text.len--;
+            p->current.col++;
+        }
+        if (d != '.') {
+            char buf[2] = { d, '\0' };
+            xml_emit_text(p->gen, (StrView){ buf, 1 }, p->cmd_space_before);
+        }
+    } else if (p->current.type == TOKEN_COMMAND) {
+        StrView dcmd = p->current.text;
+        parser_advance(p);
+        const char *sym = find_latex_text_symbol(dcmd);
+        if (sym) {
+            xml_emit_text(p->gen, (StrView){ sym, strlen(sym) }, p->cmd_space_before);
+        }
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_left_right(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    consume_and_emit_math_delim(p);
+}
+
+static void builtin_bmod(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    CharState saved = p->gen->char_state;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    p->gen->char_state.slant = SLANT_NORMAL;
+    xml_emit_text(p->gen, (StrView){" mod ", 5}, false);
+    p->gen->char_state = saved;
+    p->gen->in_math = sm;
+    p->cmd_space_before = false;
+}
+
+static void builtin_pmod(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char plain[128], buf[160];
+    eval_tex_to_plain(p, args[0], plain, sizeof(plain));
+    snprintf(buf, sizeof(buf), " (mod %s)", plain);
+    CharState saved = p->gen->char_state;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    p->gen->char_state.slant = SLANT_NORMAL;
+    xml_emit_text(p->gen, (StrView){ buf, strlen(buf) }, false);
+    p->gen->char_state = saved;
+    p->gen->in_math = sm;
+    p->cmd_space_before = false;
+}
+
+static void builtin_mathrm(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_FONT_FAMILY);
+    next.slant  = SLANT_NORMAL;
+    next.weight = WEIGHT_NORMAL;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    parse_inline_scoped(p, args[0], next);
+    p->gen->in_math = sm;
+}
+
+static void builtin_mathbf(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.weight = WEIGHT_BOLD;
+    next.slant  = SLANT_NORMAL;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    parse_inline_scoped(p, args[0], next);
+    p->gen->in_math = sm;
+}
+
+static void builtin_mathit(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.slant = SLANT_ITALIC;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_mathsf(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_SANS_FAMILY);
+    next.slant = SLANT_NORMAL;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    parse_inline_scoped(p, args[0], next);
+    p->gen->in_math = sm;
+}
+
+static void builtin_mathtt(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    snprintf(next.font_family, sizeof(next.font_family), "%s", DEFAULT_MONO_FAMILY);
+    next.slant = SLANT_NORMAL;
+    bool sm = p->gen->in_math;
+    p->gen->in_math = false;
+    parse_inline_scoped(p, args[0], next);
+    p->gen->in_math = sm;
+}
+
+static void builtin_mathcal(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CharState next = p->gen->char_state;
+    next.slant  = SLANT_ITALIC;
+    next.weight = WEIGHT_BOLD;
+    parse_inline_scoped(p, args[0], next);
+}
+
+static void builtin_boldmath(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->math_bold         = true;
+    p->gen->char_state.weight = WEIGHT_BOLD;
+}
+
+static void builtin_unboldmath(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->math_bold         = false;
+    p->gen->char_state.weight = WEIGHT_NORMAL;
+}
+
+// --- Referencias Cruzadas (\label, \ref, \pageref) ---
+
+static void builtin_label(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+    int pnum = pc ? pc->value : (int)p->gen->page_count;
+    label_register(p->env, args[0], p->env->current_ref, pnum);
+    p->cmd_space_before = false;
+}
+
+static void builtin_ref(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    const LabelDef *ld = label_find(p->env, args[0]);
+    const char *val = (ld && ld->ref_str[0] != '\0') ? ld->ref_str : "??";
+    xml_emit_text(p->gen, (StrView){ val, strlen(val) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+static void builtin_pageref(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    const LabelDef *ld = label_find(p->env, args[0]);
+    char pbuf[32];
+    if (ld) snprintf(pbuf, sizeof(pbuf), "%d", ld->page_num);
+    else snprintf(pbuf, sizeof(pbuf), "??");
+    xml_emit_text(p->gen, (StrView){ pbuf, strlen(pbuf) }, p->cmd_space_before);
+    p->cmd_space_before = false;
+}
+
+// --- Índices de Contenidos (\tableofcontents, \listoffigures, \listoftables) ---
+
+static void emit_contents_list(Parser *p, const char *kind, const char *heading_macro) {
+    xml_close_para(p->gen);
+    StrBuf hbuf;
+    if (sb_init(&hbuf, 128)) {
+        const char *sec_cmd = (strcmp(p->gen->doc_class, "article") == 0 || strcmp(p->gen->doc_class, "slides") == 0)
+                              ? "\\section*" : "\\chapter*";
+        sb_appendf(&hbuf, "%s{%s}", sec_cmd, heading_macro);
+        execute_tex_fragment(p, (StrView){ hbuf.data, hbuf.len }, false);
+        sb_free(&hbuf);
+    }
+
+    if (p->env->is_prescan) return;
+
+    CounterDef *tocdepth = counter_find_mut(p->env, (StrView){"tocdepth", 8});
+    int max_depth = tocdepth ? tocdepth->value : 3;
+
+    for (size_t i = 0; i < p->env->toc_count; i++) {
+        const TocEntryDef *te = &p->env->toc_entries[i];
+        if (strcmp(te->kind, kind) != 0) continue;
+
+        double indent_mm = 0.0;
+        bool is_bold = false;
+        int entry_depth = 1;
+        if (strcmp(te->level, "part") == 0 || strcmp(te->level, "chapter") == 0) {
+            indent_mm = 0.0;
+            is_bold   = true;
+            entry_depth = 0;
+        } else if (strcmp(te->level, "section") == 0) {
+            indent_mm = 0.0;
+            is_bold   = (strcmp(p->gen->doc_class, "book") != 0 && strcmp(p->gen->doc_class, "report") != 0);
+            entry_depth = 1;
+        } else if (strcmp(te->level, "subsection") == 0) {
+            indent_mm = 6.0;
+            entry_depth = 2;
+        } else if (strcmp(te->level, "subsubsection") == 0) {
+            indent_mm = 12.0;
+            entry_depth = 3;
+        }
+        if (strcmp(kind, "toc") == 0 && entry_depth > max_depth) continue;
+
+        StrBuf lbuf;
+        if (sb_init(&lbuf, 384)) {
+            sb_appendf(&lbuf, "\\par{\\parmargins{%.1fmm}{0mm}\\parspacing{0.5mm}{0.5mm}\\noindent ", indent_mm);
+            if (is_bold) sb_append_cstr(&lbuf, "\\bfseries ");
+            if (te->number[0] != '\0') {
+                sb_appendf(&lbuf, "%s\\hspace{2.5mm}", te->number);
+            }
+            sb_appendf(&lbuf, "%s\\dotfill %d\\par}", te->title, te->page_num);
+            execute_tex_fragment(p, (StrView){ lbuf.data, lbuf.len }, false);
+            sb_free(&lbuf);
+        }
+    }
+    xml_emit_vspace(p->gen, measure_make(3.0, UNIT_MM, 1.0), false, false);
+    p->cmd_space_before = false;
+}
+
+static void builtin_tableofcontents(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    emit_contents_list(p, "toc", "\\contentsname");
+}
+
+static void builtin_listoffigures(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    emit_contents_list(p, "lof", "\\listfigurename");
+}
+
+static void builtin_listoftables(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    emit_contents_list(p, "lot", "\\listtablename");
+}
+
+static void builtin_addcontentsline(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char kbuf[16], lbuf[32], tbuf[256];
+    StrView k = sv_trim(args[0]);
+    StrView l = sv_trim(args[1]);
+    snprintf(kbuf, sizeof(kbuf), "%.*s", (int)k.len, k.data);
+    snprintf(lbuf, sizeof(lbuf), "%.*s", (int)l.len, l.data);
+    eval_tex_to_plain(p, args[2], tbuf, sizeof(tbuf));
+
+    CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+    int pnum = pc ? pc->value : (int)p->gen->page_count;
+    toc_record_entry(p->env, kbuf, lbuf, "", tbuf, pnum);
+    p->cmd_space_before = false;
+}
+
+// --- Bibliografía (\bibitem, \cite, \nocite) e Índice Alfabético (\index, \printindex) ---
+
+static void builtin_bibitem(Parser *p, [[maybe_unused]] bool s, StrView opt[], size_t opt_c, StrView args[]) {
+    xml_close_para(p->gen);
+    p->cmd_space_before = false;
+
+    counter_step(p->env, (StrView){"enumiv", 6});
+    char lbl_raw[32];
+    if (opt_c > 0) {
+        eval_tex_to_plain(p, opt[0], lbl_raw, sizeof(lbl_raw));
+    } else {
+        CounterDef *c = counter_find_mut(p->env, (StrView){"enumiv", 6});
+        snprintf(lbl_raw, sizeof(lbl_raw), "%d", c ? c->value : 1);
+    }
+
+    bibitem_register(p->env, args[0], lbl_raw);
+    snprintf(p->env->current_ref, sizeof(p->env->current_ref), "%s", lbl_raw);
+    snprintf(p->gen->pending_item_label, sizeof(p->gen->pending_item_label), "[%s]", lbl_raw);
+    p->gen->has_pending_item_label = true;
+}
+
+static void builtin_cite(Parser *p, [[maybe_unused]] bool s, StrView opt[], size_t opt_c, StrView args[]) {
+    StrBuf cbuf;
+    if (!sb_init(&cbuf, 64)) return;
+    sb_append_cstr(&cbuf, "[");
+
+    const char *cur = args[0].data;
+    const char *end = args[0].data + args[0].len;
+    bool first = true;
+    while (cur < end) {
+        const char *comma = memchr(cur, ',', (size_t)(end - cur));
+        size_t len = comma ? (size_t)(comma - cur) : (size_t)(end - cur);
+        StrView key = sv_trim((StrView){ cur, len });
+        if (key.len > 0) {
+            if (!first) sb_append_cstr(&cbuf, ", ");
+            const BibItemDef *bd = bibitem_find(p->env, key);
+            sb_append_cstr(&cbuf, (bd && bd->label[0] != '\0') ? bd->label : "?");
+            first = false;
+        }
+        cur = comma ? (comma + 1) : end;
+    }
+
+    if (opt_c > 0 && opt[0].len > 0) {
+        char note_plain[128];
+        eval_tex_to_plain(p, opt[0], note_plain, sizeof(note_plain));
+        sb_appendf(&cbuf, ", %s", note_plain);
+    }
+    sb_append_cstr(&cbuf, "]");
+
+    xml_emit_text(p->gen, (StrView){ cbuf.data, cbuf.len }, p->cmd_space_before);
+    sb_free(&cbuf);
+    p->cmd_space_before = false;
+}
+
+static void builtin_index(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    CounterDef *pc = counter_find_mut(p->env, (StrView){"page", 4});
+    int pnum = pc ? pc->value : (int)p->gen->page_count;
+    index_record_entry(p->env, args[0], pnum);
+    p->cmd_space_before = false;
+}
+
+static int cmp_index_entries(const void *a, const void *b) {
+    const IndexEntryDef *ia = (const IndexEntryDef *)a;
+    const IndexEntryDef *ib = (const IndexEntryDef *)b;
+    int c = strcmp(ia->entry, ib->entry);
+    if (c != 0) return c;
+    return ia->page_num - ib->page_num;
+}
+
+static void builtin_printindex(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    if (p->env->is_prescan || p->env->idx_count == 0) return;
+
+    qsort(p->env->idx_entries, p->env->idx_count, sizeof(IndexEntryDef), cmp_index_entries);
+
+    StrBuf ibuf;
+    if (!sb_init(&ibuf, 512)) return;
+    sb_append_cstr(&ibuf, "\\begin{theindex}\n");
+
+    size_t i = 0;
+    while (i < p->env->idx_count) {
+        const char *raw_e = p->env->idx_entries[i].entry;
+        const char *bang  = strchr(raw_e, '!');
+        if (bang) {
+            size_t main_len = (size_t)(bang - raw_e);
+            sb_appendf(&ibuf, "\\par\\noindent\\textbf{%.*s} — %s, %d",
+                       (int)main_len, raw_e, bang + 1, p->env->idx_entries[i].page_num);
+        } else {
+            sb_appendf(&ibuf, "\\par\\noindent\\textbf{%s}, %d",
+                       raw_e, p->env->idx_entries[i].page_num);
+        }
+        size_t j = i + 1;
+        while (j < p->env->idx_count && strcmp(p->env->idx_entries[j].entry, raw_e) == 0) {
+            if (p->env->idx_entries[j].page_num != p->env->idx_entries[j - 1].page_num) {
+                sb_appendf(&ibuf, ", %d", p->env->idx_entries[j].page_num);
+            }
+            j++;
+        }
+        sb_append_cstr(&ibuf, "\\par\n");
+        i = j;
+    }
+    sb_append_cstr(&ibuf, "\\end{theindex}\n");
+    execute_tex_fragment(p, (StrView){ ibuf.data, ibuf.len }, false);
+    sb_free(&ibuf);
+    p->cmd_space_before = false;
+}
+
+// --- Comandos del Entorno Picture (\put, \multiput, \line, \vector, \circle, \oval, \qbezier, \dashbox) ---
+
+static void builtin_put(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    double px = 0.0, py = 0.0;
+    parse_pic_coords(p, &px, &py);
+    StrView obj = {0};
+    if (!parse_arg(p, &obj)) return;
+
+    double ul = get_unitlength_mm(p);
+    double saved_x = p->gen->pic_cur_x_mm;
+    double saved_y = p->gen->pic_cur_y_mm;
+    p->gen->pic_cur_x_mm = saved_x + (px * ul - p->gen->pic_x0_mm);
+    p->gen->pic_cur_y_mm = saved_y + (py * ul - p->gen->pic_y0_mm);
+    execute_tex_fragment(p, obj, false);
+    p->gen->pic_cur_x_mm = saved_x;
+    p->gen->pic_cur_y_mm = saved_y;
+    p->cmd_space_before = false;
+}
+
+static void builtin_multiput(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    double px = 0.0, py = 0.0, dx = 0.0, dy = 0.0;
+    parse_pic_coords(p, &px, &py);
+    parse_pic_coords(p, &dx, &dy);
+    StrView n_sv = {0}, obj = {0};
+    if (!parse_arg(p, &n_sv) || !parse_arg(p, &obj)) return;
+
+    long count = sv_to_long(p, n_sv);
+    if (count < 0) count = 0;
+    if (count > 256) count = 256;
+
+    double ul = get_unitlength_mm(p);
+    double saved_x = p->gen->pic_cur_x_mm;
+    double saved_y = p->gen->pic_cur_y_mm;
+    for (long i = 0; i < count; i++) {
+        p->gen->pic_cur_x_mm = saved_x + ((px + (double)i * dx) * ul - p->gen->pic_x0_mm);
+        p->gen->pic_cur_y_mm = saved_y + ((py + (double)i * dy) * ul - p->gen->pic_y0_mm);
+        execute_tex_fragment(p, obj, false);
+    }
+    p->gen->pic_cur_x_mm = saved_x;
+    p->gen->pic_cur_y_mm = saved_y;
+    p->cmd_space_before = false;
+}
+
+static void emit_pic_line_or_vec(Parser *p, bool is_arrow) {
+    double dx = 1.0, dy = 0.0;
+    parse_pic_coords(p, &dx, &dy);
+    StrView len_sv = {0};
+    if (!parse_arg(p, &len_sv)) return;
+    if (p->gen->capture_plain_buf) return;
+
+    char lbuf[64];
+    size_t n = (len_sv.len < sizeof(lbuf) - 1) ? len_sv.len : (sizeof(lbuf) - 1);
+    memcpy(lbuf, len_sv.data, n);
+    lbuf[n] = '\0';
+    double len_u = strtod(lbuf, nullptr);
+    double ul = get_unitlength_mm(p);
+
+    double x1 = p->gen->pic_cur_x_mm;
+    double y1 = p->gen->pic_cur_y_mm;
+    double x2 = x1, y2 = y1;
+    if (fabs(dx) < 1e-6) {
+        y2 = y1 + ((dy >= 0.0) ? 1.0 : -1.0) * len_u * ul;
+    } else {
+        double sx = (dx >= 0.0) ? 1.0 : -1.0;
+        x2 = x1 + sx * len_u * ul;
+        y2 = y1 + (dy / fabs(dx)) * len_u * ul;
+    }
+
+    char bx1[32], by1[32], bx2[32], by2[32], bt[32];
+    measure_format(measure_make(x1, UNIT_MM, 1.0), bx1, sizeof(bx1));
+    measure_format(measure_make(y1, UNIT_MM, 1.0), by1, sizeof(by1));
+    measure_format(measure_make(x2, UNIT_MM, 1.0), bx2, sizeof(bx2));
+    measure_format(measure_make(y2, UNIT_MM, 1.0), by2, sizeof(by2));
+    measure_format(measure_make(p->gen->pic_line_thick_mm, UNIT_MM, 1.0), bt, sizeof(bt));
+
+    sb_appendf(&p->gen->story,
+               "        <pline x1=\"%s\" y1=\"%s\" x2=\"%s\" y2=\"%s\" thick=\"%s\" arrow=\"%d\"/>\n",
+               bx1, by1, bx2, by2, bt, is_arrow ? 1 : 0);
+    p->cmd_space_before = false;
+}
+
+static void builtin_line(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    emit_pic_line_or_vec(p, false);
+}
+
+static void builtin_vector(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    emit_pic_line_or_vec(p, true);
+}
+
+static void builtin_circle(Parser *p, bool starred, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    if (p->gen->capture_plain_buf) return;
+    char dbuf[64];
+    size_t n = (args[0].len < sizeof(dbuf) - 1) ? args[0].len : (sizeof(dbuf) - 1);
+    memcpy(dbuf, args[0].data, n);
+    dbuf[n] = '\0';
+    double diam_u = strtod(dbuf, nullptr);
+    double r_mm = 0.5 * diam_u * get_unitlength_mm(p);
+
+    char bcx[32], bcy[32], br[32], bt[32];
+    measure_format(measure_make(p->gen->pic_cur_x_mm, UNIT_MM, 1.0), bcx, sizeof(bcx));
+    measure_format(measure_make(p->gen->pic_cur_y_mm, UNIT_MM, 1.0), bcy, sizeof(bcy));
+    measure_format(measure_make(r_mm, UNIT_MM, 1.0), br, sizeof(br));
+    measure_format(measure_make(p->gen->pic_line_thick_mm, UNIT_MM, 1.0), bt, sizeof(bt));
+
+    sb_appendf(&p->gen->story,
+               "        <pcircle cx=\"%s\" cy=\"%s\" r=\"%s\" thick=\"%s\" fill=\"%d\"/>\n",
+               bcx, bcy, br, bt, starred ? 1 : 0);
+    p->cmd_space_before = false;
+}
+
+static void builtin_oval(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    double ow = 10.0, oh = 10.0;
+    parse_pic_coords(p, &ow, &oh);
+    StrView part_opt = {0};
+    parse_opt_arg(p, &part_opt);
+    if (p->gen->capture_plain_buf) return;
+
+    double ul = get_unitlength_mm(p);
+    char bcx[32], bcy[32], bw[32], bh[32], bt[32], bpart[8] = "";
+    if (part_opt.len > 0) {
+        StrView tr = sv_trim(part_opt);
+        snprintf(bpart, sizeof(bpart), "%.*s", (int)(tr.len < 4 ? tr.len : 4), tr.data);
+    }
+    measure_format(measure_make(p->gen->pic_cur_x_mm, UNIT_MM, 1.0), bcx, sizeof(bcx));
+    measure_format(measure_make(p->gen->pic_cur_y_mm, UNIT_MM, 1.0), bcy, sizeof(bcy));
+    measure_format(measure_make(ow * ul, UNIT_MM, 1.0), bw, sizeof(bw));
+    measure_format(measure_make(oh * ul, UNIT_MM, 1.0), bh, sizeof(bh));
+    measure_format(measure_make(p->gen->pic_line_thick_mm, UNIT_MM, 1.0), bt, sizeof(bt));
+
+    sb_appendf(&p->gen->story,
+               "        <poval cx=\"%s\" cy=\"%s\" width=\"%s\" height=\"%s\" thick=\"%s\" part=\"%s\"/>\n",
+               bcx, bcy, bw, bh, bt, bpart);
+    p->cmd_space_before = false;
+}
+
+static void builtin_qbezier(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    StrView n_opt = {0};
+    parse_opt_arg(p, &n_opt);
+    double x1 = 0.0, y1 = 0.0, x2 = 0.0, y2 = 0.0, x3 = 0.0, y3 = 0.0;
+    parse_pic_coords(p, &x1, &y1);
+    parse_pic_coords(p, &x2, &y2);
+    parse_pic_coords(p, &x3, &y3);
+    if (p->gen->capture_plain_buf) return;
+
+    double ul = get_unitlength_mm(p);
+    char bx1[32], by1[32], bx2[32], by2[32], bx3[32], by3[32], bt[32];
+    measure_format(measure_make(p->gen->pic_cur_x_mm + (x1 * ul - p->gen->pic_x0_mm), UNIT_MM, 1.0), bx1, sizeof(bx1));
+    measure_format(measure_make(p->gen->pic_cur_y_mm + (y1 * ul - p->gen->pic_y0_mm), UNIT_MM, 1.0), by1, sizeof(by1));
+    measure_format(measure_make(p->gen->pic_cur_x_mm + (x2 * ul - p->gen->pic_x0_mm), UNIT_MM, 1.0), bx2, sizeof(bx2));
+    measure_format(measure_make(p->gen->pic_cur_y_mm + (y2 * ul - p->gen->pic_y0_mm), UNIT_MM, 1.0), by2, sizeof(by2));
+    measure_format(measure_make(p->gen->pic_cur_x_mm + (x3 * ul - p->gen->pic_x0_mm), UNIT_MM, 1.0), bx3, sizeof(bx3));
+    measure_format(measure_make(p->gen->pic_cur_y_mm + (y3 * ul - p->gen->pic_y0_mm), UNIT_MM, 1.0), by3, sizeof(by3));
+    measure_format(measure_make(p->gen->pic_line_thick_mm, UNIT_MM, 1.0), bt, sizeof(bt));
+
+    sb_appendf(&p->gen->story,
+               "        <pbezier x1=\"%s\" y1=\"%s\" x2=\"%s\" y2=\"%s\" x3=\"%s\" y3=\"%s\" thick=\"%s\"/>\n",
+               bx1, by1, bx2, by2, bx3, by3, bt);
+    p->cmd_space_before = false;
+}
+
+static void builtin_dashbox(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    StrView dash_sv = {0};
+    if (!parse_arg(p, &dash_sv)) return;
+    char dbuf[64];
+    size_t n = (dash_sv.len < sizeof(dbuf) - 1) ? dash_sv.len : (sizeof(dbuf) - 1);
+    memcpy(dbuf, dash_sv.data, n);
+    dbuf[n] = '\0';
+    double dash_u = strtod(dbuf, nullptr);
+
+    double pw = 0.0, ph = 0.0;
+    parse_pic_coords(p, &pw, &ph);
+    emit_pic_box_helper(p, pw, ph, p->gen->pic_line_thick_mm, dash_u * get_unitlength_mm(p));
+    p->cmd_space_before = false;
+}
+
+static void builtin_shortstack(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    char plain[512];
+    CharState box_cs = p->gen->char_state;
+    eval_tex_box(p, args[0], plain, sizeof(plain), &box_cs);
+    if (p->gen->in_picture) {
+        xml_emit_text(p->gen, (StrView){ plain, strlen(plain) }, false);
+    } else {
+        Measure zero = measure_make(0.0, UNIT_MM, 1.0);
+        xml_emit_box(p->gen, zero, 'c', zero, zero, zero, &box_cs, (StrView){ plain, strlen(plain) }, p->cmd_space_before);
+    }
+    p->cmd_space_before = false;
+}
+
+static void builtin_thinlines(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->pic_line_thick_mm = 0.4 * MM_PER_PT;
+}
+
+static void builtin_thicklines(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, [[maybe_unused]] StrView a[]) {
+    p->gen->pic_line_thick_mm = 0.8 * MM_PER_PT;
+}
+
+static void builtin_linethickness(Parser *p, [[maybe_unused]] bool s, [[maybe_unused]] StrView o[], [[maybe_unused]] size_t oc, StrView args[]) {
+    Measure m = measure_parse(p, args[0], UNIT_MM);
+    p->gen->pic_line_thick_mm = m.mm;
+}
+
 // ============================================================================
 // 10. Tabla de Comandos Nativos (Builtins)
 // ============================================================================
@@ -3735,9 +4842,9 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "today",            0, 0, false, builtin_today },
     { "rule",             1, 2, false, builtin_rule },
     { "mbox",             0, 1, false, builtin_mbox },
-    { "makebox",          2, 1, false, builtin_makebox },
+    { "makebox",          0, 0, false, builtin_makebox },
     { "fbox",             0, 1, false, builtin_fbox },
-    { "framebox",         2, 1, false, builtin_framebox },
+    { "framebox",         0, 0, false, builtin_framebox },
     { "parbox",           3, 2, false, builtin_parbox },
     { "raisebox",         0, 0, false, builtin_raisebox },
     { "newsavebox",       0, 0, false, builtin_newsavebox },
@@ -3761,6 +4868,94 @@ static const BuiltinCommand BUILTIN_LIST[] = {
     { "pagenumbering",    0, 1, false, builtin_pagenumbering },
     { "markboth",         0, 2, false, builtin_markboth },
     { "markright",        0, 1, false, builtin_markright },
+
+    // Fase 5: Modo matemático, referencias, TOC/LOF/LOT, bibliografía, índice y picture
+    { "(",                0, 0, false, builtin_math_open_inline },
+    { ")",                0, 0, false, builtin_math_close_inline },
+    { "[",                0, 0, false, builtin_math_open_display },
+    { "]",                0, 0, false, builtin_math_close_display },
+    { "ensuremath",       0, 1, false, builtin_ensuremath },
+    { "nonumber",         0, 0, false, builtin_nonumber },
+    { "notag",            0, 0, false, builtin_nonumber },
+    { "frac",             0, 2, false, builtin_frac },
+    { "dfrac",            0, 2, false, builtin_frac },
+    { "tfrac",            0, 2, false, builtin_frac },
+    { "binom",            0, 2, false, builtin_binom },
+    { "stackrel",         0, 2, false, builtin_stackrel },
+    { "sqrt",             1, 1, false, builtin_sqrt },
+    { "overline",         0, 1, false, builtin_overline },
+    { "bar",              0, 1, false, builtin_bar },
+    { "widehat",          0, 1, false, builtin_widehat },
+    { "hat",              0, 1, false, builtin_hat },
+    { "widetilde",        0, 1, false, builtin_widetilde },
+    { "tilde",            0, 1, false, builtin_tilde },
+    { "overbrace",        0, 1, false, builtin_overbrace },
+    { "underbrace",       0, 1, false, builtin_underbrace },
+    { "vec",              0, 1, false, builtin_vec },
+    { "dot",              0, 1, false, builtin_dot },
+    { "ddot",             0, 1, false, builtin_ddot },
+    { "acute",            0, 1, false, builtin_acute },
+    { "grave",            0, 1, false, builtin_grave },
+    { "check",            0, 1, false, builtin_check },
+    { "breve",            0, 1, false, builtin_breve },
+    { "left",             0, 0, false, builtin_left_right },
+    { "right",            0, 0, false, builtin_left_right },
+    { "big",              0, 0, false, builtin_left_right },
+    { "Big",              0, 0, false, builtin_left_right },
+    { "bigg",             0, 0, false, builtin_left_right },
+    { "Bigg",             0, 0, false, builtin_left_right },
+    { "bigl",             0, 0, false, builtin_left_right },
+    { "bigr",             0, 0, false, builtin_left_right },
+    { "Bigl",             0, 0, false, builtin_left_right },
+    { "Bigr",             0, 0, false, builtin_left_right },
+    { "biggl",            0, 0, false, builtin_left_right },
+    { "biggr",            0, 0, false, builtin_left_right },
+    { "Biggl",            0, 0, false, builtin_left_right },
+    { "Biggr",            0, 0, false, builtin_left_right },
+    { "bmod",             0, 0, false, builtin_bmod },
+    { "pmod",             0, 1, false, builtin_pmod },
+    { "mathrm",           0, 1, false, builtin_mathrm },
+    { "mathbf",           0, 1, false, builtin_mathbf },
+    { "mathit",           0, 1, false, builtin_mathit },
+    { "mathsf",           0, 1, false, builtin_mathsf },
+    { "mathtt",           0, 1, false, builtin_mathtt },
+    { "mathcal",          0, 1, false, builtin_mathcal },
+    { "mathnormal",       0, 1, false, builtin_mathit },
+    { "boldmath",         0, 0, false, builtin_boldmath },
+    { "unboldmath",       0, 0, false, builtin_unboldmath },
+    { "displaystyle",     0, 0, false, builtin_normalsize },
+    { "textstyle",        0, 0, false, builtin_normalsize },
+    { "scriptstyle",      0, 0, false, builtin_scriptsize },
+    { "scriptscriptstyle",0, 0, false, builtin_tiny },
+    { "label",            0, 1, false, builtin_label },
+    { "ref",              0, 1, false, builtin_ref },
+    { "pageref",          0, 1, false, builtin_pageref },
+    { "tableofcontents",  0, 0, false, builtin_tableofcontents },
+    { "listoffigures",    0, 0, false, builtin_listoffigures },
+    { "listoftables",     0, 0, false, builtin_listoftables },
+    { "addcontentsline",  0, 3, false, builtin_addcontentsline },
+    { "addtocontents",    0, 2, false, builtin_noop },
+    { "bibitem",          1, 1, false, builtin_bibitem },
+    { "cite",             1, 1, false, builtin_cite },
+    { "nocite",           0, 1, false, builtin_noop },
+    { "bibliographystyle",0, 1, false, builtin_noop },
+    { "bibliography",     0, 1, false, builtin_noop },
+    { "makeindex",        0, 0, false, builtin_noop },
+    { "index",            0, 1, false, builtin_index },
+    { "printindex",       0, 0, false, builtin_printindex },
+    { "put",              0, 0, false, builtin_put },
+    { "multiput",         0, 0, false, builtin_multiput },
+    { "line",             0, 0, false, builtin_line },
+    { "vector",           0, 0, false, builtin_vector },
+    { "circle",           0, 1, true,  builtin_circle },
+    { "oval",             0, 0, false, builtin_oval },
+    { "qbezier",          0, 0, false, builtin_qbezier },
+    { "dashbox",          0, 0, false, builtin_dashbox },
+    { "frame",            0, 1, false, builtin_fbox },
+    { "shortstack",       1, 1, false, builtin_shortstack },
+    { "thinlines",        0, 0, false, builtin_thinlines },
+    { "thicklines",       0, 0, false, builtin_thicklines },
+    { "linethickness",    0, 1, false, builtin_linethickness },
 
     // Clases de documento, paquetes y archivos
     { "begin",            0, 1, false, builtin_begin },
@@ -4059,6 +5254,45 @@ static bool parse_cmd_or_arg(Parser *p, StrView *out_arg) {
     return parse_arg(p, out_arg);
 }
 
+static const char *find_math_function_name(StrView cmd) {
+    static const struct { const char *cmd; const char *out; } MATH_FUNCS[] = {
+        { "sin", "sin" }, { "cos", "cos" }, { "tan", "tan" }, { "cot", "cot" },
+        { "sec", "sec" }, { "csc", "csc" }, { "arcsin", "arcsin" }, { "arccos", "arccos" },
+        { "arctan", "arctan" }, { "sinh", "sinh" }, { "cosh", "cosh" }, { "tanh", "tanh" },
+        { "coth", "coth" }, { "ln", "ln" }, { "log", "log" }, { "lg", "lg" },
+        { "exp", "exp" }, { "lim", "lim" }, { "liminf", "lim inf" }, { "limsup", "lim sup" },
+        { "sup", "sup" }, { "inf", "inf" }, { "max", "max" }, { "min", "min" },
+        { "arg", "arg" }, { "det", "det" }, { "dim", "dim" }, { "gcd", "gcd" },
+        { "hom", "hom" }, { "ker", "ker" }, { "Pr", "Pr" }, { "deg", "deg" }
+    };
+    for (size_t i = 0; i < sizeof(MATH_FUNCS) / sizeof(MATH_FUNCS[0]); i++) {
+        if (sv_equals(cmd, MATH_FUNCS[i].cmd)) return MATH_FUNCS[i].out;
+    }
+    return nullptr;
+}
+
+static bool is_math_spaced_symbol(StrView cmd) {
+    static const char *const SPACED[] = {
+        "pm", "mp", "times", "div", "cdot", "ast", "star", "circ", "bullet",
+        "oplus", "ominus", "otimes", "oslash", "odot", "cap", "cup", "uplus",
+        "sqcap", "sqcup", "vee", "lor", "wedge", "land", "setminus",
+        "leq", "le", "geq", "ge", "neq", "ne", "equiv", "approx", "cong",
+        "sim", "simeq", "asymp", "doteq", "propto", "ll", "gg",
+        "subset", "supset", "subseteq", "supseteq", "sqsubset", "sqsupset",
+        "sqsubseteq", "sqsupseteq", "in", "notin", "ni", "owns",
+        "vdash", "dashv", "models", "perp", "parallel", "mid", "bowtie",
+        "prec", "succ", "preceq", "succeq",
+        "leftarrow", "gets", "rightarrow", "to", "leftrightarrow",
+        "Leftarrow", "Rightarrow", "Leftrightarrow", "iff", "mapsto",
+        "longmapsto", "longrightarrow", "longleftarrow", "longleftrightarrow",
+        "Longrightarrow", "Longleftarrow", "Longleftrightarrow"
+    };
+    for (size_t i = 0; i < sizeof(SPACED) / sizeof(SPACED[0]); i++) {
+        if (sv_equals(cmd, SPACED[i])) return true;
+    }
+    return false;
+}
+
 static void parse_and_execute(Parser *p) {
     while (p->current.type != TOKEN_EOF) {
         if (p->current.type == TOKEN_TEXT) {
@@ -4075,9 +5309,50 @@ static void parse_and_execute(Parser *p) {
             continue;
         }
 
+        if (p->current.type == TOKEN_MATH_SHIFT) {
+            if (!p->gen->in_math) {
+                if (p->current.space_before && p->gen->para_has_content && !p->gen->capture_plain_buf) {
+                    xml_ensure_para_open(p->gen);
+                    xml_activate_current_char_style(p->gen);
+                    sb_append_cstr(&p->gen->story, " ");
+                }
+                xml_push_group(p->gen);
+                p->gen->in_math          = true;
+                p->gen->char_state.slant = SLANT_ITALIC;
+                if (p->gen->math_bold) p->gen->char_state.weight = WEIGHT_BOLD;
+            } else {
+                p->gen->in_math = false;
+                xml_pop_group(p->gen);
+            }
+            parser_advance(p);
+            continue;
+        }
+
+        if (p->current.type == TOKEN_DISPLAY_MATH) {
+            if (!p->gen->in_display_math) {
+                builtin_math_open_display(p, false, nullptr, 0, nullptr);
+            } else {
+                builtin_math_close_display(p, false, nullptr, 0, nullptr);
+            }
+            parser_advance(p);
+            continue;
+        }
+
+        if (p->current.type == TOKEN_SUP || p->current.type == TOKEN_SUB) {
+            bool is_sup = (p->current.type == TOKEN_SUP);
+            parser_advance(p);
+            StrView arg = {0};
+            if (parse_arg(p, &arg)) {
+                CharState next = p->gen->char_state;
+                next.shift = is_sup ? SHIFT_SUPER : SHIFT_SUB;
+                parse_inline_scoped(p, arg, next);
+            }
+            continue;
+        }
+
         // Agrupamiento léxico TeX: { ... } apila y restaura el estado tipográfico
         if (p->current.type == TOKEN_LBRACE) {
-            if (p->current.space_before && p->gen->para_has_content) {
+            if (p->current.space_before && p->gen->para_has_content && !p->gen->in_math) {
                 xml_ensure_para_open(p->gen);
                 xml_activate_current_char_style(p->gen);
                 sb_append_cstr(&p->gen->story, " ");
@@ -4096,6 +5371,8 @@ static void parse_and_execute(Parser *p) {
         if (p->current.type == TOKEN_AMP) {
             if (p->gen->in_tabular) {
                 xml_table_next_cell(p->gen);
+            } else if (p->gen->in_eqnarray) {
+                xml_emit_hspace(p->gen, measure_make(1.5, UNIT_MM, 1.0), nullptr, false);
             }
             parser_advance(p);
             continue;
@@ -4196,14 +5473,59 @@ static void parse_and_execute(Parser *p) {
                 continue;
             }
 
-            // 3. ¿Es un símbolo de texto o logo de LaTeX2e?
-            const char *sym_utf8 = find_latex_text_symbol(cmd);
-            if (sym_utf8) {
-                xml_emit_text(p->gen, (StrView){ sym_utf8, strlen(sym_utf8) }, space_pend);
+            // 3. ¿Es una función matemática estándar (\sin, \cos, \lim, \max...)?
+            const char *mfunc = find_math_function_name(cmd);
+            if (mfunc) {
+                CharState saved_cs = p->gen->char_state;
+                bool saved_math    = p->gen->in_math;
+                p->gen->in_math          = false;
+                p->gen->char_state.slant = SLANT_NORMAL;
+                xml_emit_text(p->gen, (StrView){ mfunc, strlen(mfunc) }, space_pend);
+                if (p->current.type == TOKEN_TEXT && p->current.text.len > 0 && isalpha((unsigned char)p->current.text.data[0])) {
+                    xml_emit_text(p->gen, (StrView){"\xC2\xA0", 2}, false);
+                }
+                p->gen->char_state = saved_cs;
+                p->gen->in_math    = saved_math;
                 continue;
             }
 
-            // 4. ¿Es un comando nativo (Builtin)?
+            // 4. ¿Es un símbolo de texto, matemático o logo de LaTeX2e?
+            const char *sym_utf8 = find_latex_text_symbol(cmd);
+            if (sym_utf8) {
+                if (p->gen->in_math && !p->gen->capture_plain_buf) {
+                    bool spaced = is_math_spaced_symbol(cmd);
+                    char sbuf[32];
+                    if (spaced) {
+                        snprintf(sbuf, sizeof(sbuf), " %s ", sym_utf8);
+                    } else {
+                        snprintf(sbuf, sizeof(sbuf), "%s", sym_utf8);
+                    }
+                    CharState saved_cs = p->gen->char_state;
+                    bool saved_math    = p->gen->in_math;
+                    p->gen->in_math          = false;
+                    // Las minúsculas griegas van en cursiva matemática; operadores y mayúsculas en redonda
+                    bool is_lower_greek = (cmd.len >= 2 && islower((unsigned char)cmd.data[0]) && !spaced &&
+                                           (sv_equals(cmd, "alpha") || sv_equals(cmd, "beta") || sv_equals(cmd, "gamma") ||
+                                            sv_equals(cmd, "delta") || sv_equals(cmd, "epsilon") || sv_equals(cmd, "varepsilon") ||
+                                            sv_equals(cmd, "zeta") || sv_equals(cmd, "eta") || sv_equals(cmd, "theta") ||
+                                            sv_equals(cmd, "vartheta") || sv_equals(cmd, "iota") || sv_equals(cmd, "kappa") ||
+                                            sv_equals(cmd, "lambda") || sv_equals(cmd, "mu") || sv_equals(cmd, "nu") ||
+                                            sv_equals(cmd, "xi") || sv_equals(cmd, "pi") || sv_equals(cmd, "varpi") ||
+                                            sv_equals(cmd, "rho") || sv_equals(cmd, "varrho") || sv_equals(cmd, "sigma") ||
+                                            sv_equals(cmd, "varsigma") || sv_equals(cmd, "tau") || sv_equals(cmd, "upsilon") ||
+                                            sv_equals(cmd, "phi") || sv_equals(cmd, "varphi") || sv_equals(cmd, "chi") ||
+                                            sv_equals(cmd, "psi") || sv_equals(cmd, "omega")));
+                    p->gen->char_state.slant = is_lower_greek ? SLANT_ITALIC : SLANT_NORMAL;
+                    xml_emit_text(p->gen, (StrView){ sbuf, strlen(sbuf) }, false);
+                    p->gen->char_state = saved_cs;
+                    p->gen->in_math    = saved_math;
+                } else {
+                    xml_emit_text(p->gen, (StrView){ sym_utf8, strlen(sym_utf8) }, space_pend);
+                }
+                continue;
+            }
+
+            // 5. ¿Es un comando nativo (Builtin)?
             const BuiltinCommand *builtin = find_builtin(cmd);
             if (builtin) {
                 p->cmd_space_before = space_pend;
@@ -4309,14 +5631,24 @@ int main(int argc, char **argv) {
         replace_extension(input_path, ".tks", tks_output_path, sizeof(tks_output_path));
     }
 
+    printf("Procesando '%s' -> Generando '%s'...\n", input_path, tks_output_path);
+
+    // Pasada 1 (prescan en memoria): recopila \label, entradas de TOC/LOF/LOT, \bibitem e \index
+    XmlGenerator prescan_gen;
+    if (xml_gen_init(&prescan_gen, nullptr)) {
+        user_macros.is_prescan = true;
+        process_file(input_path, &user_macros, &prescan_gen, 0);
+        xml_gen_finalize(&prescan_gen);
+    }
+    macro_env_reset_for_pass2(&user_macros);
+
+    // Pasada 2 (emisión definitiva al archivo intermedio .tks)
     XmlGenerator gen;
     if (!xml_gen_init(&gen, tks_output_path)) {
         perror("Error inicializando generador TKS (XML intermedio)");
         macro_env_free(&user_macros);
         return EXIT_FAILURE;
     }
-
-    printf("Procesando '%s' -> Generando '%s'...\n", input_path, tks_output_path);
 
     if (!process_file(input_path, &user_macros, &gen, 0)) {
         fprintf(stderr, "Fallo durante el procesamiento del documento\n");

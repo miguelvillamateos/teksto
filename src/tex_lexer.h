@@ -150,6 +150,42 @@ static inline Token lexer_next_token(Lexer *l) {
                      .space_before = skipped_space};
     }
 
+    // Delimitadores de modo matemático '$' y '$$'
+    if (c == '$') {
+      lexer_advance(l);
+      if (lexer_peek(l) == '$') {
+        lexer_advance(l);
+        return (Token){.type = TOKEN_DISPLAY_MATH,
+                       .text = {start, 2},
+                       .line = line,
+                       .col = col,
+                       .space_before = skipped_space};
+      }
+      return (Token){.type = TOKEN_MATH_SHIFT,
+                     .text = {start, 1},
+                     .line = line,
+                     .col = col,
+                     .space_before = skipped_space};
+    }
+
+    // Superíndice '^' y subíndice '_' en modo matemático
+    if (c == '^') {
+      lexer_advance(l);
+      return (Token){.type = TOKEN_SUP,
+                     .text = {start, 1},
+                     .line = line,
+                     .col = col,
+                     .space_before = skipped_space};
+    }
+    if (c == '_') {
+      lexer_advance(l);
+      return (Token){.type = TOKEN_SUB,
+                     .text = {start, 1},
+                     .line = line,
+                     .col = col,
+                     .space_before = skipped_space};
+    }
+
     // Carácter activo '~' (espacio irrompible en TeX)
     if (c == '~') {
       lexer_advance(l);
@@ -304,8 +340,9 @@ static inline Token lexer_next_token(Lexer *l) {
     while (l->cursor < l->len) {
       char next = lexer_peek(l);
       if (next == '\\' || next == '{' || next == '}' || next == '%' ||
-          next == '&' || next == '~' || next == '\n' || next == ' ' ||
-          next == '\t' || next == '\r') {
+          next == '&' || next == '$' || next == '^' || next == '_' ||
+          next == '~' || next == '\n' || next == ' ' || next == '\t' ||
+          next == '\r') {
         break;
       }
       if ((next == '-' && lexer_peek_ahead(l, 1) == '-') ||

@@ -30,6 +30,7 @@
 
 \pagestyle{headings}
 \markboth{Manual de \LaTeXe{} en Teksto}{Arquitectura \TeX{} -> .tks -> .svg}
+\makeindex
 
 \newsavebox{\cajasello}
 \sbox{\cajasello}{\fbox{\textbf{VALIDADO}}}
@@ -55,8 +56,10 @@ Este documento ejemplifica las funcionalidades implementadas en Teksto siguiendo
 expansi\'on de macros (\codigo{\textbackslash newcommand}, \codigo{\textbackslash def}, \codigo{\textbackslash newenvironment}),
 agrupamiento l\'exico con pila de estados, contadores jer\'arquicos, registros de longitud, selecci\'on de fuentes NFSS,
 versalitas (\textsc{Small Caps}), super\'{\i}ndices y sub\'{\i}ndices, seccionado autom\'atico, listas anidadas,
-entornos literales (\codigo{verbatim}) y primitivas de espaciado el\'astico horizontal y vertical.
+entornos literales (\codigo{verbatim}), modo matem\'atico, gr\'aficos vectoriales (\codigo{picture}), referencias cruzadas y bibliograf\'{\i}a.
 \end{abstract}
+
+\tableofcontents
 
 % Inclusión del capítulo externo capitulo1.tex
 \input{capitulo1}
@@ -133,6 +136,7 @@ Este p\'arrafo modifica localmente \codigo{\textbackslash parindent} sumando uni
 La variante con estrella \codigo{\textbackslash section*} aplica el estilo tipogr\'afico de secci\'on sin incrementar ni imprimir el contador.
 
 \section{Cajas LR, Tablas y Elementos Flotantes}
+\index{cajas LR}\index{tablas tabular}
 
 Ejemplos de cajas horizontales: \mbox{ irrompible }, \fbox{con borde}, \framebox[24mm][c]{\textbf{centrada}}, desplazamiento vertical con \raisebox{1.2mm}{\small arriba} y \raisebox{-1.0mm}{\small abajo}, y caja prealmacenada: \usebox{\cajasello}.
 
@@ -149,13 +153,50 @@ Motor Gr\'afico & \codigo{.tks} & \codigo{input.svg} \\
 \hline\hline
 \end{tabular}
 \end{center}
-\caption{Tabla con bordes dobles, \textbackslash multicolumn y \textbackslash cline.}
+\caption{Tabla con bordes dobles, \textbackslash multicolumn y \textbackslash cline.}\label{tab:pipeline}
 \end{table}
+
+\section{Modo Matem\'atico, Gr\'aficos Vectoriales y Referencias}\label{sec:matematicas}
+\index{modo matematico}\index{entorno picture}
+
+Como se detall\'o en la Secci\'on~\ref{sec:lexico} (p\'agina~\pageref{sec:lexico}) y se resumi\'o en el Cuadro~\ref{tab:pipeline}, el motor procesa el documento en dos pasadas para resolver referencias cruzadas y citas bibliogr\'aficas como \cite{knuth84,lamport94}.
+
+En modo matem\'atico en l\'{\i}nea se componen expresiones como $E = mc^2$, desigualdades $\alpha + \beta \geq \gamma$, vectores $\vec{v} \cdot \overline{w} = 0$ y l\'{\i}mites $\lim_{n \to \infty} (1 + 1/n)^n = e$. A continuaci\'on se muestra la ecuaci\'on numerada~(\ref{eq:gauss}) con fracciones, radicales, coeficientes binomiales y operadores:
+
+\begin{equation}\label{eq:gauss}
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}, \qquad \binom{n}{k} = \frac{n!}{k!(n-k)!}, \qquad \widehat{f}(\xi) = \sum_{k=0}^{N} \frac{\sqrt[3]{a_k + 1}}{2^k}
+\end{equation}
+
+\subsection{Diagrama Vectorial con el Entorno \codigo{picture}}
+
+\begin{center}
+\setlength{\unitlength}{1mm}
+\begin{picture}(110,28)(0,0)
+  \thinlines
+  \put(4,14){\framebox(24,10)[c]{\textbf{.tex}}}
+  \put(28,19){\vector(1,0){14}}
+  \put(42,14){\dashbox{1.5}(26,10)[c]{\textbf{.tks (XML)}}}
+  \put(68,19){\vector(1,0){14}}
+  \put(82,14){\framebox(24,10)[c]{\textbf{.svg}}}
+  \put(55,6){\oval(96,8)}
+  \put(16,4){\makebox(78,4)[c]{\footnotesize Pipeline vectorial nativo de Teksto}}
+  \put(10,6){\circle*{2.5}}
+  \put(100,6){\circle{3.5}}
+  \qbezier(16,14)(55,0)(94,14)
+\end{picture}
+\end{center}
 
 \appendix
 \section{Especificaci\'on del Fichero Intermedio \codigo{.tks}}
 
-Tras ejecutar \codigo{\textbackslash appendix}, las secciones principales se numeran alfab\'eticamente (\thesection). El fichero \codigo{input.tks} contiene la representaci\'on XML intermedia con las definiciones de p\'agina, familias tipogr\'aficas, estilos deduplicados (\codigo{<para-style>}, \codigo{<char-style>}) y primitivas de flujo (\codigo{<p>}, \codigo{<span>}, \codigo{<br/>}, \codigo{<hspace/>}, \codigo{<vspace/>}, \codigo{<rule/>}).
+Tras ejecutar \codigo{\textbackslash appendix}, las secciones principales se numeran alfab\'eticamente (\thesection). El fichero \codigo{input.tks} contiene la representaci\'on XML intermedia con las definiciones de p\'agina, familias tipogr\'aficas, estilos deduplicados (\codigo{<para-style>}, \codigo{<char-style>}) y primitivas de flujo (\codigo{<p>}, \codigo{<span>}, \codigo{<br/>}, \codigo{<hspace/>}, \codigo{<vspace/>}, \codigo{<rule/>}, \codigo{<mfrac/>}, \codigo{<msqrt/>}, \codigo{<mover/>}, \codigo{<table>}, \codigo{<picture>}).
+
+\begin{thebibliography}{9}
+  \bibitem{knuth84} Donald E. Knuth, \textit{The \TeX book}, Addison-Wesley, 1984.
+  \bibitem{lamport94} Leslie Lamport, \textit{\LaTeX: A Document Preparation System}, 2.\textsuperscript{a} ed., Addison-Wesley, 1994.
+\end{thebibliography}
+
+\printindex
 
 \end{document}
 
